@@ -24,5 +24,5 @@ class ContactTimeForm(forms.ModelForm):
             'school',
             'contacted_at',
             'comment',
-            Submit('submit', 'Gem kontaktregistrering', css_class='btn btn-primary'),
+            Submit('submit', 'Gem henvendelse', css_class='btn btn-primary'),
         )

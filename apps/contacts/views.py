@@ -52,7 +52,7 @@ class ContactCreateView(CreateView):
     def form_valid(self, form):
         form.instance.created_by = self.request.user
         response = super().form_valid(form)
-        messages.success(self.request, 'Kontaktregistrering blev oprettet.')
+        messages.success(self.request, 'Henvendelse blev oprettet.')
         return response
 
 
@@ -77,7 +77,7 @@ class ContactUpdateView(UpdateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(self.request, 'Kontaktregistrering blev opdateret.')
+        messages.success(self.request, 'Henvendelse blev opdateret.')
         return response
 
 
@@ -86,8 +86,8 @@ class ContactDeleteView(View):
     def get(self, request, pk):
         contact = get_object_or_404(ContactTime, pk=pk)
         return render(request, 'core/components/confirm_delete_modal.html', {
-            'title': 'Slet kontaktregistrering',
-            'message': 'Er du sikker på, at du vil slette denne kontaktregistrering?',
+            'title': 'Slet henvendelse',
+            'message': 'Er du sikker på, at du vil slette denne henvendelse?',
             'warning': 'Denne handling kan ikke fortrydes.',
             'delete_url': reverse_lazy('contacts:delete', kwargs={'pk': pk}),
         })
@@ -95,7 +95,7 @@ class ContactDeleteView(View):
     def post(self, request, pk):
         contact = get_object_or_404(ContactTime, pk=pk)
         contact.delete()
-        messages.success(request, 'Kontaktregistrering er blevet slettet.')
+        messages.success(request, 'Henvendelse er blevet slettet.')
         return JsonResponse({'success': True, 'redirect': str(reverse_lazy('contacts:list'))})
 
 
@@ -109,7 +109,7 @@ class ContactExportView(View):
         fields = [
             ('school', 'Skole'),
             ('created_by', 'Oprettet af'),
-            ('contacted_at', 'Kontaktet'),
+            ('contacted_at', 'Henvendt'),
             ('comment', 'Kommentar'),
             ('created_at', 'Oprettet'),
         ]

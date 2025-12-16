@@ -1,6 +1,6 @@
 {% extends 'core/base.html' %}
 
-{% block title %}{{ school.name }} - Kursustilmelding{% endblock %}
+{% block title %}{{ school.name }} - Basal{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -43,7 +43,7 @@
     <div class="col-lg-6">
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span>Kontakthistorik</span>
+                <span>Henvendelser</span>
                 <a href="{% url 'contacts:create' %}?school={{ school.pk }}" class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-plus-lg"></i>
                 </a>
@@ -58,13 +58,13 @@
                     <small>{{ contact.comment|truncatewords:20 }}</small>
                 </li>
                 {% empty %}
-                <li class="list-group-item text-muted">Ingen kontakthistorik.</li>
+                <li class="list-group-item text-muted">Ingen henvendelser.</li>
                 {% endfor %}
             </ul>
         </div>
 
         <div class="card">
-            <div class="card-header">Kursustilmeldinger</div>
+            <div class="card-header">Tilmeldinger</div>
             <ul class="list-group list-group-flush">
                 {% for signup in course_signups %}
                 <li class="list-group-item">
@@ -75,7 +75,7 @@
                     <small class="text-muted">{{ signup.participant_name }} - {{ signup.course.start_date|date:"d. M Y" }}</small>
                 </li>
                 {% empty %}
-                <li class="list-group-item text-muted">Ingen kursustilmeldinger.</li>
+                <li class="list-group-item text-muted">Ingen tilmeldinger.</li>
                 {% endfor %}
             </ul>
         </div>

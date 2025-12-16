@@ -1,6 +1,6 @@
 {% extends 'core/base.html' %}
 
-{% block title %}Skoler - Kursustilmelding{% endblock %}
+{% block title %}Skoler - Basal{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -53,7 +53,7 @@
                         <a href="{% url 'schools:update' school.pk %}" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-pencil"></i>
                         </a>
-                        <a href="{% url 'contacts:create' %}?school={{ school.pk }}" class="btn btn-sm btn-outline-info" title="Tilføj kontakt">
+                        <a href="{% url 'contacts:create' %}?school={{ school.pk }}" class="btn btn-sm btn-outline-info" title="Tilføj henvendelse">
                             <i class="bi bi-telephone-plus"></i>
                         </a>
                     </td>

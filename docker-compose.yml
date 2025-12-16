@@ -10,7 +10,7 @@ services:
     environment:
       - DEBUG=False
       - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/course_enrollment
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/basal
       - ALLOWED_HOSTS=localhost,127.0.0.1
     volumes:
       - static_volume:/app/staticfiles
@@ -23,7 +23,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=course_enrollment
+      - POSTGRES_DB=basal
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
 

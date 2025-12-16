@@ -10,7 +10,7 @@ SECRET_KEY = os.environ['SECRET_KEY']
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='postgres://localhost/course_enrollment',
+        default='postgres://localhost/basal',
         conn_max_age=600,
     )
 }

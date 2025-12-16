@@ -1,6 +1,6 @@
 {% extends 'core/base.html' %}
 
-{% block title %}Oversigt - Kursustilmelding{% endblock %}
+{% block title %}Oversigt - Basal{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -95,7 +95,7 @@
     <div class="col-lg-4">
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-clock-history me-2"></i>Seneste kontakter
+                <i class="bi bi-clock-history me-2"></i>Seneste henvendelser
             </div>
             <ul class="list-group list-group-flush">
                 {% for contact in recent_contacts %}
@@ -107,7 +107,7 @@
                     <small class="text-muted">af {{ contact.created_by.get_full_name|default:contact.created_by.username|default:"Ukendt" }}</small>
                 </li>
                 {% empty %}
-                <li class="list-group-item text-muted">Ingen seneste kontakter.</li>
+                <li class="list-group-item text-muted">Ingen seneste henvendelser.</li>
                 {% endfor %}
             </ul>
         </div>
