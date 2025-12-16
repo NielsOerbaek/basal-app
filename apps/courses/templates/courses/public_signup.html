@@ -1,21 +1,32 @@
 {% extends 'core/base_public.html' %}
-{% load crispy_forms_tags %}
+{% load crispy_forms_tags static %}
 
 {% block title %}Tilmelding - Basal{% endblock %}
 
 {% block extra_css %}
 <style>
-    body { background: #f8f9fa; }
     .card { max-width: 700px; }
+    .logo-header {
+        background-color: var(--basal-purple);
+        padding: 2rem;
+        border-radius: 0.375rem 0.375rem 0 0;
+        margin: -1px -1px 0 -1px;
+    }
+    .logo-header img {
+        max-width: 200px;
+        height: auto;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="card shadow">
+    <div class="logo-header text-center">
+        <img src="{% static 'img/basal-logo-white.png' %}" alt="Basal">
+    </div>
     <div class="card-body p-5">
         <div class="text-center mb-4">
-            <i class="bi bi-mortarboard text-primary" style="font-size: 3rem;"></i>
-            <h2 class="mt-2">Tilmelding</h2>
+            <h2>Tilmelding</h2>
             <p class="text-muted">Tilmeld dig et kommende kursus</p>
         </div>
 
