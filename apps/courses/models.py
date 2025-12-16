@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.db import models
 
 
@@ -45,6 +47,10 @@ class Course(models.Model):
     def is_full(self):
         return self.signup_count >= self.capacity
 
+    @property
+    def is_past(self):
+        return self.end_date < date.today()
+
 
 class CourseSignUp(models.Model):
     school = models.ForeignKey(
@@ -58,6 +64,10 @@ class CourseSignUp(models.Model):
         related_name='signups'
     )
     participant_name = models.CharField(max_length=255)
+    participant_email = models.EmailField(
+        blank=True,
+        help_text='E-mail til kontakt'
+    )
     participant_title = models.CharField(
         max_length=255,
         blank=True,

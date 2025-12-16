@@ -9,19 +9,26 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from apps.core.decorators import staff_required
 from apps.core.export import export_queryset_to_excel
+from apps.core.mixins import SortableMixin
 
 from .forms import ContactTimeForm
 from .models import ContactTime
 
 
 @method_decorator(staff_required, name='dispatch')
-class ContactListView(ListView):
+class ContactListView(SortableMixin, ListView):
     model = ContactTime
     template_name = 'contacts/contact_list.html'
     context_object_name = 'contacts'
     paginate_by = 25
+    sortable_fields = {
+        'school': 'school__name',
+        'date': 'contacted_date',
+    }
+    default_sort = 'date'
+    default_order = 'desc'
 
-    def get_queryset(self):
+    def get_base_queryset(self):
         queryset = ContactTime.objects.select_related('school', 'created_by')
         school_id = self.request.GET.get('school')
         if school_id:

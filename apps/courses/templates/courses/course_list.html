@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load sorting_tags %}
 
 {% block title %}Kurser - Basal{% endblock %}
 
@@ -35,9 +36,9 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th>Titel</th>
-                    <th>Dato</th>
-                    <th>Sted</th>
+                    <th>{% sort_header 'title' 'Titel' %}</th>
+                    <th>{% sort_header 'date' 'Dato' %}</th>
+                    <th>{% sort_header 'location' 'Sted' %}</th>
                     <th>Tilmeldinger</th>
                     <th>Status</th>
                     <th class="table-actions">Handlinger</th>
@@ -57,7 +58,9 @@
                     <td>{{ course.location }}</td>
                     <td>{{ course.signup_count }}/{{ course.capacity }}</td>
                     <td>
-                        {% if course.is_published %}
+                        {% if course.is_past %}
+                        <span class="badge bg-dark">Afholdt</span>
+                        {% elif course.is_published %}
                         <span class="badge bg-success">Offentliggjort</span>
                         {% else %}
                         <span class="badge bg-secondary">Kladde</span>

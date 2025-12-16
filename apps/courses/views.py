@@ -10,19 +10,27 @@ from django.views.generic import CreateView, DetailView, ListView, TemplateView,
 
 from apps.core.decorators import staff_required
 from apps.core.export import export_queryset_to_excel
+from apps.core.mixins import SortableMixin
 
 from .forms import CourseForm, CourseSignUpForm, PublicSignUpForm
 from .models import AttendanceStatus, Course, CourseSignUp
 
 
 @method_decorator(staff_required, name='dispatch')
-class CourseListView(ListView):
+class CourseListView(SortableMixin, ListView):
     model = Course
     template_name = 'courses/course_list.html'
     context_object_name = 'courses'
     paginate_by = 25
+    sortable_fields = {
+        'title': 'title',
+        'date': 'start_date',
+        'location': 'location',
+    }
+    default_sort = 'date'
+    default_order = 'desc'
 
-    def get_queryset(self):
+    def get_base_queryset(self):
         queryset = Course.objects.all()
         search = self.request.GET.get('search')
         if search:
@@ -194,6 +202,7 @@ class PublicSignUpView(View):
                 course=form.cleaned_data['course'],
                 school=form.cleaned_data['school'],
                 participant_name=form.cleaned_data['participant_name'],
+                participant_email=form.cleaned_data['participant_email'],
                 participant_title=form.cleaned_data.get('participant_title', ''),
             )
             return redirect('signup-success')

@@ -18,17 +18,16 @@ class DashboardView(TemplateView):
         context = super().get_context_data(**kwargs)
         now = timezone.now()
 
-        context['total_schools'] = School.objects.active().count()
-        context['pending_signups'] = CourseSignUp.objects.filter(
-            course__start_date__gte=now.date()
-        ).count()
-        context['courses_this_month'] = Course.objects.filter(
-            start_date__year=now.year,
-            start_date__month=now.month
-        ).count()
+        # Main stats
+        enrolled_schools = School.objects.active().filter(enrolled_at__isnull=False)
+        context['enrolled_schools'] = enrolled_schools.count()
+        context['past_courses'] = Course.objects.filter(end_date__lt=now.date()).count()
         context['total_trained'] = CourseSignUp.objects.filter(
             attendance=AttendanceStatus.PRESENT
         ).count()
+        # Calculate unused seats across all enrolled schools
+        total_unused = sum(s.remaining_seats for s in enrolled_schools)
+        context['unused_seats'] = total_unused
 
         context['upcoming_courses'] = Course.objects.filter(
             start_date__gte=now.date()
@@ -43,5 +42,9 @@ class DashboardView(TemplateView):
         context['recent_signups'] = CourseSignUp.objects.select_related(
             'school', 'course'
         )[:10]
+
+        context['recent_enrollments'] = School.objects.active().filter(
+            enrolled_at__isnull=False
+        ).order_by('-enrolled_at')[:10]
 
         return context

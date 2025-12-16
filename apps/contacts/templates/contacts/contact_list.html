@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load sorting_tags %}
 
 {% block title %}Henvendelser - Basal{% endblock %}
 
@@ -35,8 +36,8 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th>Skole</th>
-                    <th>Dato</th>
+                    <th>{% sort_header 'school' 'Skole' %}</th>
+                    <th>{% sort_header 'date' 'Dato' %}</th>
                     <th>Retning</th>
                     <th>Af</th>
                     <th>Kommentar</th>

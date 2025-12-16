@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load sorting_tags %}
 
 {% block title %}Skoler - Basal{% endblock %}
 
@@ -35,10 +36,10 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th>Navn</th>
-                    <th>Adresse</th>
-                    <th>Kontaktperson</th>
-                    <th>E-mail</th>
+                    <th>{% sort_header 'name' 'Navn' %}</th>
+                    <th>{% sort_header 'location' 'Adresse' %}</th>
+                    <th>{% sort_header 'contact' 'Kontaktperson' %}</th>
+                    <th>{% sort_header 'seats' 'Ledige pladser' %}</th>
                     <th class="table-actions">Handlinger</th>
                 </tr>
             </thead>
@@ -48,7 +49,13 @@
                     <td><a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a></td>
                     <td>{{ school.location }}</td>
                     <td>{{ school.contact_name }}</td>
-                    <td><a href="mailto:{{ school.contact_email }}">{{ school.contact_email }}</a></td>
+                    <td>
+                        {% if school.enrolled_at %}
+                        {{ school.remaining_seats }} / {{ school.total_seats }}
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
                     <td class="table-actions">
                         <a href="{% url 'schools:update' school.pk %}" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-pencil"></i>

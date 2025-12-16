@@ -8,21 +8,29 @@ from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from apps.core.export import export_queryset_to_excel
-
 from apps.core.decorators import staff_required
+from apps.core.mixins import SortableMixin
 
 from .forms import SchoolForm, SeatPurchaseForm
 from .models import School, SeatPurchase
 
 
 @method_decorator(staff_required, name='dispatch')
-class SchoolListView(ListView):
+class SchoolListView(SortableMixin, ListView):
     model = School
     template_name = 'schools/school_list.html'
     context_object_name = 'schools'
     paginate_by = 25
+    sortable_fields = {
+        'name': 'name',
+        'location': 'location',
+        'contact': 'contact_name',
+        'seats': '_remaining_seats',  # Special handling for computed property
+    }
+    default_sort = 'name'
 
-    def get_queryset(self):
+    def get_base_queryset(self):
+        """Return the base queryset before sorting."""
         queryset = School.objects.active()
         search = self.request.GET.get('search')
         if search:
@@ -33,6 +41,20 @@ class SchoolListView(ListView):
                 Q(contact_email__icontains=search)
             )
         return queryset
+
+    def get_queryset(self):
+        """Handle special sorting for computed fields."""
+        sort, order = self.get_sort_params()
+
+        # For seats sorting, we need to sort in Python since it's a computed property
+        if sort == 'seats':
+            queryset = list(self.get_base_queryset())
+            reverse = (order == 'desc')
+            queryset.sort(key=lambda s: s.remaining_seats, reverse=reverse)
+            return queryset
+
+        # Use default mixin sorting for other fields
+        return super().get_queryset()
 
 
 @method_decorator(staff_required, name='dispatch')

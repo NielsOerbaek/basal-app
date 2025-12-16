@@ -2,6 +2,7 @@
     <td>
         <strong>{{ signup.participant_name }}</strong>
         {% if signup.participant_title %}<br><small class="text-muted">{{ signup.participant_title }}</small>{% endif %}
+        {% if signup.participant_email %}<br><small><a href="mailto:{{ signup.participant_email }}">{{ signup.participant_email }}</a></small>{% endif %}
     </td>
     <td>{{ signup.school.name }}</td>
     <td>

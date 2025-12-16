@@ -73,11 +73,8 @@ class School(models.Model):
 
     @property
     def used_seats(self):
-        """Number of seats used (signups for future courses)."""
-        today = date.today()
-        return self.course_signups.filter(
-            course__start_date__gte=today
-        ).count()
+        """Number of seats used (all course signups)."""
+        return self.course_signups.count()
 
     @property
     def remaining_seats(self):

@@ -47,7 +47,7 @@ class CourseForm(forms.ModelForm):
 class CourseSignUpForm(forms.ModelForm):
     class Meta:
         model = CourseSignUp
-        fields = ['school', 'course', 'participant_name', 'participant_title']
+        fields = ['school', 'course', 'participant_name', 'participant_email', 'participant_title']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -56,8 +56,9 @@ class CourseSignUpForm(forms.ModelForm):
         self.helper.layout = Layout(
             'course',
             'school',
+            'participant_name',
             Row(
-                Column('participant_name', css_class='col-md-6'),
+                Column('participant_email', css_class='col-md-6'),
                 Column('participant_title', css_class='col-md-6'),
             ),
             Submit('submit', 'Gem tilmelding', css_class='btn btn-primary'),
@@ -75,8 +76,9 @@ class PublicSignUpForm(forms.Form):
         label='Vælg din skole',
         empty_label='Vælg en skole...'
     )
-    participant_name = forms.CharField(max_length=255, label='Dit navn')
-    participant_title = forms.CharField(max_length=255, required=False, label='Din jobtitel')
+    participant_name = forms.CharField(max_length=255, label='Navn')
+    participant_email = forms.EmailField(label='E-mail')
+    participant_title = forms.CharField(max_length=255, required=False, label='Stilling')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -85,8 +87,9 @@ class PublicSignUpForm(forms.Form):
             'course',
             'school',
             HTML('<hr><h5>Deltagerinformation</h5>'),
+            'participant_name',
             Row(
-                Column('participant_name', css_class='col-md-6'),
+                Column('participant_email', css_class='col-md-6'),
                 Column('participant_title', css_class='col-md-6'),
             ),
             Submit('submit', 'Tilmeld', css_class='btn btn-primary btn-lg'),

@@ -11,24 +11,16 @@
     <div class="col-md-3">
         <div class="card card-stats">
             <div class="card-body">
-                <h6 class="card-subtitle mb-2 text-muted">Skoler i alt</h6>
-                <h2 class="card-title mb-0">{{ total_schools }}</h2>
+                <h6 class="card-subtitle mb-2 text-muted">Tilmeldte skoler</h6>
+                <h2 class="card-title mb-0">{{ enrolled_schools }}</h2>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card card-stats">
             <div class="card-body">
-                <h6 class="card-subtitle mb-2 text-muted">Ventende tilmeldinger</h6>
-                <h2 class="card-title mb-0">{{ pending_signups }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card card-stats">
-            <div class="card-body">
-                <h6 class="card-subtitle mb-2 text-muted">Kurser denne måned</h6>
-                <h2 class="card-title mb-0">{{ courses_this_month }}</h2>
+                <h6 class="card-subtitle mb-2 text-muted">Afholdte kurser</h6>
+                <h2 class="card-title mb-0">{{ past_courses }}</h2>
             </div>
         </div>
     </div>
@@ -37,6 +29,14 @@
             <div class="card-body">
                 <h6 class="card-subtitle mb-2 text-muted">Uddannede i alt</h6>
                 <h2 class="card-title mb-0">{{ total_trained }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-stats">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Ubrugte pladser</h6>
+                <h2 class="card-title mb-0">{{ unused_seats }}</h2>
             </div>
         </div>
     </div>
@@ -91,6 +91,40 @@
                 {% endif %}
             </div>
         </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-building-add me-2"></i>Seneste tilmeldinger til Basal
+            </div>
+            {% if recent_enrollments %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Navn</th>
+                            <th>Adresse</th>
+                            <th>Kontaktperson</th>
+                            <th>Ledige pladser</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for school in recent_enrollments %}
+                        <tr>
+                            <td><a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a></td>
+                            <td>{{ school.location }}</td>
+                            <td>{{ school.contact_name }}</td>
+                            <td>{{ school.remaining_seats }} / {{ school.total_seats }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="card-body">
+                <p class="text-muted mb-0">Ingen tilmeldte skoler endnu.</p>
+            </div>
+            {% endif %}
+        </div>
     </div>
     <div class="col-lg-4">
         <div class="card mb-4">
@@ -101,7 +135,7 @@
                 {% for contact in recent_contacts %}
                 <li class="list-group-item">
                     <div class="d-flex justify-content-between">
-                        <strong>{{ contact.school.name }}</strong>
+                        <a href="{% url 'schools:detail' contact.school.pk %}"><strong>{{ contact.school.name }}</strong></a>
                         <small class="text-muted">{{ contact.contacted_date|date:"d. M" }}</small>
                     </div>
                     <small class="text-muted">af {{ contact.created_by.get_full_name|default:contact.created_by.username|default:"Ukendt" }}</small>
@@ -114,16 +148,16 @@
 
         <div class="card">
             <div class="card-header">
-                <i class="bi bi-person-plus me-2"></i>Seneste tilmeldinger
+                <i class="bi bi-person-plus me-2"></i>Seneste kurstilmeldinger
             </div>
             <ul class="list-group list-group-flush">
                 {% for signup in recent_signups %}
                 <li class="list-group-item">
                     <div class="d-flex justify-content-between">
-                        <strong>{{ signup.participant_name }}</strong>
+                        <a href="{% url 'schools:detail' signup.school.pk %}"><strong>{{ signup.school.name }}</strong></a>
                         <small class="text-muted">{{ signup.created_at|date:"d. M" }}</small>
                     </div>
-                    <small class="text-muted">{{ signup.school.name }} - {{ signup.course.title }}</small>
+                    <small class="text-muted">{{ signup.course.title }}{% if signup.participant_title %} - {{ signup.participant_title }}{% endif %}</small>
                 </li>
                 {% empty %}
                 <li class="list-group-item text-muted">Ingen seneste tilmeldinger.</li>

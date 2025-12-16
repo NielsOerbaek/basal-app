@@ -170,6 +170,7 @@ class CourseViewTest(TestCase):
             'course': self.course.pk,
             'school': self.school.pk,
             'participant_name': 'Test Person',
+            'participant_email': 'test@example.com',
         })
         self.assertRedirects(response, reverse('signup-success'))
         self.assertEqual(CourseSignUp.objects.count(), 1)

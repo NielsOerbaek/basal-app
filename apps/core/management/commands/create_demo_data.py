@@ -305,15 +305,12 @@ class Command(BaseCommand):
 
         signups = []
 
-        # Track remaining seats per school for future courses
+        # Track remaining seats per school (all signups count against seats)
         school_remaining_seats = {s.pk: s.total_seats for s in enrolled_schools}
 
         for course in all_courses:
-            # For past courses, signups don't count against seat limit
-            is_future = course.start_date >= date.today()
-
             # Random number of signups per course
-            num_signups = random.randint(3, min(10, course.capacity))
+            num_signups = random.randint(0, min(5, course.capacity))
 
             # Shuffle schools for random selection
             shuffled_schools = enrolled_schools.copy()
@@ -324,28 +321,30 @@ class Command(BaseCommand):
                 if signups_for_course >= num_signups:
                     break
 
-                # For future courses, check seat availability
-                if is_future and school_remaining_seats.get(school.pk, 0) <= 0:
+                # Check seat availability
+                if school_remaining_seats.get(school.pk, 0) <= 0:
                     continue
 
                 first = random.choice(first_names)
                 last = random.choice(last_names)
                 name = f'{first} {last}'
+                # Generate email from name and school domain
+                email_name = f'{first.lower()}.{last.lower()}'
+                school_domain = school.contact_email.split('@')[1] if '@' in school.contact_email else 'skole.dk'
+                email = f'{email_name}@{school_domain}'
 
                 try:
                     signup = CourseSignUp.objects.create(
                         school=school,
                         course=course,
                         participant_name=name,
+                        participant_email=email,
                         participant_title=random.choice(titles),
                         attendance=self.get_attendance_for_course(course),
                     )
                     signups.append(signup)
                     signups_for_course += 1
-
-                    # Decrement remaining seats for future courses
-                    if is_future:
-                        school_remaining_seats[school.pk] -= 1
+                    school_remaining_seats[school.pk] -= 1
                 except Exception:
                     # Skip if unique constraint violation
                     pass
@@ -370,11 +369,26 @@ class Command(BaseCommand):
         if not all_schools:
             return []
 
-        # Get admin user for created_by
-        try:
-            admin_user = User.objects.get(username='admin')
-        except User.DoesNotExist:
-            admin_user = None
+        # Create or get staff users for contacts
+        esther, _ = User.objects.get_or_create(
+            username='esther',
+            defaults={
+                'first_name': 'Esther',
+                'last_name': 'Chemnitz',
+                'email': 'esther@basal.dk',
+                'is_staff': True,
+            }
+        )
+        caroline, _ = User.objects.get_or_create(
+            username='caroline',
+            defaults={
+                'first_name': 'Caroline',
+                'last_name': 'Buskov',
+                'email': 'caroline@basal.dk',
+                'is_staff': True,
+            }
+        )
+        staff_users = [esther, caroline]
 
         comments = [
             'Talte med skoleleder om tilmelding til Basal. God interesse.',
@@ -406,7 +420,7 @@ class Command(BaseCommand):
 
                 contact = ContactTime.objects.create(
                     school=school,
-                    created_by=admin_user,
+                    created_by=random.choice(staff_users),
                     contacted_date=contacted_date,
                     contacted_time=contacted_time,
                     inbound=random.choice([True, False]),
