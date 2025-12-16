@@ -1,0 +1,95 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ course.title }} - Kursustilmelding{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-calendar-event me-2"></i>{{ course.title }}</h1>
+    <div>
+        <a href="{% url 'courses:rollcall' course.pk %}" class="btn btn-outline-success">
+            <i class="bi bi-clipboard-check me-1"></i>Fremmøde
+        </a>
+        <a href="{% url 'courses:update' course.pk %}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i>Rediger
+        </a>
+        <button type="button" class="btn btn-outline-danger"
+                hx-get="{% url 'courses:delete' course.pk %}"
+                hx-target="#modal-container">
+            <i class="bi bi-trash me-1"></i>Slet
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-5">
+        <div class="card mb-4">
+            <div class="card-header">Kursusoplysninger</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Dato/tid</dt>
+                    <dd class="col-sm-8">{{ course.datetime|date:"d. M Y H:i" }}</dd>
+                    <dt class="col-sm-4">Sted</dt>
+                    <dd class="col-sm-8">{{ course.location }}</dd>
+                    <dt class="col-sm-4">Kapacitet</dt>
+                    <dd class="col-sm-8">{{ course.capacity }}</dd>
+                    <dt class="col-sm-4">Tilmeldinger</dt>
+                    <dd class="col-sm-8">{{ course.signup_count }} / {{ course.capacity }}</dd>
+                    <dt class="col-sm-4">Fremmødte</dt>
+                    <dd class="col-sm-8">{{ course.attendance_count }}</dd>
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">
+                        {% if course.is_published %}
+                        <span class="badge bg-success">Offentliggjort</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Kladde</span>
+                        {% endif %}
+                    </dd>
+                    <dt class="col-sm-4">Kommentarer</dt>
+                    <dd class="col-sm-8">{{ course.comment|default:"-"|linebreaks }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Deltagere ({{ signups.count }})</span>
+                <a href="{% url 'courses:signup-export' %}?course={{ course.pk }}" class="btn btn-sm btn-outline-success">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Eksportér
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Navn</th>
+                            <th>Titel</th>
+                            <th>Skole</th>
+                            <th>Fremmøde</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for signup in signups %}
+                        <tr>
+                            <td>{{ signup.participant_name }}</td>
+                            <td>{{ signup.participant_title|default:"-" }}</td>
+                            <td><a href="{% url 'schools:detail' signup.school.pk %}">{{ signup.school.name }}</a></td>
+                            <td>
+                                <span class="badge bg-{% if signup.attendance == 'present' %}success{% elif signup.attendance == 'absent' %}danger{% else %}secondary{% endif %}">
+                                    {{ signup.get_attendance_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-3">Ingen tilmeldinger endnu.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

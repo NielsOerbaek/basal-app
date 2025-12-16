@@ -1,0 +1,24 @@
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ title|default:"Bekræft sletning" }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>{{ message|default:"Er du sikker på, at du vil slette dette element?"|safe }}</p>
+                {% if warning %}
+                <p class="text-muted small">{{ warning }}</p>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuller</button>
+                <button type="button" class="btn btn-{{ button_class|default:'danger' }}"
+                        hx-post="{{ delete_url }}"
+                        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+                    {{ button_text|default:"Slet" }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

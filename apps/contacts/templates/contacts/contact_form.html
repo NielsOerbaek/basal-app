@@ -1,0 +1,19 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% if object %}Rediger{% else %}Tilføj{% endif %} kontakt - Kursustilmelding{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-telephone me-2"></i>{% if object %}Rediger kontakt{% else %}Tilføj kontakt{% endif %}</h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            {% crispy form %}
+        </form>
+    </div>
+</div>
+{% endblock %}

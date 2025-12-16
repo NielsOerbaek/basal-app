@@ -1,0 +1,36 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Kontaktregistrering - Kursustilmelding{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-telephone me-2"></i>Kontaktregistrering</h1>
+    <div>
+        <a href="{% url 'contacts:update' contact.pk %}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i>Rediger
+        </a>
+        <button type="button" class="btn btn-outline-danger"
+                hx-get="{% url 'contacts:delete' contact.pk %}"
+                hx-target="#modal-container">
+            <i class="bi bi-trash me-1"></i>Slet
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Skole</dt>
+            <dd class="col-sm-9"><a href="{% url 'schools:detail' contact.school.pk %}">{{ contact.school.name }}</a></dd>
+            <dt class="col-sm-3">Kontaktet</dt>
+            <dd class="col-sm-9">{{ contact.contacted_at|date:"d. M Y H:i" }}</dd>
+            <dt class="col-sm-3">Af</dt>
+            <dd class="col-sm-9">{{ contact.employee|default:"Ukendt" }}</dd>
+            <dt class="col-sm-3">Kommentar</dt>
+            <dd class="col-sm-9">{{ contact.comment|linebreaks }}</dd>
+            <dt class="col-sm-3">Oprettet</dt>
+            <dd class="col-sm-9">{{ contact.created_at|date:"d. M Y H:i" }}</dd>
+        </dl>
+    </div>
+</div>
+{% endblock %}

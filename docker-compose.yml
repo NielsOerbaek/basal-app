@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DEBUG=False
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/course_enrollment
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+    volumes:
+      - static_volume:/app/staticfiles
+    command: >
+      sh -c "python manage.py migrate --settings=config.settings.production &&
+             gunicorn --bind 0.0.0.0:8000 config.wsgi:application"
+
+  db:
+    image: postgres:16-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=course_enrollment
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+
+volumes:
+  postgres_data:
+  static_volume:

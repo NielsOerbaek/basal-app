@@ -1,0 +1,29 @@
+<tr>
+    <td>
+        <strong>{{ signup.participant_name }}</strong>
+        {% if signup.participant_title %}<br><small class="text-muted">{{ signup.participant_title }}</small>{% endif %}
+    </td>
+    <td>{{ signup.school.name }}</td>
+    <td>
+        <div class="btn-group" role="group">
+            <button type="button"
+                    class="btn btn-sm {% if signup.attendance == 'present' %}btn-success{% else %}btn-outline-success{% endif %}"
+                    hx-post="{% url 'courses:mark-attendance' signup.pk %}"
+                    hx-vals='{"attendance": "present"}'
+                    hx-target="closest tr"
+                    hx-swap="outerHTML"
+                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+                <i class="bi bi-check-lg"></i> Til stede
+            </button>
+            <button type="button"
+                    class="btn btn-sm {% if signup.attendance == 'absent' %}btn-danger{% else %}btn-outline-danger{% endif %}"
+                    hx-post="{% url 'courses:mark-attendance' signup.pk %}"
+                    hx-vals='{"attendance": "absent"}'
+                    hx-target="closest tr"
+                    hx-swap="outerHTML"
+                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+                <i class="bi bi-x-lg"></i> Fraværende
+            </button>
+        </div>
+    </td>
+</tr>

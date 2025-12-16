@@ -1,0 +1,80 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Kurser - Kursustilmelding{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-calendar-event me-2"></i>Kurser</h1>
+    <div>
+        <a href="{% url 'courses:export' %}?{{ request.GET.urlencode }}" class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-excel me-1"></i>Eksportér
+        </a>
+        <a href="{% url 'courses:create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Tilføj kursus
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-10">
+                <input type="text" name="search" value="{{ request.GET.search }}" class="form-control" placeholder="Søg kurser...">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-search me-1"></i>Søg
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Titel</th>
+                    <th>Dato/tid</th>
+                    <th>Sted</th>
+                    <th>Tilmeldinger</th>
+                    <th>Status</th>
+                    <th class="table-actions">Handlinger</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course in courses %}
+                <tr>
+                    <td><a href="{% url 'courses:detail' course.pk %}">{{ course.title }}</a></td>
+                    <td>{{ course.datetime|date:"d. M Y H:i" }}</td>
+                    <td>{{ course.location }}</td>
+                    <td>{{ course.signup_count }}/{{ course.capacity }}</td>
+                    <td>
+                        {% if course.is_published %}
+                        <span class="badge bg-success">Offentliggjort</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Kladde</span>
+                        {% endif %}
+                    </td>
+                    <td class="table-actions">
+                        <a href="{% url 'courses:rollcall' course.pk %}" class="btn btn-sm btn-outline-success" title="Fremmøde">
+                            <i class="bi bi-clipboard-check"></i>
+                        </a>
+                        <a href="{% url 'courses:update' course.pk %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">Ingen kurser fundet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include 'core/components/pagination.html' %}
+{% endblock %}

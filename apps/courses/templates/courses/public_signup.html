@@ -1,0 +1,53 @@
+{% extends 'core/base_public.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Kursustilmelding{% endblock %}
+
+{% block extra_css %}
+<style>
+    body { background: #f8f9fa; }
+    .card { max-width: 700px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-body p-5">
+        <div class="text-center mb-4">
+            <i class="bi bi-mortarboard text-primary" style="font-size: 3rem;"></i>
+            <h2 class="mt-2">Kursustilmelding</h2>
+            <p class="text-muted">Tilmeld dig et kommende kursus</p>
+        </div>
+
+        {% if form.errors %}
+        <div class="alert alert-danger">Ret venligst fejlene nedenfor.</div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            {% crispy form %}
+        </form>
+    </div>
+</div>
+<p class="text-center mt-3">
+    <a href="{% url 'login' %}" class="text-muted">Medarbejder login</a>
+</p>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const schoolSelect = document.getElementById('id_school');
+        const newSchoolFields = document.getElementById('new-school-fields');
+        function toggleNewSchoolFields() {
+            if (schoolSelect && newSchoolFields) {
+                newSchoolFields.style.display = schoolSelect.value ? 'none' : 'block';
+            }
+        }
+        if (schoolSelect) {
+            schoolSelect.addEventListener('change', toggleNewSchoolFields);
+            toggleNewSchoolFields();
+        }
+    });
+</script>
+{% endblock %}

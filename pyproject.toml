@@ -1,0 +1,28 @@
+[project]
+name = "course-enrollment"
+version = "0.1.0"
+description = "Course Enrollment Management System for teacher training programs"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.0,<6.0",
+    "psycopg[binary]>=3.1",
+    "django-crispy-forms>=2.1",
+    "crispy-bootstrap5>=2024.2",
+    "django-htmx>=1.17",
+    "openpyxl>=3.1",
+    "python-dotenv>=1.0",
+    "whitenoise>=6.6",
+    "gunicorn>=21.0",
+    "dj-database-url>=2.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest-django>=4.5",
+    "factory-boy>=3.3",
+    "django-debug-toolbar>=4.2",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

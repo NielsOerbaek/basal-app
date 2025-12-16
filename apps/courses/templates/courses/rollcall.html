@@ -1,0 +1,70 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Fremmøde - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-clipboard-check me-2"></i>Fremmøde: {{ course.title }}</h1>
+    <a href="{% url 'courses:detail' course.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Tilbage til kursus
+    </a>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="mb-0">{{ total }}</h3>
+                <small class="text-muted">I alt</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body">
+                <h3 class="mb-0">{{ present }}</h3>
+                <small>Til stede</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-danger text-white">
+            <div class="card-body">
+                <h3 class="mb-0">{{ absent }}</h3>
+                <small>Fraværende</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-secondary text-white">
+            <div class="card-body">
+                <h3 class="mb-0">{{ unmarked }}</h3>
+                <small>Ikke registreret</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Deltager</th>
+                    <th>Skole</th>
+                    <th>Fremmøde</th>
+                </tr>
+            </thead>
+            <tbody id="rollcall-body">
+                {% for signup in signups %}
+                {% include 'courses/partials/rollcall_row.html' %}
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center text-muted py-4">Ingen tilmeldinger til dette kursus.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

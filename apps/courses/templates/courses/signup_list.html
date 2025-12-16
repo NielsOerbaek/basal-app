@@ -1,0 +1,74 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Tilmeldinger - Kursustilmelding{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-person-lines-fill me-2"></i>Tilmeldinger</h1>
+    <a href="{% url 'courses:signup-export' %}?{{ request.GET.urlencode }}" class="btn btn-outline-success">
+        <i class="bi bi-file-earmark-excel me-1"></i>Eksportér
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-5">
+                <select name="course" class="form-select">
+                    <option value="">Alle kurser</option>
+                    {% for course in courses %}
+                    <option value="{{ course.pk }}" {% if request.GET.course == course.pk|stringformat:"d" %}selected{% endif %}>{{ course.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-5">
+                <input type="text" name="search" value="{{ request.GET.search }}" class="form-control" placeholder="Søg deltagere...">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-search me-1"></i>Filtrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Deltager</th>
+                    <th>Titel</th>
+                    <th>Skole</th>
+                    <th>Kursus</th>
+                    <th>Fremmøde</th>
+                    <th>Tilmeldt</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for signup in signups %}
+                <tr>
+                    <td>{{ signup.participant_name }}</td>
+                    <td>{{ signup.participant_title|default:"-" }}</td>
+                    <td><a href="{% url 'schools:detail' signup.school.pk %}">{{ signup.school.name }}</a></td>
+                    <td><a href="{% url 'courses:detail' signup.course.pk %}">{{ signup.course.title }}</a></td>
+                    <td>
+                        <span class="badge bg-{% if signup.attendance == 'present' %}success{% elif signup.attendance == 'absent' %}danger{% else %}secondary{% endif %}">
+                            {{ signup.get_attendance_display }}
+                        </span>
+                    </td>
+                    <td>{{ signup.created_at|date:"d. M Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">Ingen tilmeldinger fundet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include 'core/components/pagination.html' %}
+{% endblock %}
