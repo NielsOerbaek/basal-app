@@ -60,7 +60,7 @@ class SchoolDetailView(DetailView):
         )[:10]
         context['course_signups'] = self.object.course_signups.select_related(
             'course'
-        ).order_by('-course__datetime')[:10]
+        ).order_by('-course__start_date')[:10]
         return context
 
 

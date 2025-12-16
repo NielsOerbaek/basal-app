@@ -26,8 +26,14 @@
             <div class="card-header">Kursusoplysninger</div>
             <div class="card-body">
                 <dl class="row mb-0">
-                    <dt class="col-sm-4">Dato/tid</dt>
-                    <dd class="col-sm-8">{{ course.datetime|date:"d. M Y H:i" }}</dd>
+                    <dt class="col-sm-4">Dato</dt>
+                    <dd class="col-sm-8">
+                        {% if course.start_date == course.end_date %}
+                        {{ course.start_date|date:"d. M Y" }}
+                        {% else %}
+                        {{ course.start_date|date:"d. M Y" }} - {{ course.end_date|date:"d. M Y" }}
+                        {% endif %}
+                    </dd>
                     <dt class="col-sm-4">Sted</dt>
                     <dd class="col-sm-8">{{ course.location }}</dd>
                     <dt class="col-sm-4">Kapacitet</dt>

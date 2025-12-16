@@ -98,7 +98,8 @@ class CourseExportView(View):
         queryset = Course.objects.all()
         fields = [
             ('title', 'Titel'),
-            ('datetime', 'Dato/tid'),
+            ('start_date', 'Startdato'),
+            ('end_date', 'Slutdato'),
             ('location', 'Lokation'),
             ('capacity', 'Kapacitet'),
             ('signup_count', 'Tilmeldinger'),

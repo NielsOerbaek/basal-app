@@ -36,7 +36,7 @@
             <thead class="table-light">
                 <tr>
                     <th>Titel</th>
-                    <th>Dato/tid</th>
+                    <th>Dato</th>
                     <th>Sted</th>
                     <th>Tilmeldinger</th>
                     <th>Status</th>
@@ -47,7 +47,13 @@
                 {% for course in courses %}
                 <tr>
                     <td><a href="{% url 'courses:detail' course.pk %}">{{ course.title }}</a></td>
-                    <td>{{ course.datetime|date:"d. M Y H:i" }}</td>
+                    <td>
+                        {% if course.start_date == course.end_date %}
+                        {{ course.start_date|date:"d. M Y" }}
+                        {% else %}
+                        {{ course.start_date|date:"d. M" }} - {{ course.end_date|date:"d. M Y" }}
+                        {% endif %}
+                    </td>
                     <td>{{ course.location }}</td>
                     <td>{{ course.signup_count }}/{{ course.capacity }}</td>
                     <td>

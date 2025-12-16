@@ -11,9 +11,10 @@ from .models import Course, CourseSignUp
 class CourseForm(forms.ModelForm):
     class Meta:
         model = Course
-        fields = ['title', 'datetime', 'location', 'capacity', 'is_published', 'comment']
+        fields = ['title', 'start_date', 'end_date', 'location', 'capacity', 'is_published', 'comment']
         widgets = {
-            'datetime': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'start_date': forms.DateInput(attrs={'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'type': 'date'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -22,16 +23,25 @@ class CourseForm(forms.ModelForm):
         self.helper.layout = Layout(
             'title',
             Row(
-                Column('datetime', css_class='col-md-6'),
-                Column('location', css_class='col-md-6'),
+                Column('start_date', css_class='col-md-6'),
+                Column('end_date', css_class='col-md-6'),
             ),
             Row(
+                Column('location', css_class='col-md-6'),
                 Column('capacity', css_class='col-md-6'),
-                Column('is_published', css_class='col-md-6'),
             ),
+            'is_published',
             'comment',
             Submit('submit', 'Gem kursus', css_class='btn btn-primary'),
         )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+        if start_date and end_date and end_date < start_date:
+            raise forms.ValidationError('Slutdato kan ikke være før startdato.')
+        return cleaned_data
 
 
 class CourseSignUpForm(forms.ModelForm):
@@ -56,7 +66,7 @@ class CourseSignUpForm(forms.ModelForm):
 
 class PublicSignUpForm(forms.Form):
     course = forms.ModelChoiceField(
-        queryset=Course.objects.filter(is_published=True, datetime__gte=timezone.now()),
+        queryset=Course.objects.filter(is_published=True, start_date__gte=timezone.now().date()),
         label='Vælg et kursus',
         empty_label='Vælg et kursus...'
     )

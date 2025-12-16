@@ -72,7 +72,7 @@
                         <a href="{% url 'courses:detail' signup.course.pk %}">{{ signup.course.title }}</a>
                         <span class="badge bg-{{ signup.attendance }}">{{ signup.get_attendance_display }}</span>
                     </div>
-                    <small class="text-muted">{{ signup.participant_name }} - {{ signup.course.datetime|date:"d. M Y" }}</small>
+                    <small class="text-muted">{{ signup.participant_name }} - {{ signup.course.start_date|date:"d. M Y" }}</small>
                 </li>
                 {% empty %}
                 <li class="list-group-item text-muted">Ingen kursustilmeldinger.</li>

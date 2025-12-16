@@ -19,21 +19,21 @@ class DashboardView(TemplateView):
 
         context['total_schools'] = School.objects.active().count()
         context['pending_signups'] = CourseSignUp.objects.filter(
-            course__datetime__gte=now
+            course__start_date__gte=now.date()
         ).count()
         context['courses_this_month'] = Course.objects.filter(
-            datetime__year=now.year,
-            datetime__month=now.month
+            start_date__year=now.year,
+            start_date__month=now.month
         ).count()
         context['total_trained'] = CourseSignUp.objects.filter(
             attendance=AttendanceStatus.PRESENT
         ).count()
 
         context['upcoming_courses'] = Course.objects.filter(
-            datetime__gte=now
+            start_date__gte=now.date()
         ).annotate(
             signup_count_value=Count('signups')
-        ).order_by('datetime')[:5]
+        ).order_by('start_date')[:5]
 
         context['recent_contacts'] = ContactTime.objects.select_related(
             'school', 'created_by'

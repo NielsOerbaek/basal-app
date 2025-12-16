@@ -9,7 +9,8 @@ class AttendanceStatus(models.TextChoices):
 
 class Course(models.Model):
     title = models.CharField(max_length=255)
-    datetime = models.DateTimeField()
+    start_date = models.DateField()
+    end_date = models.DateField()
     location = models.CharField(max_length=255)
     capacity = models.PositiveIntegerField(default=30)
     comment = models.TextField(blank=True)
@@ -21,10 +22,12 @@ class Course(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-datetime']
+        ordering = ['-start_date']
 
     def __str__(self):
-        return f"{self.title} - {self.datetime.strftime('%Y-%m-%d')}"
+        if self.start_date == self.end_date:
+            return f"{self.title} - {self.start_date.strftime('%Y-%m-%d')}"
+        return f"{self.title} - {self.start_date.strftime('%Y-%m-%d')} til {self.end_date.strftime('%Y-%m-%d')}"
 
     @property
     def signup_count(self):
