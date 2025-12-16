@@ -1,5 +1,4 @@
-from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView
@@ -8,8 +7,10 @@ from apps.contacts.models import ContactTime
 from apps.courses.models import AttendanceStatus, Course, CourseSignUp
 from apps.schools.models import School
 
+from .decorators import staff_required
 
-@method_decorator(staff_member_required, name='dispatch')
+
+@method_decorator(staff_required, name='dispatch')
 class DashboardView(TemplateView):
     template_name = 'core/dashboard.html'
 

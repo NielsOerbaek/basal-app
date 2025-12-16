@@ -15,7 +15,7 @@ class DashboardViewTest(TestCase):
     def test_dashboard_requires_login(self):
         """Dashboard should redirect unauthenticated users to login."""
         response = self.client.get(reverse('core:dashboard'))
-        self.assertRedirects(response, '/admin/login/?next=/')
+        self.assertRedirects(response, '/login/?next=/')
 
     def test_dashboard_loads_for_staff(self):
         """Dashboard should load successfully for staff users."""

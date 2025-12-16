@@ -1,5 +1,4 @@
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -9,13 +8,14 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView
 
+from apps.core.decorators import staff_required
 from apps.core.export import export_queryset_to_excel
 
 from .forms import CourseForm, CourseSignUpForm, PublicSignUpForm
 from .models import AttendanceStatus, Course, CourseSignUp
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class CourseListView(ListView):
     model = Course
     template_name = 'courses/course_list.html'
@@ -33,7 +33,7 @@ class CourseListView(ListView):
         return queryset
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class CourseCreateView(CreateView):
     model = Course
     form_class = CourseForm
@@ -46,7 +46,7 @@ class CourseCreateView(CreateView):
         return response
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class CourseDetailView(DetailView):
     model = Course
     template_name = 'courses/course_detail.html'
@@ -58,7 +58,7 @@ class CourseDetailView(DetailView):
         return context
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class CourseUpdateView(UpdateView):
     model = Course
     form_class = CourseForm
@@ -73,7 +73,7 @@ class CourseUpdateView(UpdateView):
         return response
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class CourseDeleteView(View):
     def get(self, request, pk):
         course = get_object_or_404(Course, pk=pk)
@@ -92,7 +92,7 @@ class CourseDeleteView(View):
         return JsonResponse({'success': True, 'redirect': str(reverse_lazy('courses:list'))})
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class CourseExportView(View):
     def get(self, request):
         queryset = Course.objects.all()
@@ -108,7 +108,7 @@ class CourseExportView(View):
         return export_queryset_to_excel(queryset, fields, 'courses')
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class SignUpListView(ListView):
     model = CourseSignUp
     template_name = 'courses/signup_list.html'
@@ -134,7 +134,7 @@ class SignUpListView(ListView):
         return context
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class SignUpExportView(View):
     def get(self, request):
         queryset = CourseSignUp.objects.select_related('school', 'course')
@@ -152,7 +152,7 @@ class SignUpExportView(View):
         return export_queryset_to_excel(queryset, fields, 'signups')
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class RollCallView(DetailView):
     model = Course
     template_name = 'courses/rollcall.html'
@@ -169,7 +169,7 @@ class RollCallView(DetailView):
         return context
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class MarkAttendanceView(View):
     def post(self, request, pk):
         signup = get_object_or_404(CourseSignUp, pk=pk)

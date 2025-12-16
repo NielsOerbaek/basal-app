@@ -1,5 +1,4 @@
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
@@ -8,13 +7,14 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
+from apps.core.decorators import staff_required
 from apps.core.export import export_queryset_to_excel
 
 from .forms import ContactTimeForm
 from .models import ContactTime
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class ContactListView(ListView):
     model = ContactTime
     template_name = 'contacts/contact_list.html'
@@ -35,7 +35,7 @@ class ContactListView(ListView):
         return queryset
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class ContactCreateView(CreateView):
     model = ContactTime
     form_class = ContactTimeForm
@@ -56,7 +56,7 @@ class ContactCreateView(CreateView):
         return response
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class ContactDetailView(DetailView):
     model = ContactTime
     template_name = 'contacts/contact_detail.html'
@@ -66,7 +66,7 @@ class ContactDetailView(DetailView):
         return ContactTime.objects.select_related('school', 'created_by')
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class ContactUpdateView(UpdateView):
     model = ContactTime
     form_class = ContactTimeForm
@@ -81,7 +81,7 @@ class ContactUpdateView(UpdateView):
         return response
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class ContactDeleteView(View):
     def get(self, request, pk):
         contact = get_object_or_404(ContactTime, pk=pk)
@@ -99,7 +99,7 @@ class ContactDeleteView(View):
         return JsonResponse({'success': True, 'redirect': str(reverse_lazy('contacts:list'))})
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class ContactExportView(View):
     def get(self, request):
         queryset = ContactTime.objects.select_related('school', 'created_by')

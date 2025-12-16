@@ -1,5 +1,4 @@
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -10,11 +9,13 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from apps.core.export import export_queryset_to_excel
 
+from apps.core.decorators import staff_required
+
 from .forms import SchoolForm
 from .models import School
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class SchoolListView(ListView):
     model = School
     template_name = 'schools/school_list.html'
@@ -34,7 +35,7 @@ class SchoolListView(ListView):
         return queryset
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class SchoolCreateView(CreateView):
     model = School
     form_class = SchoolForm
@@ -47,7 +48,7 @@ class SchoolCreateView(CreateView):
         return response
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class SchoolDetailView(DetailView):
     model = School
     template_name = 'schools/school_detail.html'
@@ -64,7 +65,7 @@ class SchoolDetailView(DetailView):
         return context
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class SchoolUpdateView(UpdateView):
     model = School
     form_class = SchoolForm
@@ -79,7 +80,7 @@ class SchoolUpdateView(UpdateView):
         return response
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class SchoolDeleteView(View):
     def get(self, request, pk):
         school = School.objects.get(pk=pk)
@@ -99,7 +100,7 @@ class SchoolDeleteView(View):
         return JsonResponse({'success': True, 'redirect': str(reverse_lazy('schools:list'))})
 
 
-@method_decorator(staff_member_required, name='dispatch')
+@method_decorator(staff_required, name='dispatch')
 class SchoolExportView(View):
     def get(self, request):
         queryset = School.objects.active()

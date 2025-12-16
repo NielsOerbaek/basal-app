@@ -1,5 +1,4 @@
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
@@ -7,6 +6,8 @@ from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
+
+from apps.core.decorators import staff_required
 
 from .forms import UserCreateForm, UserUpdateForm
 
@@ -20,7 +21,7 @@ def superuser_required(view_func):
     return wrapper
 
 
-@method_decorator([staff_member_required, superuser_required], name='dispatch')
+@method_decorator([staff_required, superuser_required], name='dispatch')
 class UserListView(ListView):
     model = User
     template_name = 'accounts/user_list.html'
@@ -42,7 +43,7 @@ class UserListView(ListView):
         return queryset
 
 
-@method_decorator([staff_member_required, superuser_required], name='dispatch')
+@method_decorator([staff_required, superuser_required], name='dispatch')
 class UserCreateView(CreateView):
     model = User
     form_class = UserCreateForm
@@ -55,14 +56,14 @@ class UserCreateView(CreateView):
         return response
 
 
-@method_decorator([staff_member_required, superuser_required], name='dispatch')
+@method_decorator([staff_required, superuser_required], name='dispatch')
 class UserDetailView(DetailView):
     model = User
     template_name = 'accounts/user_detail.html'
     context_object_name = 'user_obj'
 
 
-@method_decorator([staff_member_required, superuser_required], name='dispatch')
+@method_decorator([staff_required, superuser_required], name='dispatch')
 class UserUpdateView(UpdateView):
     model = User
     form_class = UserUpdateForm
@@ -78,7 +79,7 @@ class UserUpdateView(UpdateView):
         return response
 
 
-@method_decorator([staff_member_required, superuser_required], name='dispatch')
+@method_decorator([staff_required, superuser_required], name='dispatch')
 class UserToggleActiveView(View):
     def post(self, request, pk):
         user = get_object_or_404(User, pk=pk)
