@@ -188,6 +188,24 @@ class MarkAttendanceView(View):
         return render(request, 'courses/partials/rollcall_row.html', {'signup': signup})
 
 
+@method_decorator(staff_required, name='dispatch')
+class SignUpDeleteView(View):
+    def get(self, request, pk):
+        signup = get_object_or_404(CourseSignUp, pk=pk)
+        return render(request, 'core/components/confirm_delete_modal.html', {
+            'title': 'Slet tilmelding',
+            'message': f'Er du sikker på, at du vil slette tilmeldingen for <strong>{signup.participant_name}</strong>?',
+            'delete_url': reverse('courses:signup-delete', kwargs={'pk': pk}),
+        })
+
+    def post(self, request, pk):
+        signup = get_object_or_404(CourseSignUp, pk=pk)
+        course_pk = signup.course.pk
+        signup.delete()
+        messages.success(request, 'Tilmeldingen er blevet slettet.')
+        return JsonResponse({'success': True, 'redirect': reverse('courses:detail', kwargs={'pk': course_pk})})
+
+
 class PublicSignUpView(View):
     template_name = 'courses/public_signup.html'
 

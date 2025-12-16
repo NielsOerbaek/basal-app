@@ -14,5 +14,6 @@ urlpatterns = [
     path('export/', views.CourseExportView.as_view(), name='export'),
     path('signups/', views.SignUpListView.as_view(), name='signup-list'),
     path('signups/<int:pk>/attendance/', views.MarkAttendanceView.as_view(), name='mark-attendance'),
+    path('signups/<int:pk>/delete/', views.SignUpDeleteView.as_view(), name='signup-delete'),
     path('signups/export/', views.SignUpExportView.as_view(), name='signup-export'),
 ]
