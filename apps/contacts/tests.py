@@ -1,9 +1,8 @@
-from datetime import datetime
+from datetime import date, time
 
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
-from django.utils import timezone
 
 from apps.schools.models import School
 
@@ -28,21 +27,34 @@ class ContactTimeModelTest(TestCase):
         contact = ContactTime.objects.create(
             school=self.school,
             created_by=self.user,
-            contacted_at=timezone.now(),
+            contacted_date=date.today(),
+            contacted_time=time(10, 30),
+            inbound=False,
             comment='Test comment'
         )
         self.assertEqual(contact.school, self.school)
         self.assertEqual(contact.created_by, self.user)
+        self.assertEqual(contact.contacted_date, date.today())
 
     def test_contact_without_user(self):
         """ContactTime can be created without a user (created_by is nullable)."""
         contact = ContactTime.objects.create(
             school=self.school,
             created_by=None,
-            contacted_at=timezone.now(),
+            contacted_date=date.today(),
             comment='Test comment'
         )
         self.assertIsNone(contact.created_by)
+
+    def test_contact_time_optional(self):
+        """ContactTime can be created without time."""
+        contact = ContactTime.objects.create(
+            school=self.school,
+            contacted_date=date.today(),
+            contacted_time=None,
+            comment='Test comment'
+        )
+        self.assertIsNone(contact.contacted_time)
 
 
 class ContactViewTest(TestCase):
@@ -62,7 +74,7 @@ class ContactViewTest(TestCase):
         self.contact = ContactTime.objects.create(
             school=self.school,
             created_by=self.user,
-            contacted_at=timezone.now(),
+            contacted_date=date.today(),
             comment='Test comment'
         )
 

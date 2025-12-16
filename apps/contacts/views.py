@@ -109,7 +109,9 @@ class ContactExportView(View):
         fields = [
             ('school', 'Skole'),
             ('created_by', 'Oprettet af'),
-            ('contacted_at', 'Henvendt'),
+            ('contacted_date', 'Dato'),
+            ('contacted_time', 'Tidspunkt'),
+            ('inbound', 'Kontaktede de os?'),
             ('comment', 'Kommentar'),
             ('created_at', 'Oprettet'),
         ]

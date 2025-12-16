@@ -36,7 +36,8 @@
             <thead class="table-light">
                 <tr>
                     <th>Skole</th>
-                    <th>Henvendt</th>
+                    <th>Dato</th>
+                    <th>Retning</th>
                     <th>Af</th>
                     <th>Kommentar</th>
                     <th class="table-actions">Handlinger</th>
@@ -46,7 +47,14 @@
                 {% for contact in contacts %}
                 <tr>
                     <td><a href="{% url 'schools:detail' contact.school.pk %}">{{ contact.school.name }}</a></td>
-                    <td>{{ contact.contacted_at|date:"d. M Y H:i" }}</td>
+                    <td>{{ contact.contacted_date|date:"d. M Y" }}{% if contact.contacted_time %} {{ contact.contacted_time|time:"H:i" }}{% endif %}</td>
+                    <td>
+                        {% if contact.inbound %}
+                        <span class="badge bg-info">Indgående</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Udgående</span>
+                        {% endif %}
+                    </td>
                     <td>{{ contact.created_by.get_full_name|default:contact.created_by.username|default:"-" }}</td>
                     <td>{{ contact.comment|truncatewords:15 }}</td>
                     <td class="table-actions">
@@ -60,7 +68,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="text-center text-muted py-4">Ingen henvendelser fundet.</td>
+                    <td colspan="6" class="text-center text-muted py-4">Ingen henvendelser fundet.</td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.db.models import Q
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -11,8 +11,8 @@ from apps.core.export import export_queryset_to_excel
 
 from apps.core.decorators import staff_required
 
-from .forms import SchoolForm
-from .models import School
+from .forms import SchoolForm, SeatPurchaseForm
+from .models import School, SeatPurchase
 
 
 @method_decorator(staff_required, name='dispatch')
@@ -62,6 +62,7 @@ class SchoolDetailView(DetailView):
         context['course_signups'] = self.object.course_signups.select_related(
             'course'
         ).order_by('-course__start_date')[:10]
+        context['seat_purchases'] = self.object.seat_purchases.all()
         return context
 
 
@@ -121,3 +122,28 @@ class SchoolAutocompleteView(View):
         schools = School.objects.active().filter(name__icontains=query)[:10]
         results = [{'id': s.pk, 'name': s.name, 'location': s.location} for s in schools]
         return JsonResponse({'results': results})
+
+
+@method_decorator(staff_required, name='dispatch')
+class AddSeatsView(View):
+    def get(self, request, pk):
+        school = get_object_or_404(School, pk=pk)
+        form = SeatPurchaseForm()
+        return render(request, 'schools/add_seats.html', {
+            'school': school,
+            'form': form,
+        })
+
+    def post(self, request, pk):
+        school = get_object_or_404(School, pk=pk)
+        form = SeatPurchaseForm(request.POST)
+        if form.is_valid():
+            purchase = form.save(commit=False)
+            purchase.school = school
+            purchase.save()
+            messages.success(request, f'{purchase.seats} pladser tilføjet til "{school.name}".')
+            return redirect('schools:detail', pk=school.pk)
+        return render(request, 'schools/add_seats.html', {
+            'school': school,
+            'form': form,
+        })

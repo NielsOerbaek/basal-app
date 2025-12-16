@@ -119,7 +119,8 @@ class CourseViewTest(TestCase):
             name='Test School',
             location='Location',
             contact_name='Contact',
-            contact_email='test@example.com'
+            contact_email='test@example.com',
+            enrolled_at=date.today()  # School needs to be enrolled to have seats
         )
         self.course = Course.objects.create(
             title='Test Course',

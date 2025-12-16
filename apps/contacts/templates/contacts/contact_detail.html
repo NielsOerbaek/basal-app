@@ -22,8 +22,16 @@
         <dl class="row mb-0">
             <dt class="col-sm-3">Skole</dt>
             <dd class="col-sm-9"><a href="{% url 'schools:detail' contact.school.pk %}">{{ contact.school.name }}</a></dd>
-            <dt class="col-sm-3">Henvendt</dt>
-            <dd class="col-sm-9">{{ contact.contacted_at|date:"d. M Y H:i" }}</dd>
+            <dt class="col-sm-3">Dato</dt>
+            <dd class="col-sm-9">{{ contact.contacted_date|date:"d. M Y" }}{% if contact.contacted_time %} kl. {{ contact.contacted_time|time:"H:i" }}{% endif %}</dd>
+            <dt class="col-sm-3">Retning</dt>
+            <dd class="col-sm-9">
+                {% if contact.inbound %}
+                <span class="badge bg-info">Indgående</span> (de kontaktede os)
+                {% else %}
+                <span class="badge bg-secondary">Udgående</span> (vi kontaktede dem)
+                {% endif %}
+            </dd>
             <dt class="col-sm-3">Af</dt>
             <dd class="col-sm-9">{{ contact.created_by.get_full_name|default:contact.created_by.username|default:"Ukendt" }}</dd>
             <dt class="col-sm-3">Kommentar</dt>

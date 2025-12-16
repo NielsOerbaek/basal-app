@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from apps.contacts.models import ContactTime
 from apps.courses.models import AttendanceStatus, Course, CourseSignUp
-from apps.schools.models import School
+from apps.schools.models import School, SeatPurchase
 
 
 class Command(BaseCommand):
@@ -26,6 +26,7 @@ class Command(BaseCommand):
             CourseSignUp.objects.all().delete()
             ContactTime.objects.all().delete()
             Course.objects.all().delete()
+            SeatPurchase.objects.all().delete()
             School.objects.filter(is_active=True).update(is_active=False)
             School.objects.all().delete()
             self.stdout.write(self.style.SUCCESS('Eksisterende data slettet'))
@@ -40,7 +41,7 @@ class Command(BaseCommand):
         courses = self.create_courses()
         self.stdout.write(self.style.SUCCESS(f'  {len(courses)} kurser oprettet'))
 
-        # Create signups
+        # Create signups (respecting seat limits)
         signups = self.create_signups(schools, courses)
         self.stdout.write(self.style.SUCCESS(f'  {len(signups)} tilmeldinger oprettet'))
 
@@ -53,176 +54,210 @@ class Command(BaseCommand):
     def create_schools(self):
         schools_data = [
             {
-                'name': 'Aarhus Gymnasium',
-                'location': 'Aarhus C',
+                'name': 'Sønderbro Skole',
+                'location': 'Amagerbrogade 45, 2300 København S',
                 'contact_name': 'Lars Pedersen',
-                'contact_email': 'lars.pedersen@aarhus-gym.dk',
-                'contact_phone': '86 12 34 56',
+                'contact_email': 'lp@sonderbro-skole.dk',
+                'contact_phone': '32 54 12 34',
             },
             {
-                'name': 'Odense Tekniske Skole',
-                'location': 'Odense SØ',
+                'name': 'Vesterbro Skole',
+                'location': 'Vestergade 12, 1456 København V',
                 'contact_name': 'Mette Hansen',
-                'contact_email': 'mette.hansen@odense-tek.dk',
-                'contact_phone': '65 98 76 54',
+                'contact_email': 'mh@vesterbro-skole.dk',
+                'contact_phone': '33 21 45 67',
             },
             {
-                'name': 'Aalborg Handelsskole',
-                'location': 'Aalborg Ø',
+                'name': 'Hasle Skole',
+                'location': 'Haslevej 100, 8210 Aarhus V',
                 'contact_name': 'Søren Nielsen',
-                'contact_email': 'soren.nielsen@aalborg-handel.dk',
-                'contact_phone': '98 11 22 33',
+                'contact_email': 'sn@hasle-skole.dk',
+                'contact_phone': '86 15 23 45',
             },
             {
-                'name': 'Roskilde Katedralskole',
-                'location': 'Roskilde',
+                'name': 'Munkebjerg Skole',
+                'location': 'Munkebjergvej 80, 5230 Odense M',
                 'contact_name': 'Anne Christensen',
-                'contact_email': 'anne.c@roskilde-kat.dk',
+                'contact_email': 'ac@munkebjerg-skole.dk',
+                'contact_phone': '65 91 23 45',
+            },
+            {
+                'name': 'Nørre Boulevard Skole',
+                'location': 'Nørre Boulevard 5, 9000 Aalborg',
+                'contact_name': 'Peter Mortensen',
+                'contact_email': 'pm@nb-skole.dk',
+                'contact_phone': '98 12 34 56',
+            },
+            {
+                'name': 'Bakkeskolen',
+                'location': 'Bakkedraget 22, 4000 Roskilde',
+                'contact_name': 'Kirsten Larsen',
+                'contact_email': 'kl@bakkeskolen.dk',
                 'contact_phone': '46 35 12 00',
             },
             {
-                'name': 'Esbjerg Seminarium',
-                'location': 'Esbjerg V',
-                'contact_name': 'Peter Mortensen',
-                'contact_email': 'pm@esbjerg-sem.dk',
-                'contact_phone': '75 45 67 89',
-            },
-            {
-                'name': 'Københavns Professionshøjskole',
-                'location': 'København N',
-                'contact_name': 'Kirsten Larsen',
-                'contact_email': 'kila@kp.dk',
-                'contact_phone': '72 48 75 00',
-            },
-            {
-                'name': 'Vejle Handelsskole',
-                'location': 'Vejle',
+                'name': 'Strandskolen',
+                'location': 'Strandvejen 150, 6700 Esbjerg',
                 'contact_name': 'Michael Jensen',
-                'contact_email': 'mj@vejle-handel.dk',
-                'contact_phone': '76 82 00 00',
+                'contact_email': 'mj@strandskolen.dk',
+                'contact_phone': '75 12 34 56',
             },
             {
-                'name': 'Frederiksberg HF',
-                'location': 'Frederiksberg',
+                'name': 'Engdalskolen',
+                'location': 'Engdalsvej 3, 8660 Skanderborg',
                 'contact_name': 'Louise Andersen',
-                'contact_email': 'louise@frb-hf.dk',
-                'contact_phone': '38 14 22 33',
+                'contact_email': 'la@engdalskolen.dk',
+                'contact_phone': '86 52 12 34',
             },
             {
-                'name': 'Herning Gymnasium',
-                'location': 'Herning',
+                'name': 'Skovvangskolen',
+                'location': 'Skovvangen 10, 7400 Herning',
                 'contact_name': 'Thomas Rasmussen',
-                'contact_email': 'tr@herning-gym.dk',
+                'contact_email': 'tr@skovvangskolen.dk',
                 'contact_phone': '97 12 34 56',
             },
             {
-                'name': 'Svendborg Erhvervsskole',
-                'location': 'Svendborg',
+                'name': 'Østervangskolen',
+                'location': 'Østervang 25, 5700 Svendborg',
                 'contact_name': 'Camilla Olsen',
-                'contact_email': 'co@svendborg-erhv.dk',
+                'contact_email': 'co@ostervangskolen.dk',
                 'contact_phone': '62 21 00 00',
             },
             {
-                'name': 'Viborg Katedralskole',
-                'location': 'Viborg',
+                'name': 'Nordvestskolen',
+                'location': 'Nordvestgade 8, 8800 Viborg',
                 'contact_name': 'Henrik Thomsen',
-                'contact_email': 'ht@viborg-kat.dk',
+                'contact_email': 'ht@nordvestskolen.dk',
                 'contact_phone': '86 62 45 00',
             },
             {
-                'name': 'Næstved Gymnasium',
-                'location': 'Næstved',
+                'name': 'Kildeskovskolen',
+                'location': 'Kildeskovvej 15, 4700 Næstved',
                 'contact_name': 'Marie Kjær',
-                'contact_email': 'mk@naestved-gym.dk',
+                'contact_email': 'mk@kildeskovskolen.dk',
                 'contact_phone': '55 77 15 00',
             },
         ]
 
         schools = []
-        for data in schools_data:
+        today = date.today()
+        for i, data in enumerate(schools_data):
+            # Most schools enrolled, some recently, some over a year ago
+            if i < 4:
+                # Enrolled over a year ago (has forankringsplads)
+                data['enrolled_at'] = today - timedelta(days=random.randint(400, 800))
+            elif i < 10:
+                # Enrolled within the last year
+                data['enrolled_at'] = today - timedelta(days=random.randint(30, 300))
+            else:
+                # Not enrolled yet
+                data['enrolled_at'] = None
+
             school, created = School.objects.get_or_create(
                 name=data['name'],
                 defaults=data
             )
             if created:
                 schools.append(school)
+
+        # Add some seat purchases for a few schools
+        enrolled_schools = [s for s in schools if s.enrolled_at]
+        for school in random.sample(enrolled_schools, min(3, len(enrolled_schools))):
+            SeatPurchase.objects.create(
+                school=school,
+                seats=random.choice([2, 3, 5]),
+                purchased_at=date.today() - timedelta(days=random.randint(10, 100)),
+                notes='Ekstra pladser købt'
+            )
+
         return schools
 
     def create_courses(self):
         today = date.today()
+
+        # Generate month names for course titles
+        months = [
+            'Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni',
+            'Juli', 'August', 'September', 'Oktober', 'November', 'December'
+        ]
+
+        def get_month_name(d):
+            return months[d.month - 1]
+
         courses_data = [
             # Past courses
             {
-                'title': 'Introduktion til digital undervisning',
+                'title': f'Introduktion til Basal - {get_month_name(today - timedelta(days=60))}',
                 'start_date': today - timedelta(days=60),
-                'end_date': today - timedelta(days=59),
+                'end_date': today - timedelta(days=60),
                 'location': 'København',
                 'capacity': 25,
                 'is_published': True,
-                'comment': 'Grundlæggende kursus i digitale værktøjer',
+                'comment': 'Grundlæggende introduktion til Basal-metoden',
             },
             {
-                'title': 'Inkluderende undervisning i praksis',
+                'title': f'Introduktion til Basal - {get_month_name(today - timedelta(days=30))}',
                 'start_date': today - timedelta(days=30),
-                'end_date': today - timedelta(days=28),
+                'end_date': today - timedelta(days=30),
                 'location': 'Aarhus',
                 'capacity': 20,
                 'is_published': True,
-                'comment': 'Fokus på differentieret undervisning',
+                'comment': 'Grundlæggende introduktion til Basal-metoden',
             },
-            # Current/upcoming courses
+            # Upcoming courses
             {
-                'title': 'Feedback og evaluering',
-                'start_date': today + timedelta(days=7),
-                'end_date': today + timedelta(days=7),
+                'title': f'Introduktion til Basal - {get_month_name(today + timedelta(days=14))}',
+                'start_date': today + timedelta(days=14),
+                'end_date': today + timedelta(days=14),
                 'location': 'Odense',
                 'capacity': 30,
                 'is_published': True,
-                'comment': 'En-dags workshop om effektiv feedback',
+                'comment': 'Grundlæggende introduktion til Basal-metoden',
             },
             {
-                'title': 'Klasseledelse for nye lærere',
-                'start_date': today + timedelta(days=14),
-                'end_date': today + timedelta(days=15),
-                'location': 'København',
-                'capacity': 25,
-                'is_published': True,
-                'comment': 'To-dages intensivt kursus',
-            },
-            {
-                'title': 'Digital dannelse og kildekritik',
+                'title': f'Basal for skoleledere - {get_month_name(today + timedelta(days=21))}',
                 'start_date': today + timedelta(days=21),
                 'end_date': today + timedelta(days=21),
-                'location': 'Aalborg',
-                'capacity': 35,
-                'is_published': True,
-            },
-            {
-                'title': 'Projektbaseret læring',
-                'start_date': today + timedelta(days=30),
-                'end_date': today + timedelta(days=32),
-                'location': 'Vejle',
+                'location': 'København',
                 'capacity': 20,
                 'is_published': True,
-                'comment': 'Tre-dages kursus med praktiske øvelser',
+                'comment': 'Kursus rettet mod skoleledere og mellemledere',
             },
             {
-                'title': 'Trivsel og motivation i klasserummet',
+                'title': f'Basal opfølgning - {get_month_name(today + timedelta(days=35))}',
+                'start_date': today + timedelta(days=35),
+                'end_date': today + timedelta(days=35),
+                'location': 'Aalborg',
+                'capacity': 25,
+                'is_published': True,
+                'comment': 'Opfølgningskursus for deltagere der har taget introduktionen',
+            },
+            {
+                'title': f'Introduktion til Basal - {get_month_name(today + timedelta(days=45))}',
                 'start_date': today + timedelta(days=45),
                 'end_date': today + timedelta(days=45),
-                'location': 'Roskilde',
-                'capacity': 40,
+                'location': 'Vejle',
+                'capacity': 25,
                 'is_published': True,
+            },
+            {
+                'title': f'Basal Forankring - {get_month_name(today + timedelta(days=60))}',
+                'start_date': today + timedelta(days=60),
+                'end_date': today + timedelta(days=61),
+                'location': 'Roskilde',
+                'capacity': 15,
+                'is_published': True,
+                'comment': 'To-dages forankringskursus for nye lærere',
             },
             # Unpublished course
             {
-                'title': 'Avanceret pædagogik (under udvikling)',
+                'title': f'Introduktion til Basal - {get_month_name(today + timedelta(days=90))}',
                 'start_date': today + timedelta(days=90),
-                'end_date': today + timedelta(days=92),
+                'end_date': today + timedelta(days=90),
                 'location': 'København',
-                'capacity': 15,
+                'capacity': 30,
                 'is_published': False,
-                'comment': 'Kursus under udvikling - ikke offentliggjort endnu',
+                'comment': 'Endnu ikke offentliggjort',
             },
         ]
 
@@ -238,11 +273,11 @@ class Command(BaseCommand):
         return courses
 
     def create_signups(self, schools, courses):
-        # Get all schools (including existing ones)
-        all_schools = list(School.objects.active())
+        # Get all enrolled schools (they have seats)
+        enrolled_schools = list(School.objects.active().exclude(enrolled_at__isnull=True))
         all_courses = list(Course.objects.all())
 
-        if not all_schools or not all_courses:
+        if not enrolled_schools or not all_courses:
             return []
 
         first_names = [
@@ -256,17 +291,43 @@ class Command(BaseCommand):
             'Christensen', 'Larsen', 'Sørensen', 'Rasmussen', 'Thomsen',
         ]
         titles = [
-            'Lærer', 'Lektor', 'Underviser', 'Pædagog',
-            'Adjunkt', 'Fagkoordinator', 'Studievejleder',
+            'Lærer',
+            'Lærer',
+            'Lærer',
+            'Lærer',
+            'Indskolingslærer',
+            'Mellemtrinslærer',
+            'Udskolingslærer',
+            'Skoleleder',
+            'Viceskoleleder',
+            'Afdelingsleder',
         ]
 
         signups = []
-        for course in all_courses:
-            # Random number of signups per course (3-15)
-            num_signups = random.randint(3, min(15, course.capacity))
-            selected_schools = random.sample(all_schools, min(num_signups, len(all_schools)))
 
-            for school in selected_schools:
+        # Track remaining seats per school for future courses
+        school_remaining_seats = {s.pk: s.total_seats for s in enrolled_schools}
+
+        for course in all_courses:
+            # For past courses, signups don't count against seat limit
+            is_future = course.start_date >= date.today()
+
+            # Random number of signups per course
+            num_signups = random.randint(3, min(10, course.capacity))
+
+            # Shuffle schools for random selection
+            shuffled_schools = enrolled_schools.copy()
+            random.shuffle(shuffled_schools)
+
+            signups_for_course = 0
+            for school in shuffled_schools:
+                if signups_for_course >= num_signups:
+                    break
+
+                # For future courses, check seat availability
+                if is_future and school_remaining_seats.get(school.pk, 0) <= 0:
+                    continue
+
                 first = random.choice(first_names)
                 last = random.choice(last_names)
                 name = f'{first} {last}'
@@ -280,6 +341,11 @@ class Command(BaseCommand):
                         attendance=self.get_attendance_for_course(course),
                     )
                     signups.append(signup)
+                    signups_for_course += 1
+
+                    # Decrement remaining seats for future courses
+                    if is_future:
+                        school_remaining_seats[school.pk] -= 1
                 except Exception:
                     # Skip if unique constraint violation
                     pass
@@ -311,16 +377,16 @@ class Command(BaseCommand):
             admin_user = None
 
         comments = [
-            'Talte med kontaktperson om kommende kurser. God interesse.',
-            'Sendt information om efterårssæsonen.',
-            'Opfølgning på tidligere tilmelding. Ønsker flere pladser.',
-            'Koordineret praktiske detaljer omkring transport.',
-            'Diskuterede muligheder for skræddersyet kursusforløb.',
+            'Talte med skoleleder om tilmelding til Basal. God interesse.',
+            'Sendt information om kommende kurser.',
+            'Opfølgning på tidligere kursusdeltagelse. Ønsker flere pladser.',
+            'Koordineret praktiske detaljer omkring kursusdeltagelse.',
+            'Diskuterede muligheder for forankringskursus.',
             'Modtaget feedback fra tidligere kursus. Meget positive tilbagemeldinger.',
-            'Aftalt at sende opdateret kursusoversigt.',
+            'Aftalt at sende opdateret kursusoversigt til lærerne.',
             'Gennemgået tilmeldingsprocedure med ny kontaktperson.',
-            'Bekræftet deltagelse i kommende kursus.',
-            'Drøftet behov for særlige tilpasninger.',
+            'Bekræftet deltagelse i kommende introduktionskursus.',
+            'Drøftet behov for ekstra pladser til næste skoleår.',
         ]
 
         contacts = []
@@ -329,12 +395,21 @@ class Command(BaseCommand):
             num_contacts = random.randint(1, 4)
             for i in range(num_contacts):
                 days_ago = random.randint(1, 180)
-                contacted_at = timezone.now() - timedelta(days=days_ago)
+                contacted_date = (timezone.now() - timedelta(days=days_ago)).date()
+                # Some contacts have time, some don't
+                contacted_time = None
+                if random.random() > 0.3:
+                    contacted_time = timezone.now().time().replace(
+                        hour=random.randint(8, 17),
+                        minute=random.choice([0, 15, 30, 45])
+                    )
 
                 contact = ContactTime.objects.create(
                     school=school,
                     created_by=admin_user,
-                    contacted_at=contacted_at,
+                    contacted_date=contacted_date,
+                    contacted_time=contacted_time,
+                    inbound=random.choice([True, False]),
                     comment=random.choice(comments),
                 )
                 contacts.append(contact)

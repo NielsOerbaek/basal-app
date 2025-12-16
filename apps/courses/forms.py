@@ -91,3 +91,15 @@ class PublicSignUpForm(forms.Form):
             ),
             Submit('submit', 'Tilmeld', css_class='btn btn-primary btn-lg'),
         )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        school = cleaned_data.get('school')
+
+        if school and not school.has_available_seats:
+            raise forms.ValidationError(
+                'Din skole har ikke flere ledige pladser. '
+                'Kontakt venligst Basal for at købe flere pladser.'
+            )
+
+        return cleaned_data
