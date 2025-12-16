@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.db import models
 
 
@@ -7,8 +8,8 @@ class ContactTime(models.Model):
         on_delete=models.CASCADE,
         related_name='contact_history'
     )
-    employee = models.ForeignKey(
-        'accounts.Employee',
+    created_by = models.ForeignKey(
+        User,
         on_delete=models.SET_NULL,
         null=True,
         related_name='contacts_made'

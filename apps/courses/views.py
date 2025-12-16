@@ -10,7 +10,6 @@ from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView
 
 from apps.core.export import export_queryset_to_excel
-from apps.schools.models import School
 
 from .forms import CourseForm, CourseSignUpForm, PublicSignUpForm
 from .models import AttendanceStatus, Course, CourseSignUp
@@ -190,19 +189,9 @@ class PublicSignUpView(View):
     def post(self, request):
         form = PublicSignUpForm(request.POST)
         if form.is_valid():
-            school = form.cleaned_data.get('school')
-            if not school:
-                school = School.objects.create(
-                    name=form.cleaned_data['new_school_name'],
-                    location=form.cleaned_data['new_school_location'],
-                    contact_name=form.cleaned_data['new_school_contact_name'],
-                    contact_email=form.cleaned_data['new_school_contact_email'],
-                    contact_phone=form.cleaned_data.get('new_school_contact_phone', ''),
-                )
-
             CourseSignUp.objects.create(
                 course=form.cleaned_data['course'],
-                school=school,
+                school=form.cleaned_data['school'],
                 participant_name=form.cleaned_data['participant_name'],
                 participant_title=form.cleaned_data.get('participant_title', ''),
             )

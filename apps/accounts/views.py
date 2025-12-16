@@ -9,7 +9,6 @@ from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from .forms import UserCreateForm, UserUpdateForm
-from .models import Employee
 
 
 def superuser_required(view_func):
@@ -29,7 +28,7 @@ class UserListView(ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        queryset = User.objects.select_related('employee_profile').order_by(
+        queryset = User.objects.order_by(
             'first_name', 'last_name', 'username'
         )
         search = self.request.GET.get('search')
@@ -52,7 +51,6 @@ class UserCreateView(CreateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        Employee.objects.create(user=self.object)
         messages.success(self.request, f'Brugeren "{self.object.username}" blev oprettet.')
         return response
 

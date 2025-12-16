@@ -25,7 +25,7 @@
             <dt class="col-sm-3">Kontaktet</dt>
             <dd class="col-sm-9">{{ contact.contacted_at|date:"d. M Y H:i" }}</dd>
             <dt class="col-sm-3">Af</dt>
-            <dd class="col-sm-9">{{ contact.employee|default:"Ukendt" }}</dd>
+            <dd class="col-sm-9">{{ contact.created_by.get_full_name|default:contact.created_by.username|default:"Ukendt" }}</dd>
             <dt class="col-sm-3">Kommentar</dt>
             <dd class="col-sm-9">{{ contact.comment|linebreaks }}</dd>
             <dt class="col-sm-3">Oprettet</dt>

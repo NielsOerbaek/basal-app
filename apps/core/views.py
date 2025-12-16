@@ -36,7 +36,7 @@ class DashboardView(TemplateView):
         ).order_by('datetime')[:5]
 
         context['recent_contacts'] = ContactTime.objects.select_related(
-            'school', 'employee', 'employee__user'
+            'school', 'created_by'
         )[:10]
 
         context['recent_signups'] = CourseSignUp.objects.select_related(

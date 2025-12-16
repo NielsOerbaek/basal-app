@@ -98,7 +98,7 @@
                         <strong>{{ contact.school.name }}</strong>
                         <small class="text-muted">{{ contact.contacted_at|date:"d. M" }}</small>
                     </div>
-                    <small class="text-muted">af {{ contact.employee|default:"Ukendt" }}</small>
+                    <small class="text-muted">af {{ contact.created_by.get_full_name|default:contact.created_by.username|default:"Ukendt" }}</small>
                 </li>
                 {% empty %}
                 <li class="list-group-item text-muted">Ingen seneste kontakter.</li>

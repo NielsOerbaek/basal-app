@@ -56,7 +56,7 @@ class SchoolDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['contact_history'] = self.object.contact_history.select_related(
-            'employee', 'employee__user'
+            'created_by'
         )[:10]
         context['course_signups'] = self.object.course_signups.select_related(
             'course'

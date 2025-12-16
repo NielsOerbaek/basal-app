@@ -22,7 +22,7 @@ class ContactListView(ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        queryset = ContactTime.objects.select_related('school', 'employee', 'employee__user')
+        queryset = ContactTime.objects.select_related('school', 'created_by')
         school_id = self.request.GET.get('school')
         if school_id:
             queryset = queryset.filter(school_id=school_id)
@@ -50,7 +50,7 @@ class ContactCreateView(CreateView):
         return initial
 
     def form_valid(self, form):
-        form.instance.employee = getattr(self.request.user, 'employee_profile', None)
+        form.instance.created_by = self.request.user
         response = super().form_valid(form)
         messages.success(self.request, 'Kontaktregistrering blev oprettet.')
         return response
@@ -63,7 +63,7 @@ class ContactDetailView(DetailView):
     context_object_name = 'contact'
 
     def get_queryset(self):
-        return ContactTime.objects.select_related('school', 'employee', 'employee__user')
+        return ContactTime.objects.select_related('school', 'created_by')
 
 
 @method_decorator(staff_member_required, name='dispatch')
@@ -102,13 +102,13 @@ class ContactDeleteView(View):
 @method_decorator(staff_member_required, name='dispatch')
 class ContactExportView(View):
     def get(self, request):
-        queryset = ContactTime.objects.select_related('school', 'employee', 'employee__user')
+        queryset = ContactTime.objects.select_related('school', 'created_by')
         school_id = request.GET.get('school')
         if school_id:
             queryset = queryset.filter(school_id=school_id)
         fields = [
             ('school', 'Skole'),
-            ('employee', 'Medarbejder'),
+            ('created_by', 'Oprettet af'),
             ('contacted_at', 'Kontaktet'),
             ('comment', 'Kommentar'),
             ('created_at', 'Oprettet'),

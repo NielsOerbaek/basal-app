@@ -1,5 +1,5 @@
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Row, Column, Submit, Div, HTML, Field
+from crispy_forms.layout import Layout, Row, Column, Submit, HTML
 from django import forms
 from django.utils import timezone
 
@@ -62,15 +62,9 @@ class PublicSignUpForm(forms.Form):
     )
     school = forms.ModelChoiceField(
         queryset=School.objects.active(),
-        required=False,
         label='Vælg din skole',
-        empty_label='Vælg din skole eller registrer en ny...'
+        empty_label='Vælg en skole...'
     )
-    new_school_name = forms.CharField(max_length=255, required=False, label='Skolenavn')
-    new_school_location = forms.CharField(max_length=255, required=False, label='Adresse')
-    new_school_contact_name = forms.CharField(max_length=255, required=False, label='Kontaktperson')
-    new_school_contact_email = forms.EmailField(required=False, label='Kontakt e-mail')
-    new_school_contact_phone = forms.CharField(max_length=50, required=False, label='Kontakt telefon')
     participant_name = forms.CharField(max_length=255, label='Dit navn')
     participant_title = forms.CharField(max_length=255, required=False, label='Din jobtitel')
 
@@ -79,19 +73,7 @@ class PublicSignUpForm(forms.Form):
         self.helper = FormHelper()
         self.helper.layout = Layout(
             'course',
-            HTML('<hr><h5>Skoleinformation</h5>'),
             'school',
-            Div(
-                HTML('<p class="text-muted small">Eller registrer en ny skole:</p>'),
-                'new_school_name',
-                'new_school_location',
-                Row(
-                    Column('new_school_contact_name', css_class='col-md-6'),
-                    Column('new_school_contact_email', css_class='col-md-6'),
-                ),
-                'new_school_contact_phone',
-                css_id='new-school-fields',
-            ),
             HTML('<hr><h5>Deltagerinformation</h5>'),
             Row(
                 Column('participant_name', css_class='col-md-6'),
@@ -99,21 +81,3 @@ class PublicSignUpForm(forms.Form):
             ),
             Submit('submit', 'Tilmeld', css_class='btn btn-primary btn-lg'),
         )
-
-    def clean(self):
-        cleaned_data = super().clean()
-        school = cleaned_data.get('school')
-        new_school_name = cleaned_data.get('new_school_name')
-
-        if not school and not new_school_name:
-            raise forms.ValidationError('Vælg venligst en eksisterende skole eller indtast oplysninger om en ny skole.')
-
-        if not school:
-            if not cleaned_data.get('new_school_location'):
-                self.add_error('new_school_location', 'Dette felt er påkrævet for nye skoler.')
-            if not cleaned_data.get('new_school_contact_name'):
-                self.add_error('new_school_contact_name', 'Dette felt er påkrævet for nye skoler.')
-            if not cleaned_data.get('new_school_contact_email'):
-                self.add_error('new_school_contact_email', 'Dette felt er påkrævet for nye skoler.')
-
-        return cleaned_data
