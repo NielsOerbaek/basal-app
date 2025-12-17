@@ -72,8 +72,13 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.app_name == 'schools' %}active{% endif %}" href="{% url 'schools:list' %}">
+                        <a class="nav-link {% if request.resolver_match.app_name == 'schools' and 'kommune' not in request.resolver_match.url_name %}active{% endif %}" href="{% url 'schools:list' %}">
                             <i class="bi bi-building me-1"></i>Skoler
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'kommune' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'schools:kommune-list' %}">
+                            <i class="bi bi-geo-alt me-1"></i>Kommuner
                         </a>
                     </li>
                     <li class="nav-item">

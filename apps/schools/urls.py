@@ -6,6 +6,9 @@ app_name = 'schools'
 
 urlpatterns = [
     path('', views.SchoolListView.as_view(), name='list'),
+    # Kommune URLs
+    path('kommuner/', views.KommuneListView.as_view(), name='kommune-list'),
+    path('kommuner/<str:kommune>/', views.KommuneDetailView.as_view(), name='kommune-detail'),
     path('create/', views.SchoolCreateView.as_view(), name='create'),
     path('<int:pk>/', views.SchoolDetailView.as_view(), name='detail'),
     path('<int:pk>/edit/', views.SchoolUpdateView.as_view(), name='update'),

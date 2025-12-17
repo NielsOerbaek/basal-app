@@ -1,0 +1,49 @@
+{% extends 'core/base.html' %}
+{% load sorting_tags %}
+
+{% block title %}Kommuner - Basal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-geo-alt me-2"></i>Kommuner</h1>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{% sort_header 'kommune' 'Kommune' %}</th>
+                    <th>{% sort_header 'total' 'Skoler i alt' %}</th>
+                    <th>{% sort_header 'enrolled' 'Tilmeldt Basal' %}</th>
+                    <th>{% sort_header 'not_enrolled' 'Ikke tilmeldt' %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for kommune in kommuner %}
+                <tr>
+                    <td>
+                        <a href="{% url 'schools:kommune-detail' kommune.kommune %}">
+                            {{ kommune.kommune }}
+                        </a>
+                    </td>
+                    <td>{{ kommune.total_schools }}</td>
+                    <td>
+                        {% if kommune.enrolled_schools %}
+                        <span class="text-success">{{ kommune.enrolled_schools }}</span>
+                        {% else %}
+                        <span class="text-muted">0</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ kommune.not_enrolled }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">Ingen kommuner fundet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

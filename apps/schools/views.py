@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Count, F, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -13,6 +13,49 @@ from apps.core.mixins import SortableMixin
 
 from .forms import SchoolForm, SeatPurchaseForm, PersonForm, SchoolCommentForm
 from .models import School, SeatPurchase, Person, SchoolComment
+
+
+@method_decorator(staff_required, name='dispatch')
+class KommuneListView(SortableMixin, ListView):
+    template_name = 'schools/kommune_list.html'
+    context_object_name = 'kommuner'
+    sortable_fields = {
+        'kommune': 'kommune',
+        'total': 'total_schools',
+        'enrolled': 'enrolled_schools',
+        'not_enrolled': 'not_enrolled',
+    }
+    default_sort = 'kommune'
+
+    def get_base_queryset(self):
+        return (
+            School.objects.active()
+            .values('kommune')
+            .annotate(
+                total_schools=Count('id'),
+                enrolled_schools=Count('id', filter=Q(enrolled_at__isnull=False)),
+                not_enrolled=F('total_schools') - F('enrolled_schools')
+            )
+        )
+
+
+@method_decorator(staff_required, name='dispatch')
+class KommuneDetailView(ListView):
+    template_name = 'schools/kommune_detail.html'
+    context_object_name = 'schools'
+
+    def get_queryset(self):
+        return (
+            School.objects.active()
+            .filter(kommune=self.kwargs['kommune'])
+            .prefetch_related('people')
+            .order_by('name')
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['kommune'] = self.kwargs['kommune']
+        return context
 
 
 @method_decorator(staff_required, name='dispatch')
