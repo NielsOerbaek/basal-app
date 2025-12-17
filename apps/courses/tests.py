@@ -297,3 +297,31 @@ class CourseMaterialsTest(TestCase):
         response = self.client.get(reverse('courses:create'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'enctype="multipart/form-data"')
+
+
+class CourseFormDateTest(TestCase):
+    """Tests for course form date field population."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpass123',
+            is_staff=True
+        )
+        self.client.login(username='testuser', password='testpass123')
+        self.course = Course.objects.create(
+            title='Test Course',
+            start_date=date(2025, 6, 15),
+            end_date=date(2025, 6, 16),
+            location='Test Location',
+            capacity=30
+        )
+
+    def test_edit_form_populates_dates(self):
+        """Course edit form should populate date fields with existing values."""
+        response = self.client.get(reverse('courses:update', kwargs={'pk': self.course.pk}))
+        self.assertEqual(response.status_code, 200)
+        # HTML5 date inputs require YYYY-MM-DD format
+        self.assertContains(response, 'value="2025-06-15"')
+        self.assertContains(response, 'value="2025-06-16"')
