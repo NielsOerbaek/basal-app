@@ -1,0 +1,38 @@
+{% comment %}
+Reusable activity table component.
+Usage: {% include "audit/includes/activity_table.html" with activities=recent_activities limit=5 %}
+{% endcomment %}
+<div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Tidspunkt</th>
+                <th>Handling</th>
+                <th>Objekt</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for activity in activities|slice:limit %}
+            <tr>
+                <td class="small">{{ activity.timestamp|date:"d/m H:i" }}</td>
+                <td>
+                    {% if activity.action == 'CREATE' %}
+                        <span class="badge bg-success">Oprettet</span>
+                    {% elif activity.action == 'UPDATE' %}
+                        <span class="badge bg-warning text-dark">Opdateret</span>
+                    {% elif activity.action == 'DELETE' %}
+                        <span class="badge bg-danger">Slettet</span>
+                    {% endif %}
+                </td>
+                <td class="small">{{ activity.object_repr|truncatewords:5 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="text-center text-muted py-3">
+                    Ingen aktivitet endnu
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

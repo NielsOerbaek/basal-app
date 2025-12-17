@@ -1,0 +1,101 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Aktivitet - {{ course.title }} - Basal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1><i class="bi bi-clock-history me-2"></i>Aktivitetslog</h1>
+        <p class="text-muted mb-0">For kurset: <a href="{% url 'courses:detail' course.pk %}">{{ course.title }}</a></p>
+    </div>
+    <a href="{% url 'courses:detail' course.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Tilbage til kursus
+    </a>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Tidspunkt</th>
+                    <th>Bruger</th>
+                    <th>Handling</th>
+                    <th>Type</th>
+                    <th>Objekt</th>
+                    <th>Ændringer</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for activity in activities %}
+                <tr>
+                    <td>{{ activity.timestamp|date:"d/m/Y H:i" }}</td>
+                    <td>{{ activity.user.username|default:"System" }}</td>
+                    <td>
+                        {% if activity.action == 'CREATE' %}
+                            <span class="badge bg-success">Oprettet</span>
+                        {% elif activity.action == 'UPDATE' %}
+                            <span class="badge bg-warning text-dark">Opdateret</span>
+                        {% elif activity.action == 'DELETE' %}
+                            <span class="badge bg-danger">Slettet</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ activity.content_type.model|title }}</td>
+                    <td>{{ activity.object_repr }}</td>
+                    <td>
+                        {% if activity.changes %}
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#changes-{{ activity.id }}">
+                                Vis ændringer
+                            </button>
+                            <div class="collapse mt-2" id="changes-{{ activity.id }}">
+                                <ul class="list-unstyled small">
+                                {% for field, change in activity.changes.items %}
+                                    <li>
+                                        <strong>{{ field }}:</strong>
+                                        <span class="text-danger">{{ change.old|default:"(tom)" }}</span>
+                                        &rarr;
+                                        <span class="text-success">{{ change.new|default:"(tom)" }}</span>
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                            </div>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        Ingen aktivitet fundet for dette kursus
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Forrige</a>
+            </li>
+        {% endif %}
+        <li class="page-item disabled">
+            <span class="page-link">Side {{ page_obj.number }} af {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Næste</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

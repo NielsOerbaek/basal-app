@@ -58,7 +58,7 @@
     </div>
 
     <div class="col-lg-7">
-        <div class="card">
+        <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span>Deltagere ({{ signups.count }})</span>
                 <a href="{% url 'courses:signup-export' %}?course={{ course.pk }}" class="btn btn-sm btn-outline-success">
@@ -103,6 +103,16 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-clock-history me-2"></i>Seneste aktivitet</span>
+                <a href="{% url 'audit:course_activity' course.pk %}" class="btn btn-sm btn-outline-primary">
+                    Se alle
+                </a>
+            </div>
+            {% include "audit/includes/activity_table.html" with activities=recent_activities limit=5 %}
         </div>
     </div>
 </div>

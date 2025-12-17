@@ -85,6 +85,9 @@ class SchoolDetailView(DetailView):
             'course'
         ).order_by('-course__start_date')[:10]
         context['seat_purchases'] = self.object.seat_purchases.all()
+        context['recent_activities'] = self.object.activity_logs.select_related(
+            'user', 'content_type'
+        )[:5]
         return context
 
 

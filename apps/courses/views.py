@@ -63,6 +63,9 @@ class CourseDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['signups'] = self.object.signups.select_related('school').all()
+        context['recent_activities'] = self.object.activity_logs.select_related(
+            'user', 'content_type'
+        )[:5]
         return context
 
 
