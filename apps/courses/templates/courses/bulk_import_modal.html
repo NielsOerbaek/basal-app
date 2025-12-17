@@ -1,0 +1,39 @@
+<div class="modal fade" id="bulkImportModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" action="{% url 'courses:bulk-import' course.pk %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-upload me-2"></i>Bulk import tilmeldinger</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">
+                        Indsæt data fra Excel (tab-separeret). Forventet format:
+                    </p>
+                    <div class="alert alert-info small">
+                        <strong>Kolonne 1:</strong> Deltagerens navn<br>
+                        <strong>Kolonne 2:</strong> Skolens navn<br>
+                        <strong>Kolonne 3:</strong> Email (valgfri)
+                    </div>
+                    <div class="mb-3">
+                        <label for="data" class="form-label">Data fra Excel</label>
+                        <textarea name="data" id="data" class="form-control font-monospace" rows="10"
+                                  placeholder="Jens Hansen&#9;Eksempel Skole&#9;jens@eksempel.dk
+Maria Jensen&#9;Anden Skole&#9;maria@anden.dk"></textarea>
+                    </div>
+                    <p class="small text-muted mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Skoler vil blive matchet i næste trin. Du kan vælge den korrekte skole hvis navnet ikke matcher præcist.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuller</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-arrow-right me-1"></i>Næste
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

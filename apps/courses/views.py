@@ -251,3 +251,166 @@ class CheckSchoolSeatsView(View):
             })
         except School.DoesNotExist:
             return JsonResponse({'error': 'School not found'}, status=404)
+
+
+@method_decorator(staff_required, name='dispatch')
+class BulkImportView(View):
+    """Bulk import signups by pasting from Excel."""
+
+    def get(self, request, pk):
+        course = get_object_or_404(Course, pk=pk)
+        return render(request, 'courses/bulk_import_modal.html', {'course': course})
+
+    def post(self, request, pk):
+        from apps.schools.models import School
+
+        course = get_object_or_404(Course, pk=pk)
+        raw_data = request.POST.get('data', '')
+
+        # Parse pasted data (tab-separated: name, school, email)
+        rows = []
+        lines = raw_data.strip().split('\n')
+
+        for i, line in enumerate(lines):
+            if not line.strip():
+                continue
+
+            # Split by tab (Excel default) or multiple spaces
+            parts = line.split('\t')
+            if len(parts) < 2:
+                parts = [p.strip() for p in line.split('  ') if p.strip()]
+
+            if len(parts) < 2:
+                continue
+
+            # Skip header row
+            if i == 0 and parts[0].lower() in ['navn', 'name', 'deltager']:
+                continue
+
+            name = parts[0].strip()
+            school_name = parts[1].strip() if len(parts) > 1 else ''
+            email = parts[2].strip() if len(parts) > 2 else ''
+
+            if not name or not school_name:
+                continue
+
+            # Find matching schools
+            matches = self._find_school_matches(school_name)
+
+            rows.append({
+                'index': len(rows),
+                'name': name,
+                'school_name': school_name,
+                'email': email,
+                'matches': matches,
+                'exact_match': matches[0] if matches and matches[0].name.lower() == school_name.lower() else None,
+            })
+
+        if not rows:
+            messages.error(request, 'Ingen gyldige rækker fundet. Forventet format: Navn, Skole, Email (tab-separeret)')
+            return render(request, 'courses/bulk_import_modal.html', {'course': course})
+
+        # Get all schools for fallback dropdown
+        all_schools = School.objects.active().order_by('name')
+
+        return render(request, 'courses/bulk_import_match.html', {
+            'course': course,
+            'rows': rows,
+            'all_schools': all_schools,
+        })
+
+    def _find_school_matches(self, search_term):
+        from apps.schools.models import School
+
+        if not search_term:
+            return []
+
+        # Try exact match first
+        exact = School.objects.active().filter(name__iexact=search_term).first()
+        if exact:
+            return [exact]
+
+        # Find schools containing the search term
+        contains = list(School.objects.active().filter(name__icontains=search_term)[:5])
+
+        # Find schools where search term contains school name
+        if len(contains) < 5:
+            all_schools = School.objects.active()
+            for school in all_schools:
+                if school.name.lower() in search_term.lower() and school not in contains:
+                    contains.append(school)
+                    if len(contains) >= 5:
+                        break
+
+        # Sort by name length similarity
+        contains.sort(key=lambda s: abs(len(s.name) - len(search_term)))
+
+        return contains[:5]
+
+
+@method_decorator(staff_required, name='dispatch')
+class BulkImportConfirmView(View):
+    """Process confirmed bulk import."""
+
+    def post(self, request, pk):
+        from apps.schools.models import School
+
+        course = get_object_or_404(Course, pk=pk)
+
+        # Get form data
+        count = int(request.POST.get('count', 0))
+        created = 0
+        skipped = 0
+        errors = []
+
+        for i in range(count):
+            school_id = request.POST.get(f'school_{i}')
+            name = request.POST.get(f'name_{i}')
+            email = request.POST.get(f'email_{i}', '')
+
+            if not school_id or school_id == 'skip':
+                skipped += 1
+                continue
+
+            try:
+                school = School.objects.get(pk=school_id)
+
+                # Check for duplicate
+                if CourseSignUp.objects.filter(course=course, school=school, participant_name=name).exists():
+                    errors.append(f'{name} ({school.name}) er allerede tilmeldt')
+                    continue
+
+                CourseSignUp.objects.create(
+                    course=course,
+                    school=school,
+                    participant_name=name,
+                    participant_email=email,
+                )
+                created += 1
+
+            except School.DoesNotExist:
+                errors.append(f'Skole ikke fundet for {name}')
+            except Exception as e:
+                errors.append(f'Fejl ved oprettelse af {name}: {str(e)}')
+
+        # Build result message
+        msg_parts = []
+        if created:
+            msg_parts.append(f'{created} tilmelding{"er" if created != 1 else ""} oprettet')
+        if skipped:
+            msg_parts.append(f'{skipped} sprunget over')
+        if errors:
+            msg_parts.append(f'{len(errors)} fejl')
+
+        if created:
+            messages.success(request, '. '.join(msg_parts) + '.')
+        elif errors:
+            messages.error(request, '. '.join(msg_parts) + '.')
+        else:
+            messages.warning(request, 'Ingen tilmeldinger oprettet.')
+
+        if errors:
+            for error in errors[:5]:  # Show max 5 errors
+                messages.warning(request, error)
+
+        return redirect('courses:detail', pk=course.pk)

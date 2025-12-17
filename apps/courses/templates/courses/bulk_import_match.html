@@ -1,0 +1,93 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Bulk Import - {{ course.title }} - Basal{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'courses:list' %}">Kurser</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'courses:detail' course.pk %}">{{ course.title }}</a></li>
+        <li class="breadcrumb-item active">Bulk Import</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-upload me-2"></i>Vælg skoler</h1>
+</div>
+
+<div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i>
+    Vælg den korrekte skole for hver deltager. Hvis skolens navn ikke matcher præcist, vælg fra listen eller søg efter den rigtige skole.
+</div>
+
+<form method="post" action="{% url 'courses:bulk-import-confirm' course.pk %}">
+    {% csrf_token %}
+    <input type="hidden" name="count" value="{{ rows|length }}">
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 25%">Deltager</th>
+                        <th style="width: 20%">Indtastet skole</th>
+                        <th style="width: 35%">Vælg skole</th>
+                        <th style="width: 20%">Email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td>
+                            <strong>{{ row.name }}</strong>
+                            <input type="hidden" name="name_{{ row.index }}" value="{{ row.name }}">
+                            <input type="hidden" name="email_{{ row.index }}" value="{{ row.email }}">
+                        </td>
+                        <td>
+                            <span class="text-muted">{{ row.school_name }}</span>
+                        </td>
+                        <td>
+                            <select name="school_{{ row.index }}" class="form-select form-select-sm">
+                                <option value="skip">-- Spring over --</option>
+                                {% if row.exact_match %}
+                                <option value="{{ row.exact_match.pk }}" selected>
+                                    {{ row.exact_match.name }} ({{ row.exact_match.kommune }})
+                                </option>
+                                {% else %}
+                                    {% if row.matches %}
+                                    <optgroup label="Forslag">
+                                        {% for match in row.matches %}
+                                        <option value="{{ match.pk }}" {% if forloop.first %}selected{% endif %}>
+                                            {{ match.name }} ({{ match.kommune }})
+                                        </option>
+                                        {% endfor %}
+                                    </optgroup>
+                                    {% endif %}
+                                {% endif %}
+                                <optgroup label="Alle skoler">
+                                    {% for school in all_schools %}
+                                    <option value="{{ school.pk }}">{{ school.name }} ({{ school.kommune }})</option>
+                                    {% endfor %}
+                                </optgroup>
+                            </select>
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ row.email|default:"-" }}</small>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mt-4 d-flex justify-content-between">
+        <a href="{% url 'courses:detail' course.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-x-lg me-1"></i>Annuller
+        </a>
+        <button type="submit" class="btn btn-success">
+            <i class="bi bi-check-lg me-1"></i>Importér {{ rows|length }} tilmelding{{ rows|length|pluralize:"er" }}
+        </button>
+    </div>
+</form>
+{% endblock %}
