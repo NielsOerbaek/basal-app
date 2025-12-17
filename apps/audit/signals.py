@@ -107,21 +107,11 @@ def log_delete(sender, instance, **kwargs):
     config = get_audit_config(sender)
     user = get_current_user()
 
-    # Get related entities before they're gone
-    related_school = None
-    related_course = None
-
-    if config.get_school:
-        try:
-            related_school = config.get_school(instance)
-        except Exception:
-            pass
-
-    if config.get_course:
-        try:
-            related_course = config.get_course(instance)
-        except Exception:
-            pass
+    # For DELETE actions, we don't set related_school or related_course FKs
+    # because cascade deletes can cause FK constraint violations when:
+    # 1. The related entity is being deleted in the same transaction
+    # 2. The related entity is the instance itself (e.g., deleting a Course)
+    # The object_repr field captures enough context for the audit trail.
 
     ActivityLog.objects.create(
         user=user if user and user.is_authenticated else None,
@@ -130,8 +120,8 @@ def log_delete(sender, instance, **kwargs):
         object_repr=_get_object_repr(instance),
         action=ActionType.DELETE,
         changes={},
-        related_school=related_school,
-        related_course=related_course,
+        related_school=None,
+        related_course=None,
     )
 
 
