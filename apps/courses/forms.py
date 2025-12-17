@@ -97,12 +97,4 @@ class PublicSignUpForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        school = cleaned_data.get('school')
-
-        if school and not school.has_available_seats:
-            raise forms.ValidationError(
-                'Din skole har ikke flere ubrugte pladser. '
-                'Kontakt venligst Basal for at købe flere pladser.'
-            )
-
         return cleaned_data
