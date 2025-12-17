@@ -1,0 +1,31 @@
+name: Database Backup
+
+on:
+  schedule:
+    # Run daily at 01:00 UTC (02:00 Danish time in winter, 03:00 in summer)
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+    # Allow manual triggering from GitHub Actions UI
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger database backup
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/cron/backup/")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "Response: $body"
+          echo "HTTP Code: $http_code"
+
+          if [ "$http_code" != "200" ]; then
+            echo "Backup failed with HTTP $http_code"
+            exit 1
+          fi
+
+          echo "Backup completed successfully"

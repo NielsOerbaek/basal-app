@@ -46,7 +46,7 @@ Basal handles:
 - **Static Files**: WhiteNoise
 - **WSGI Server**: Gunicorn
 - **Reverse Proxy**: Caddy (automatic HTTPS)
-- **Backups**: Cloudflare R2 (via boto3)
+- **Backups**: Backblaze B2 (via boto3 S3-compatible API)
 
 ## Setup
 
@@ -109,12 +109,13 @@ python manage.py create_demo_data --clear  # Clear existing data first
 ```
 
 ### `backup_database`
-Backs up the PostgreSQL database to Cloudflare R2 with automatic cleanup.
+Backs up the PostgreSQL database to Backblaze B2 with automatic cleanup.
 ```bash
 python manage.py backup_database
 python manage.py backup_database --retention-days 60
+python manage.py backup_database --local-only  # Skip B2 upload
 ```
-Requires: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`
+Requires: `B2_KEY_ID`, `B2_APPLICATION_KEY`, `B2_BUCKET_NAME`, `B2_ENDPOINT`
 
 ### `import_schools`
 Imports schools from Excel files.
@@ -147,7 +148,7 @@ GitHub Actions workflows handle scheduled tasks:
 | Workflow | Schedule | Description |
 |----------|----------|-------------|
 | `send-reminders.yml` | Daily 08:00 UTC | Sends course reminders |
-| `backup-database.yml` | Daily 03:00 UTC | Database backups to R2 |
+| `backup-database.yml` | Daily 01:00 UTC | Database backups to B2 |
 
 Both use authenticated endpoints with `CRON_SECRET` bearer token.
 
@@ -171,7 +172,7 @@ Key environment variables:
 | `RESEND_API_KEY` | Resend email API key |
 | `DEFAULT_FROM_EMAIL` | Default sender email address |
 | `CRON_SECRET` | Secret for authenticated cron endpoints |
-| `R2_*` | Cloudflare R2 credentials for backups |
+| `B2_*` | Backblaze B2 credentials for backups |
 
 ## License
 

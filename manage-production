@@ -1,0 +1,46 @@
+#!/bin/bash
+# Run Django manage.py commands on production server
+# Usage: ./manage-production <command> [args...]
+# Examples:
+#   ./manage-production shell
+#   ./manage-production showmigrations
+#   ./manage-production createsuperuser
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Read PRODUCTION_HOST from .env
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    PRODUCTION_HOST=$(grep -E '^PRODUCTION_HOST=' "$SCRIPT_DIR/.env" | cut -d'=' -f2)
+fi
+
+if [ -z "$PRODUCTION_HOST" ]; then
+    echo "Error: PRODUCTION_HOST not set in .env"
+    exit 1
+fi
+
+SERVER="root@$PRODUCTION_HOST"
+REMOTE_PATH="/opt/basal"
+
+if [ $# -eq 0 ]; then
+    echo "Usage: ./manage-production <command> [args...]"
+    echo ""
+    echo "Server: $SERVER"
+    echo ""
+    echo "Examples:"
+    echo "  ./manage-production shell"
+    echo "  ./manage-production showmigrations"
+    echo "  ./manage-production dbshell"
+    echo "  ./manage-production createsuperuser"
+    exit 1
+fi
+
+# Use -t for interactive commands (shell, dbshell, createsuperuser)
+# Use -T for non-interactive commands
+case "$1" in
+    shell|dbshell|createsuperuser)
+        ssh -t "$SERVER" "cd $REMOTE_PATH && docker compose exec app python manage.py $*"
+        ;;
+    *)
+        ssh "$SERVER" "cd $REMOTE_PATH && docker compose exec -T app python manage.py $*"
+        ;;
+esac

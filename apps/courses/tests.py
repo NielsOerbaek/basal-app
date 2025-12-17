@@ -1,8 +1,12 @@
+import os
+import tempfile
 from datetime import date, timedelta
 
+from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from apps.schools.models import School
@@ -49,9 +53,8 @@ class CourseModelTest(TestCase):
         """Course.signup_count returns correct count."""
         school = School.objects.create(
             name='Test School',
-            location='Location',
-            contact_name='Contact',
-            contact_email='test@example.com'
+            adresse='Test Address',
+            kommune='Test Kommune'
         )
         course = Course.objects.create(
             title='Test Course',
@@ -72,9 +75,8 @@ class CourseSignUpModelTest(TestCase):
     def setUp(self):
         self.school = School.objects.create(
             name='Test School',
-            location='Location',
-            contact_name='Contact',
-            contact_email='test@example.com'
+            adresse='Test Address',
+            kommune='Test Kommune'
         )
         self.course = Course.objects.create(
             title='Test Course',
@@ -117,9 +119,8 @@ class CourseViewTest(TestCase):
         )
         self.school = School.objects.create(
             name='Test School',
-            location='Location',
-            contact_name='Contact',
-            contact_email='test@example.com',
+            adresse='Test Address',
+            kommune='Test Kommune',
             enrolled_at=date.today()  # School needs to be enrolled to have seats
         )
         self.course = Course.objects.create(
@@ -174,3 +175,125 @@ class CourseViewTest(TestCase):
         })
         self.assertRedirects(response, reverse('signup-success'))
         self.assertEqual(CourseSignUp.objects.count(), 1)
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class CourseMaterialsTest(TestCase):
+    """Tests for course materials upload functionality."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpass123',
+            is_staff=True
+        )
+        self.client.login(username='testuser', password='testpass123')
+
+    def tearDown(self):
+        # Clean up uploaded files
+        for course in Course.objects.all():
+            if course.materials:
+                try:
+                    course.materials.delete(save=False)
+                except Exception:
+                    pass
+
+    def test_create_course_with_materials(self):
+        """Course can be created with materials file upload."""
+        pdf_content = b'%PDF-1.4 test content'
+        materials_file = SimpleUploadedFile(
+            'test_materials.pdf',
+            pdf_content,
+            content_type='application/pdf'
+        )
+
+        response = self.client.post(reverse('courses:create'), {
+            'title': 'Course With Materials',
+            'start_date': date.today() + timedelta(days=7),
+            'end_date': date.today() + timedelta(days=7),
+            'location': 'Test Location',
+            'capacity': 30,
+            'materials': materials_file,
+        })
+
+        self.assertRedirects(response, reverse('courses:list'))
+        course = Course.objects.get(title='Course With Materials')
+        self.assertTrue(course.materials)
+        self.assertIn('test_materials', course.materials.name)
+
+    def test_update_course_with_materials(self):
+        """Course materials can be added via update."""
+        course = Course.objects.create(
+            title='Course Without Materials',
+            start_date=date.today() + timedelta(days=7),
+            end_date=date.today() + timedelta(days=7),
+            location='Test Location',
+            capacity=30
+        )
+        self.assertFalse(course.materials)
+
+        pdf_content = b'%PDF-1.4 updated content'
+        materials_file = SimpleUploadedFile(
+            'updated_materials.pdf',
+            pdf_content,
+            content_type='application/pdf'
+        )
+
+        response = self.client.post(reverse('courses:update', kwargs={'pk': course.pk}), {
+            'title': course.title,
+            'start_date': course.start_date,
+            'end_date': course.end_date,
+            'location': course.location,
+            'capacity': course.capacity,
+            'materials': materials_file,
+        })
+
+        self.assertRedirects(response, reverse('courses:detail', kwargs={'pk': course.pk}))
+        course.refresh_from_db()
+        self.assertTrue(course.materials)
+        self.assertIn('updated_materials', course.materials.name)
+
+    def test_course_detail_shows_materials_link(self):
+        """Course detail page shows download link when materials exist."""
+        pdf_content = b'%PDF-1.4 test content'
+        materials_file = SimpleUploadedFile(
+            'detail_test.pdf',
+            pdf_content,
+            content_type='application/pdf'
+        )
+
+        course = Course.objects.create(
+            title='Course With Materials',
+            start_date=date.today() + timedelta(days=7),
+            end_date=date.today() + timedelta(days=7),
+            location='Test Location',
+            capacity=30
+        )
+        course.materials.save('detail_test.pdf', materials_file)
+
+        response = self.client.get(reverse('courses:detail', kwargs={'pk': course.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Download')
+        self.assertContains(response, course.materials.url)
+
+    def test_course_detail_no_materials(self):
+        """Course detail page shows dash when no materials."""
+        course = Course.objects.create(
+            title='Course Without Materials',
+            start_date=date.today() + timedelta(days=7),
+            end_date=date.today() + timedelta(days=7),
+            location='Test Location',
+            capacity=30
+        )
+
+        response = self.client.get(reverse('courses:detail', kwargs={'pk': course.pk}))
+        self.assertEqual(response.status_code, 200)
+        # The "Materiale" row should show "-" not "Download"
+        self.assertNotContains(response, 'course_materials/')
+
+    def test_form_has_enctype_multipart(self):
+        """Course form should have enctype=multipart/form-data for file uploads."""
+        response = self.client.get(reverse('courses:create'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'enctype="multipart/form-data"')

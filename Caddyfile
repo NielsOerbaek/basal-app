@@ -1,0 +1,31 @@
+{$DOMAIN:localhost} {
+    # Static files
+    handle /static/* {
+        root * /srv
+        file_server
+    }
+
+    # Media files
+    handle /media/* {
+        root * /srv
+        file_server
+    }
+
+    # Proxy to Django app
+    handle {
+        reverse_proxy app:8000
+    }
+
+    # Security headers
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+
+    # Logging
+    log {
+        output stdout
+        format console
+    }
+}

@@ -105,3 +105,9 @@ RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
 
 # Cron job authentication
 CRON_SECRET = os.environ.get('CRON_SECRET', '')
+
+# Backblaze B2 backup settings
+B2_KEY_ID = os.environ.get('B2_KEY_ID', '')
+B2_APPLICATION_KEY = os.environ.get('B2_APPLICATION_KEY', '')
+B2_BUCKET_NAME = os.environ.get('B2_BUCKET_NAME', '')
+B2_ENDPOINT = os.environ.get('B2_ENDPOINT', '')

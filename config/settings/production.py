@@ -22,6 +22,11 @@ X_FRAME_OPTIONS = 'DENY'
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 
+# CSRF trusted origins (required when behind reverse proxy)
+CSRF_TRUSTED_ORIGINS = [
+    f"https://{host.strip()}" for host in os.environ.get('ALLOWED_HOSTS', 'localhost').split(',')
+] + ['https://localhost', 'http://localhost']
+
 # Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.example.com')

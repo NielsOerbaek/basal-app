@@ -54,6 +54,27 @@ class DashboardView(TemplateView):
         return context
 
 
+def verify_cron_token(request):
+    """Verify CRON_SECRET token from header or query param."""
+    cron_secret = getattr(settings, 'CRON_SECRET', None)
+    if not cron_secret:
+        return False, JsonResponse({'error': 'CRON_SECRET not configured'}, status=500)
+
+    auth_header = request.headers.get('Authorization', '')
+    token_param = request.GET.get('token', '')
+
+    provided_token = None
+    if auth_header.startswith('Bearer '):
+        provided_token = auth_header[7:]
+    elif token_param:
+        provided_token = token_param
+
+    if provided_token != cron_secret:
+        return False, JsonResponse({'error': 'Unauthorized'}, status=401)
+
+    return True, None
+
+
 class CronSendRemindersView(View):
     """
     Protected endpoint for sending course reminders via cron job.
@@ -61,25 +82,10 @@ class CronSendRemindersView(View):
     """
 
     def get(self, request):
-        # Verify secret token
-        cron_secret = getattr(settings, 'CRON_SECRET', None)
-        if not cron_secret:
-            return JsonResponse({'error': 'CRON_SECRET not configured'}, status=500)
+        valid, error_response = verify_cron_token(request)
+        if not valid:
+            return error_response
 
-        # Check Authorization header or query param
-        auth_header = request.headers.get('Authorization', '')
-        token_param = request.GET.get('token', '')
-
-        provided_token = None
-        if auth_header.startswith('Bearer '):
-            provided_token = auth_header[7:]
-        elif token_param:
-            provided_token = token_param
-
-        if provided_token != cron_secret:
-            return JsonResponse({'error': 'Unauthorized'}, status=401)
-
-        # Run the management command
         from io import StringIO
         output = StringIO()
 
@@ -93,4 +99,34 @@ class CronSendRemindersView(View):
             return JsonResponse({
                 'success': False,
                 'error': str(e),
+            }, status=500)
+
+
+class CronBackupView(View):
+    """
+    Protected endpoint for database backup via cron job.
+    Requires CRON_SECRET token in Authorization header or query param.
+    """
+
+    def get(self, request):
+        valid, error_response = verify_cron_token(request)
+        if not valid:
+            return error_response
+
+        from io import StringIO
+        output = StringIO()
+        error_output = StringIO()
+
+        try:
+            call_command('backup_database', stdout=output, stderr=error_output)
+            return JsonResponse({
+                'success': True,
+                'output': output.getvalue(),
+                'errors': error_output.getvalue() or None,
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e),
+                'output': output.getvalue(),
             }, status=500)

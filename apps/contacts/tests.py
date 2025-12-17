@@ -17,9 +17,8 @@ class ContactTimeModelTest(TestCase):
         )
         self.school = School.objects.create(
             name='Test School',
-            location='Location',
-            contact_name='Contact',
-            contact_email='test@example.com'
+            adresse='Test Address',
+            kommune='Test Kommune'
         )
 
     def test_create_contact(self):
@@ -67,9 +66,8 @@ class ContactViewTest(TestCase):
         )
         self.school = School.objects.create(
             name='Test School',
-            location='Location',
-            contact_name='Contact',
-            contact_email='test@example.com'
+            adresse='Test Address',
+            kommune='Test Kommune'
         )
         self.contact = ContactTime.objects.create(
             school=self.school,
