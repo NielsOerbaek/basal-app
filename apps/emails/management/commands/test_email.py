@@ -94,18 +94,35 @@ class Command(BaseCommand):
         self.stdout.write(body_html)
         self.stdout.write('-' * 60 + '\n')
 
-        # Prepare attachment if provided
-        attachments = None
+        # Prepare attachments
+        attachments = []
+
+        # Add template attachment if present
+        if template.attachment:
+            try:
+                with template.attachment.open('rb') as f:
+                    content = f.read()
+                    attachments.append({
+                        'filename': template.attachment.name.split('/')[-1],
+                        'content': list(content),
+                    })
+                self.stdout.write(self.style.SUCCESS(
+                    f'Vedhæfter fra skabelon: {template.attachment.name.split("/")[-1]} ({len(content)} bytes)'
+                ))
+            except Exception as e:
+                self.stderr.write(self.style.WARNING(f'Kunne ikke læse skabelon-vedhæftning: {e}'))
+
+        # Add extra attachment if provided via command line
         attachment_path = options.get('attachment')
         if attachment_path:
             try:
                 import os
                 with open(attachment_path, 'rb') as f:
                     content = f.read()
-                    attachments = [{
+                    attachments.append({
                         'filename': os.path.basename(attachment_path),
                         'content': list(content),
-                    }]
+                    })
                 self.stdout.write(self.style.SUCCESS(
                     f'Vedhæfter: {os.path.basename(attachment_path)} ({len(content)} bytes)'
                 ))
