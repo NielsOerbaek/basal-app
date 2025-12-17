@@ -11,8 +11,8 @@ from apps.core.export import export_queryset_to_excel
 from apps.core.decorators import staff_required
 from apps.core.mixins import SortableMixin
 
-from .forms import SchoolForm, SeatPurchaseForm
-from .models import School, SeatPurchase
+from .forms import SchoolForm, SeatPurchaseForm, PersonForm, SchoolCommentForm
+from .models import School, SeatPurchase, Person, SchoolComment
 
 
 @method_decorator(staff_required, name='dispatch')
@@ -24,7 +24,6 @@ class SchoolListView(SortableMixin, ListView):
     sortable_fields = {
         'name': 'name',
         'location': 'location',
-        'contact': 'contact_name',
         'seats': '_remaining_seats',  # Special handling for computed property
     }
     default_sort = 'name'
@@ -37,9 +36,9 @@ class SchoolListView(SortableMixin, ListView):
             queryset = queryset.filter(
                 Q(name__icontains=search) |
                 Q(location__icontains=search) |
-                Q(contact_name__icontains=search) |
-                Q(contact_email__icontains=search)
-            )
+                Q(people__name__icontains=search) |
+                Q(people__email__icontains=search)
+            ).distinct()
         return queryset
 
     def get_queryset(self):
@@ -85,6 +84,10 @@ class SchoolDetailView(DetailView):
             'course'
         ).order_by('-course__start_date')[:10]
         context['seat_purchases'] = self.object.seat_purchases.all()
+        context['people'] = self.object.people.all()
+        context['school_comments'] = self.object.school_comments.select_related('created_by').all()
+        context['person_form'] = PersonForm()
+        context['comment_form'] = SchoolCommentForm()
         return context
 
 
@@ -130,9 +133,7 @@ class SchoolExportView(View):
         fields = [
             ('name', 'Navn'),
             ('location', 'Adresse'),
-            ('contact_name', 'Kontaktperson'),
-            ('contact_email', 'Kontakt e-mail'),
-            ('contact_phone', 'Kontakt telefon'),
+            ('enrolled_at', 'Tilmeldt'),
             ('created_at', 'Oprettet'),
         ]
         return export_queryset_to_excel(queryset, fields, 'schools')
@@ -169,3 +170,118 @@ class AddSeatsView(View):
             'school': school,
             'form': form,
         })
+
+
+@method_decorator(staff_required, name='dispatch')
+class PersonCreateView(View):
+    def get(self, request, school_pk):
+        school = get_object_or_404(School, pk=school_pk)
+        form = PersonForm()
+        return render(request, 'schools/person_form.html', {
+            'school': school,
+            'form': form,
+        })
+
+    def post(self, request, school_pk):
+        school = get_object_or_404(School, pk=school_pk)
+        form = PersonForm(request.POST)
+        if form.is_valid():
+            person = form.save(commit=False)
+            person.school = school
+            person.save()
+            messages.success(request, f'Person "{person.name}" tilføjet.')
+            return redirect('schools:detail', pk=school.pk)
+        return render(request, 'schools/person_form.html', {
+            'school': school,
+            'form': form,
+        })
+
+
+@method_decorator(staff_required, name='dispatch')
+class PersonUpdateView(View):
+    def get(self, request, pk):
+        person = get_object_or_404(Person, pk=pk)
+        form = PersonForm(instance=person)
+        return render(request, 'schools/person_form.html', {
+            'school': person.school,
+            'form': form,
+            'person': person,
+        })
+
+    def post(self, request, pk):
+        person = get_object_or_404(Person, pk=pk)
+        form = PersonForm(request.POST, instance=person)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Person "{person.name}" opdateret.')
+            return redirect('schools:detail', pk=person.school.pk)
+        return render(request, 'schools/person_form.html', {
+            'school': person.school,
+            'form': form,
+            'person': person,
+        })
+
+
+@method_decorator(staff_required, name='dispatch')
+class PersonDeleteView(View):
+    def get(self, request, pk):
+        person = get_object_or_404(Person, pk=pk)
+        return render(request, 'core/components/confirm_delete_modal.html', {
+            'title': 'Slet person',
+            'message': f'Er du sikker på, at du vil slette <strong>{person.name}</strong>?',
+            'delete_url': reverse_lazy('schools:person-delete', kwargs={'pk': pk}),
+            'button_text': 'Slet',
+        })
+
+    def post(self, request, pk):
+        person = get_object_or_404(Person, pk=pk)
+        school_pk = person.school.pk
+        person_name = person.name
+        person.delete()
+        messages.success(request, f'Person "{person_name}" er blevet slettet.')
+        return JsonResponse({'success': True, 'redirect': str(reverse_lazy('schools:detail', kwargs={'pk': school_pk}))})
+
+
+@method_decorator(staff_required, name='dispatch')
+class SchoolCommentCreateView(View):
+    def get(self, request, school_pk):
+        school = get_object_or_404(School, pk=school_pk)
+        form = SchoolCommentForm()
+        return render(request, 'schools/comment_form.html', {
+            'school': school,
+            'form': form,
+        })
+
+    def post(self, request, school_pk):
+        school = get_object_or_404(School, pk=school_pk)
+        form = SchoolCommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.school = school
+            comment.created_by = request.user
+            comment.save()
+            messages.success(request, 'Kommentar tilføjet.')
+            return redirect('schools:detail', pk=school.pk)
+        return render(request, 'schools/comment_form.html', {
+            'school': school,
+            'form': form,
+        })
+
+
+@method_decorator(staff_required, name='dispatch')
+class SchoolCommentDeleteView(View):
+    def get(self, request, pk):
+        comment = get_object_or_404(SchoolComment, pk=pk)
+        return render(request, 'core/components/confirm_delete_modal.html', {
+            'title': 'Slet kommentar',
+            'message': 'Er du sikker på, at du vil slette denne kommentar?',
+            'delete_url': reverse_lazy('schools:comment-delete', kwargs={'pk': pk}),
+            'button_text': 'Slet',
+        })
+
+    def post(self, request, pk):
+        comment = get_object_or_404(SchoolComment, pk=pk)
+        school_pk = comment.school.pk
+        comment.delete()
+        messages.success(request, 'Kommentar er blevet slettet.')
+        return JsonResponse({'success': True, 'redirect': str(reverse_lazy('schools:detail', kwargs={'pk': school_pk}))})

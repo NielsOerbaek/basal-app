@@ -13,4 +13,11 @@ urlpatterns = [
     path('<int:pk>/add-seats/', views.AddSeatsView.as_view(), name='add-seats'),
     path('export/', views.SchoolExportView.as_view(), name='export'),
     path('autocomplete/', views.SchoolAutocompleteView.as_view(), name='autocomplete'),
+    # Person URLs
+    path('<int:school_pk>/person/add/', views.PersonCreateView.as_view(), name='person-create'),
+    path('person/<int:pk>/edit/', views.PersonUpdateView.as_view(), name='person-update'),
+    path('person/<int:pk>/delete/', views.PersonDeleteView.as_view(), name='person-delete'),
+    # Comment URLs
+    path('<int:school_pk>/comment/add/', views.SchoolCommentCreateView.as_view(), name='comment-create'),
+    path('comment/<int:pk>/delete/', views.SchoolCommentDeleteView.as_view(), name='comment-delete'),
 ]

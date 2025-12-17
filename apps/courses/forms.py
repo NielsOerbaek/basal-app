@@ -101,7 +101,7 @@ class PublicSignUpForm(forms.Form):
 
         if school and not school.has_available_seats:
             raise forms.ValidationError(
-                'Din skole har ikke flere ledige pladser. '
+                'Din skole har ikke flere ubrugte pladser. '
                 'Kontakt venligst Basal for at købe flere pladser.'
             )
 

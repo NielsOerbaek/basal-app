@@ -38,8 +38,8 @@
                 <tr>
                     <th>{% sort_header 'name' 'Navn' %}</th>
                     <th>{% sort_header 'location' 'Adresse' %}</th>
-                    <th>{% sort_header 'contact' 'Kontaktperson' %}</th>
-                    <th>{% sort_header 'seats' 'Ledige pladser' %}</th>
+                    <th>Kontaktperson</th>
+                    <th>{% sort_header 'seats' 'Ubrugte pladser' %}</th>
                     <th class="table-actions">Handlinger</th>
                 </tr>
             </thead>
@@ -48,7 +48,7 @@
                 <tr>
                     <td><a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a></td>
                     <td>{{ school.location }}</td>
-                    <td>{{ school.contact_name }}</td>
+                    <td>{% with primary=school.people.all|first %}{{ primary.name|default:"-" }}{% endwith %}</td>
                     <td>
                         {% if school.enrolled_at %}
                         {{ school.remaining_seats }} / {{ school.total_seats }}

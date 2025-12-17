@@ -25,12 +25,6 @@
                 <dl class="row mb-0">
                     <dt class="col-sm-4">Adresse</dt>
                     <dd class="col-sm-8">{{ school.location }}</dd>
-                    <dt class="col-sm-4">Kontaktperson</dt>
-                    <dd class="col-sm-8">{{ school.contact_name }}</dd>
-                    <dt class="col-sm-4">E-mail</dt>
-                    <dd class="col-sm-8"><a href="mailto:{{ school.contact_email }}">{{ school.contact_email }}</a></dd>
-                    <dt class="col-sm-4">Telefon</dt>
-                    <dd class="col-sm-8">{{ school.contact_phone|default:"-" }}</dd>
                     <dt class="col-sm-4">Tilmeldt Basal</dt>
                     <dd class="col-sm-8">
                         {% if school.enrolled_at %}
@@ -42,10 +36,50 @@
                         <span class="text-muted">Ikke tilmeldt</span>
                         {% endif %}
                     </dd>
-                    <dt class="col-sm-4">Kommentarer</dt>
-                    <dd class="col-sm-8">{{ school.comments|default:"-"|linebreaks }}</dd>
                 </dl>
             </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-people me-2"></i>Personer</span>
+                <a href="{% url 'schools:person-create' school.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-lg me-1"></i>Tilføj person
+                </a>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for person in people %}
+                <li class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-1">
+                                {% if person.is_primary %}<i class="bi bi-star-fill text-warning me-1" title="Primær kontakt"></i>{% endif %}
+                                <strong>{{ person.name }}</strong>
+                                <span class="badge bg-secondary ms-2">{{ person.display_role }}</span>
+                            </div>
+                            <div class="small text-muted">
+                                {% if person.email %}<i class="bi bi-envelope me-1"></i><a href="mailto:{{ person.email }}">{{ person.email }}</a>{% endif %}
+                                {% if person.email and person.phone %}<span class="mx-2">|</span>{% endif %}
+                                {% if person.phone %}<i class="bi bi-telephone me-1"></i>{{ person.phone }}{% endif %}
+                            </div>
+                            {% if person.comment %}<div class="small mt-1">{{ person.comment }}</div>{% endif %}
+                        </div>
+                        <div class="btn-group btn-group-sm ms-2">
+                            <a href="{% url 'schools:person-update' person.pk %}" class="btn btn-outline-secondary" title="Rediger">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button type="button" class="btn btn-outline-danger" title="Slet"
+                                    hx-get="{% url 'schools:person-delete' person.pk %}"
+                                    hx-target="#modal-container">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted">Ingen personer tilføjet.</li>
+                {% endfor %}
+            </ul>
         </div>
 
         <div class="card mb-4">
@@ -68,7 +102,7 @@
                     </div>
                     <div class="col-4">
                         <div class="fs-3 fw-bold {% if school.remaining_seats > 0 %}text-success{% else %}text-danger{% endif %}">{{ school.remaining_seats }}</div>
-                        <small class="text-muted">Ledige</small>
+                        <small class="text-muted">Ubrugte</small>
                     </div>
                 </div>
 
@@ -105,9 +139,40 @@
     <div class="col-lg-6">
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-chat-text me-2"></i>Kommentarer</span>
+                <a href="{% url 'schools:comment-create' school.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-lg me-1"></i>Tilføj kommentar
+                </a>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for comment in school_comments %}
+                <li class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small class="text-muted">{{ comment.created_at|date:"d. M Y" }}</small>
+                                <small class="text-muted">{{ comment.created_by.get_full_name|default:comment.created_by.username|default:"Ukendt" }}</small>
+                            </div>
+                            <div>{{ comment.comment|linebreaks }}</div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger ms-2" title="Slet"
+                                hx-get="{% url 'schools:comment-delete' comment.pk %}"
+                                hx-target="#modal-container">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted">Ingen kommentarer.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <span>Henvendelser</span>
                 <a href="{% url 'contacts:create' %}?school={{ school.pk }}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-plus-lg"></i>
+                    <i class="bi bi-plus-lg"></i> Tilføj henvendelse
                 </a>
             </div>
             <ul class="list-group list-group-flush">

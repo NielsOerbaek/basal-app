@@ -2,13 +2,13 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Row, Column, Submit, Field, HTML
 from django import forms
 
-from .models import School, SeatPurchase
+from .models import School, SeatPurchase, Person, SchoolComment, PersonRole
 
 
 class SchoolForm(forms.ModelForm):
     class Meta:
         model = School
-        fields = ['name', 'location', 'contact_name', 'contact_email', 'contact_phone', 'enrolled_at', 'comments']
+        fields = ['name', 'location', 'enrolled_at']
         widgets = {
             'enrolled_at': forms.DateInput(attrs={'type': 'date'}),
         }
@@ -22,16 +22,52 @@ class SchoolForm(forms.ModelForm):
         self.helper.layout = Layout(
             'name',
             'location',
-            Row(
-                Column('contact_name', css_class='col-md-6'),
-                Column('contact_email', css_class='col-md-6'),
-            ),
-            Row(
-                Column('contact_phone', css_class='col-md-6'),
-                Column('enrolled_at', css_class='col-md-6'),
-            ),
-            'comments',
+            'enrolled_at',
             Submit('submit', 'Gem skole', css_class='btn btn-primary'),
+        )
+
+
+class PersonForm(forms.ModelForm):
+    class Meta:
+        model = Person
+        fields = ['name', 'role', 'role_other', 'phone', 'email', 'comment', 'is_primary']
+        widgets = {
+            'comment': forms.Textarea(attrs={'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'name',
+            Row(
+                Column('role', css_class='col-md-6'),
+                Column('role_other', css_class='col-md-6'),
+            ),
+            Row(
+                Column('phone', css_class='col-md-6'),
+                Column('email', css_class='col-md-6'),
+            ),
+            'comment',
+            'is_primary',
+            Submit('submit', 'Gem person', css_class='btn btn-primary'),
+        )
+
+
+class SchoolCommentForm(forms.ModelForm):
+    class Meta:
+        model = SchoolComment
+        fields = ['comment']
+        widgets = {
+            'comment': forms.Textarea(attrs={'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'comment',
+            Submit('submit', 'Gem kommentar', css_class='btn btn-primary'),
         )
 
 

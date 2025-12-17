@@ -1,7 +1,15 @@
 from datetime import date
 
+from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
+
+
+class PersonRole(models.TextChoices):
+    KOORDINATOR = 'koordinator', 'Koordinator'
+    SKOLELEDER = 'skoleleder', 'Skoleleder'
+    UDSKOLINGSLEDER = 'udskolingsleder', 'Udskolingsleder'
+    OTHER = 'other', 'Andet'
 
 
 class SchoolManager(models.Manager):
@@ -15,10 +23,6 @@ class School(models.Model):
 
     name = models.CharField(max_length=255)
     location = models.CharField(max_length=255)
-    contact_name = models.CharField(max_length=255)
-    contact_email = models.EmailField()
-    contact_phone = models.CharField(max_length=50, blank=True)
-    comments = models.TextField(blank=True)
     enrolled_at = models.DateField(
         null=True,
         blank=True,
@@ -111,3 +115,66 @@ class SeatPurchase(models.Model):
 
     def __str__(self):
         return f"{self.school.name} - {self.seats} pladser ({self.purchased_at})"
+
+
+class Person(models.Model):
+    school = models.ForeignKey(
+        School,
+        on_delete=models.CASCADE,
+        related_name='people'
+    )
+    name = models.CharField(max_length=255, verbose_name='Navn')
+    role = models.CharField(
+        max_length=20,
+        choices=PersonRole.choices,
+        default=PersonRole.KOORDINATOR,
+        verbose_name='Funktion'
+    )
+    role_other = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Anden funktion'
+    )
+    phone = models.CharField(max_length=50, blank=True, verbose_name='Telefon')
+    email = models.EmailField(blank=True, verbose_name='E-mail')
+    comment = models.TextField(blank=True, verbose_name='Kommentar')
+    is_primary = models.BooleanField(default=False, verbose_name='Primær kontakt')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-is_primary', 'name']
+        verbose_name = 'Person'
+        verbose_name_plural = 'Personer'
+
+    def __str__(self):
+        return f"{self.name} ({self.display_role})"
+
+    @property
+    def display_role(self):
+        if self.role == PersonRole.OTHER:
+            return self.role_other or 'Andet'
+        return self.get_role_display()
+
+
+class SchoolComment(models.Model):
+    school = models.ForeignKey(
+        School,
+        on_delete=models.CASCADE,
+        related_name='school_comments'
+    )
+    comment = models.TextField(verbose_name='Kommentar')
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='school_comments_made'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Kommentar'
+        verbose_name_plural = 'Kommentarer'
+
+    def __str__(self):
+        return f"{self.school.name} - {self.created_at.strftime('%Y-%m-%d')}"
