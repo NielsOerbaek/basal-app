@@ -30,6 +30,7 @@ class KommuneListView(SortableMixin, ListView):
     def get_base_queryset(self):
         return (
             School.objects.active()
+            .exclude(kommune='')
             .values('kommune')
             .annotate(
                 total_schools=Count('id'),
