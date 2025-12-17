@@ -2,6 +2,7 @@ import logging
 
 from django.conf import settings
 from django.template import Template, Context
+from django.utils.formats import date_format
 
 import resend
 
@@ -25,7 +26,7 @@ def get_signup_context(signup):
         'participant_title': signup.participant_title,
         'school_name': signup.school.name,
         'course_title': signup.course.title,
-        'course_date': signup.course.start_date.strftime('%d. %B %Y'),
+        'course_date': date_format(signup.course.start_date, 'j. F Y'),
         'course_location': signup.course.location,
     }
 
