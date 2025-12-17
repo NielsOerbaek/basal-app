@@ -24,15 +24,22 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if options['clear']:
             self.stdout.write('Sletter eksisterende data...')
-            # Delete in order to avoid foreign key constraints
-            ActivityLog.objects.all().delete()
-            CourseSignUp.objects.all().delete()
-            ContactTime.objects.all().delete()
-            Course.objects.all().delete()
-            SchoolComment.objects.all().delete()
-            Person.objects.all().delete()
-            SeatPurchase.objects.all().delete()
-            School.objects.all().delete()
+            # Use TRUNCATE CASCADE to handle foreign key constraints properly
+            from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    TRUNCATE TABLE
+                        audit_activitylog,
+                        courses_coursesignup,
+                        contacts_contacttime,
+                        courses_course,
+                        schools_schoolcomment,
+                        schools_person,
+                        schools_seatpurchase,
+                        schools_invoice,
+                        schools_school
+                    RESTART IDENTITY CASCADE
+                """)
             self.stdout.write(self.style.SUCCESS('Eksisterende data slettet'))
 
         self.stdout.write('Opretter demo data...')
