@@ -65,14 +65,21 @@ class CourseSignUpForm(forms.ModelForm):
         )
 
 
+class SchoolChoiceField(forms.ModelChoiceField):
+    """Custom field to display school name with kommune."""
+
+    def label_from_instance(self, obj):
+        return f"{obj.name} ({obj.kommune})"
+
+
 class PublicSignUpForm(forms.Form):
     course = forms.ModelChoiceField(
         queryset=Course.objects.filter(is_published=True, start_date__gte=timezone.now().date()),
         label='Vælg et kursus',
         empty_label='Vælg et kursus...'
     )
-    school = forms.ModelChoiceField(
-        queryset=School.objects.active(),
+    school = SchoolChoiceField(
+        queryset=School.objects.active().exclude(enrolled_at__isnull=True).order_by('name'),
         label='Vælg din skole',
         empty_label='Vælg en skole...'
     )
