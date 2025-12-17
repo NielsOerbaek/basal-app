@@ -23,7 +23,7 @@ class SchoolListView(SortableMixin, ListView):
     paginate_by = 25
     sortable_fields = {
         'name': 'name',
-        'location': 'location',
+        'kommune': 'kommune',
         'seats': '_remaining_seats',  # Special handling for computed property
     }
     default_sort = 'name'
@@ -35,7 +35,8 @@ class SchoolListView(SortableMixin, ListView):
         if search:
             queryset = queryset.filter(
                 Q(name__icontains=search) |
-                Q(location__icontains=search) |
+                Q(adresse__icontains=search) |
+                Q(kommune__icontains=search) |
                 Q(people__name__icontains=search) |
                 Q(people__email__icontains=search)
             ).distinct()
@@ -135,7 +136,8 @@ class SchoolExportView(View):
         queryset = School.objects.active()
         fields = [
             ('name', 'Navn'),
-            ('location', 'Adresse'),
+            ('adresse', 'Adresse'),
+            ('kommune', 'Kommune'),
             ('enrolled_at', 'Tilmeldt'),
             ('created_at', 'Oprettet'),
         ]
@@ -146,7 +148,7 @@ class SchoolAutocompleteView(View):
     def get(self, request):
         query = request.GET.get('q', '')
         schools = School.objects.active().filter(name__icontains=query)[:10]
-        results = [{'id': s.pk, 'name': s.name, 'location': s.location} for s in schools]
+        results = [{'id': s.pk, 'name': s.name, 'kommune': s.kommune} for s in schools]
         return JsonResponse({'results': results})
 
 

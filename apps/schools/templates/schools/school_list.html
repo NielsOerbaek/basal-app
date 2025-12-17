@@ -37,7 +37,7 @@
             <thead class="table-light">
                 <tr>
                     <th>{% sort_header 'name' 'Navn' %}</th>
-                    <th>{% sort_header 'location' 'Adresse' %}</th>
+                    <th>{% sort_header 'kommune' 'Kommune' %}</th>
                     <th>Kontaktperson</th>
                     <th>{% sort_header 'seats' 'Ubrugte pladser' %}</th>
                     <th class="table-actions">Handlinger</th>
@@ -47,7 +47,7 @@
                 {% for school in schools %}
                 <tr>
                     <td><a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a></td>
-                    <td>{{ school.location }}</td>
+                    <td>{{ school.kommune }}</td>
                     <td>{% with primary=school.people.all|first %}{{ primary.name|default:"-" }}{% endwith %}</td>
                     <td>
                         {% if school.enrolled_at %}

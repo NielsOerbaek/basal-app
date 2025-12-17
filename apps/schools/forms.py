@@ -8,7 +8,7 @@ from .models import School, SeatPurchase, Person, SchoolComment, PersonRole
 class SchoolForm(forms.ModelForm):
     class Meta:
         model = School
-        fields = ['name', 'location', 'enrolled_at']
+        fields = ['name', 'adresse', 'kommune', 'enrolled_at']
         widgets = {
             'enrolled_at': forms.DateInput(attrs={'type': 'date'}),
         }
@@ -21,7 +21,10 @@ class SchoolForm(forms.ModelForm):
         self.helper = FormHelper()
         self.helper.layout = Layout(
             'name',
-            'location',
+            Row(
+                Column('adresse', css_class='col-md-8'),
+                Column('kommune', css_class='col-md-4'),
+            ),
             'enrolled_at',
             Submit('submit', 'Gem skole', css_class='btn btn-primary'),
         )

@@ -12,7 +12,8 @@ class SchoolModelTest(TestCase):
         """School model can be created and saved."""
         school = School.objects.create(
             name='Test School',
-            location='Test Location',
+            adresse='Test Address',
+            kommune='Test Kommune',
         )
         self.assertEqual(school.name, 'Test School')
         self.assertTrue(school.is_active)
@@ -21,7 +22,8 @@ class SchoolModelTest(TestCase):
         """School soft delete sets is_active to False."""
         school = School.objects.create(
             name='Test School',
-            location='Test Location',
+            adresse='Test Address',
+            kommune='Test Kommune',
         )
         school.delete()
         school.refresh_from_db()
@@ -31,11 +33,13 @@ class SchoolModelTest(TestCase):
         """School.objects.active() returns only active schools."""
         active = School.objects.create(
             name='Active School',
-            location='Location',
+            adresse='Address',
+            kommune='Kommune',
         )
         inactive = School.objects.create(
             name='Inactive School',
-            location='Location',
+            adresse='Address',
+            kommune='Kommune',
             is_active=False
         )
         self.assertIn(active, School.objects.active())
@@ -43,14 +47,15 @@ class SchoolModelTest(TestCase):
 
     def test_base_seats_without_enrollment(self):
         """School without enrolled_at has 0 base seats."""
-        school = School.objects.create(name='Test', location='Test')
+        school = School.objects.create(name='Test', adresse='Test', kommune='Test')
         self.assertEqual(school.base_seats, 0)
 
     def test_base_seats_with_enrollment(self):
         """School with enrolled_at has BASE_SEATS."""
         school = School.objects.create(
             name='Test',
-            location='Test',
+            adresse='Test',
+            kommune='Test',
             enrolled_at=date.today()
         )
         self.assertEqual(school.base_seats, School.BASE_SEATS)
@@ -59,7 +64,8 @@ class SchoolModelTest(TestCase):
         """School enrolled less than 1 year ago has no forankringsplads."""
         school = School.objects.create(
             name='Test',
-            location='Test',
+            adresse='Test',
+            kommune='Test',
             enrolled_at=date.today() - timedelta(days=100)
         )
         self.assertFalse(school.has_forankringsplads)
@@ -69,7 +75,8 @@ class SchoolModelTest(TestCase):
         """School enrolled more than 1 year ago has forankringsplads."""
         school = School.objects.create(
             name='Test',
-            location='Test',
+            adresse='Test',
+            kommune='Test',
             enrolled_at=date.today() - timedelta(days=400)
         )
         self.assertTrue(school.has_forankringsplads)
@@ -80,7 +87,8 @@ class PersonModelTest(TestCase):
     def setUp(self):
         self.school = School.objects.create(
             name='Test School',
-            location='Test Location',
+            adresse='Test Address',
+            kommune='Test Kommune',
         )
 
     def test_create_person(self):
@@ -150,7 +158,8 @@ class SchoolCommentModelTest(TestCase):
     def setUp(self):
         self.school = School.objects.create(
             name='Test School',
-            location='Test Location',
+            adresse='Test Address',
+            kommune='Test Kommune',
         )
         self.user = User.objects.create_user(
             username='testuser',
@@ -195,7 +204,8 @@ class SchoolViewTest(TestCase):
         )
         self.school = School.objects.create(
             name='Test School',
-            location='Test Location',
+            adresse='Test Address',
+            kommune='Test Kommune',
         )
 
     def test_school_list_requires_login(self):
@@ -242,7 +252,8 @@ class PersonViewTest(TestCase):
         )
         self.school = School.objects.create(
             name='Test School',
-            location='Test Location',
+            adresse='Test Address',
+            kommune='Test Kommune',
         )
         self.person = Person.objects.create(
             school=self.school,
@@ -325,7 +336,8 @@ class SchoolCommentViewTest(TestCase):
         )
         self.school = School.objects.create(
             name='Test School',
-            location='Test Location',
+            adresse='Test Address',
+            kommune='Test Kommune',
         )
         self.comment = SchoolComment.objects.create(
             school=self.school,
@@ -376,7 +388,8 @@ class SeatPurchaseModelTest(TestCase):
     def setUp(self):
         self.school = School.objects.create(
             name='Test School',
-            location='Test Location',
+            adresse='Test Address',
+            kommune='Test Kommune',
             enrolled_at=date.today()
         )
 
@@ -440,7 +453,8 @@ class SchoolDeleteViewTest(TestCase):
         )
         self.school = School.objects.create(
             name='Test School',
-            location='Test Location',
+            adresse='Test Address',
+            kommune='Test Kommune',
         )
 
     def test_delete_requires_login(self):
@@ -473,11 +487,13 @@ class SchoolSearchViewTest(TestCase):
         )
         self.school1 = School.objects.create(
             name='Alpha School',
-            location='Copenhagen',
+            adresse='Testvej 1',
+            kommune='København',
         )
         self.school2 = School.objects.create(
             name='Beta School',
-            location='Aarhus',
+            adresse='Testvej 2',
+            kommune='Aarhus',
         )
         # Add person to school1
         Person.objects.create(
@@ -495,10 +511,18 @@ class SchoolSearchViewTest(TestCase):
         self.assertContains(response, 'Alpha School')
         self.assertNotContains(response, 'Beta School')
 
-    def test_search_by_location(self):
-        """Search finds schools by location."""
+    def test_search_by_kommune(self):
+        """Search finds schools by kommune."""
         self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:list'), {'search': 'Copenhagen'})
+        response = self.client.get(reverse('schools:list'), {'search': 'København'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Alpha School')
+        self.assertNotContains(response, 'Beta School')
+
+    def test_search_by_adresse(self):
+        """Search finds schools by adresse."""
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(reverse('schools:list'), {'search': 'Testvej 1'})
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Alpha School')
         self.assertNotContains(response, 'Beta School')
@@ -538,7 +562,8 @@ class AddSeatsViewTest(TestCase):
         )
         self.school = School.objects.create(
             name='Test School',
-            location='Test Location',
+            adresse='Test Address',
+            kommune='Test Kommune',
             enrolled_at=date.today()
         )
 
@@ -575,7 +600,8 @@ class FormValidationTest(TestCase):
     def setUp(self):
         self.school = School.objects.create(
             name='Test School',
-            location='Test Location',
+            adresse='Test Address',
+            kommune='Test Kommune',
         )
 
     def test_school_form_valid(self):
@@ -583,7 +609,8 @@ class FormValidationTest(TestCase):
         from .forms import SchoolForm
         form = SchoolForm(data={
             'name': 'New School',
-            'location': 'New Location',
+            'adresse': 'New Address',
+            'kommune': 'New Kommune',
         })
         self.assertTrue(form.is_valid())
 
@@ -591,19 +618,31 @@ class FormValidationTest(TestCase):
         """SchoolForm requires name field."""
         from .forms import SchoolForm
         form = SchoolForm(data={
-            'location': 'Location',
+            'adresse': 'Address',
+            'kommune': 'Kommune',
         })
         self.assertFalse(form.is_valid())
         self.assertIn('name', form.errors)
 
-    def test_school_form_requires_location(self):
-        """SchoolForm requires location field."""
+    def test_school_form_requires_adresse(self):
+        """SchoolForm requires adresse field."""
         from .forms import SchoolForm
         form = SchoolForm(data={
             'name': 'School Name',
+            'kommune': 'Kommune',
         })
         self.assertFalse(form.is_valid())
-        self.assertIn('location', form.errors)
+        self.assertIn('adresse', form.errors)
+
+    def test_school_form_requires_kommune(self):
+        """SchoolForm requires kommune field."""
+        from .forms import SchoolForm
+        form = SchoolForm(data={
+            'name': 'School Name',
+            'adresse': 'Address',
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('kommune', form.errors)
 
     def test_person_form_valid(self):
         """PersonForm accepts valid data."""

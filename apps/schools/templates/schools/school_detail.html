@@ -24,7 +24,9 @@
             <div class="card-body">
                 <dl class="row mb-0">
                     <dt class="col-sm-4">Adresse</dt>
-                    <dd class="col-sm-8">{{ school.location }}</dd>
+                    <dd class="col-sm-8">{{ school.adresse }}</dd>
+                    <dt class="col-sm-4">Kommune</dt>
+                    <dd class="col-sm-8">{{ school.kommune }}</dd>
                     <dt class="col-sm-4">Tilmeldt Basal</dt>
                     <dd class="col-sm-8">
                         {% if school.enrolled_at %}

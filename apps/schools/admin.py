@@ -24,9 +24,9 @@ class SchoolCommentInline(admin.TabularInline):
 
 @admin.register(School)
 class SchoolAdmin(admin.ModelAdmin):
-    list_display = ['name', 'location', 'enrolled_at', 'total_seats', 'remaining_seats', 'is_active']
-    list_filter = ['is_active', 'enrolled_at', 'created_at']
-    search_fields = ['name', 'location']
+    list_display = ['name', 'kommune', 'enrolled_at', 'total_seats', 'remaining_seats', 'is_active']
+    list_filter = ['is_active', 'enrolled_at', 'created_at', 'kommune']
+    search_fields = ['name', 'adresse', 'kommune']
     readonly_fields = ['created_at', 'updated_at', 'total_seats', 'remaining_seats']
     inlines = [PersonInline, SchoolCommentInline, SeatPurchaseInline]
 

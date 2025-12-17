@@ -81,7 +81,8 @@ class Command(BaseCommand):
         schools_data = [
             {
                 'name': 'Sønderbro Skole',
-                'location': 'Amagerbrogade 45, 2300 København S',
+                'adresse': 'Amagerbrogade 45, 2300 København S',
+                'kommune': 'København',
                 'contact_name': 'Lars Pedersen',
                 'contact_email': 'lp@sonderbro-skole.dk',
                 'contact_phone': '32 54 12 34',
@@ -89,7 +90,8 @@ class Command(BaseCommand):
             },
             {
                 'name': 'Vesterbro Skole',
-                'location': 'Vestergade 12, 1456 København V',
+                'adresse': 'Vestergade 12, 1456 København V',
+                'kommune': 'København',
                 'contact_name': 'Mette Hansen',
                 'contact_email': 'mh@vesterbro-skole.dk',
                 'contact_phone': '33 21 45 67',
@@ -97,7 +99,8 @@ class Command(BaseCommand):
             },
             {
                 'name': 'Hasle Skole',
-                'location': 'Haslevej 100, 8210 Aarhus V',
+                'adresse': 'Haslevej 100, 8210 Aarhus V',
+                'kommune': 'Aarhus',
                 'contact_name': 'Søren Nielsen',
                 'contact_email': 'sn@hasle-skole.dk',
                 'contact_phone': '86 15 23 45',
@@ -105,7 +108,8 @@ class Command(BaseCommand):
             },
             {
                 'name': 'Munkebjerg Skole',
-                'location': 'Munkebjergvej 80, 5230 Odense M',
+                'adresse': 'Munkebjergvej 80, 5230 Odense M',
+                'kommune': 'Odense',
                 'contact_name': 'Anne Christensen',
                 'contact_email': 'ac@munkebjerg-skole.dk',
                 'contact_phone': '65 91 23 45',
@@ -113,7 +117,8 @@ class Command(BaseCommand):
             },
             {
                 'name': 'Nørre Boulevard Skole',
-                'location': 'Nørre Boulevard 5, 9000 Aalborg',
+                'adresse': 'Nørre Boulevard 5, 9000 Aalborg',
+                'kommune': 'Aalborg',
                 'contact_name': 'Peter Mortensen',
                 'contact_email': 'pm@nb-skole.dk',
                 'contact_phone': '98 12 34 56',
@@ -121,7 +126,8 @@ class Command(BaseCommand):
             },
             {
                 'name': 'Bakkeskolen',
-                'location': 'Bakkedraget 22, 4000 Roskilde',
+                'adresse': 'Bakkedraget 22, 4000 Roskilde',
+                'kommune': 'Roskilde',
                 'contact_name': 'Kirsten Larsen',
                 'contact_email': 'kl@bakkeskolen.dk',
                 'contact_phone': '46 35 12 00',
@@ -129,7 +135,8 @@ class Command(BaseCommand):
             },
             {
                 'name': 'Strandskolen',
-                'location': 'Strandvejen 150, 6700 Esbjerg',
+                'adresse': 'Strandvejen 150, 6700 Esbjerg',
+                'kommune': 'Esbjerg',
                 'contact_name': 'Michael Jensen',
                 'contact_email': 'mj@strandskolen.dk',
                 'contact_phone': '75 12 34 56',
@@ -137,7 +144,8 @@ class Command(BaseCommand):
             },
             {
                 'name': 'Engdalskolen',
-                'location': 'Engdalsvej 3, 8660 Skanderborg',
+                'adresse': 'Engdalsvej 3, 8660 Skanderborg',
+                'kommune': 'Skanderborg',
                 'contact_name': 'Louise Andersen',
                 'contact_email': 'la@engdalskolen.dk',
                 'contact_phone': '86 52 12 34',
@@ -145,7 +153,8 @@ class Command(BaseCommand):
             },
             {
                 'name': 'Skovvangskolen',
-                'location': 'Skovvangen 10, 7400 Herning',
+                'adresse': 'Skovvangen 10, 7400 Herning',
+                'kommune': 'Herning',
                 'contact_name': 'Thomas Rasmussen',
                 'contact_email': 'tr@skovvangskolen.dk',
                 'contact_phone': '97 12 34 56',
@@ -153,7 +162,8 @@ class Command(BaseCommand):
             },
             {
                 'name': 'Østervangskolen',
-                'location': 'Østervang 25, 5700 Svendborg',
+                'adresse': 'Østervang 25, 5700 Svendborg',
+                'kommune': 'Svendborg',
                 'contact_name': 'Camilla Olsen',
                 'contact_email': 'co@ostervangskolen.dk',
                 'contact_phone': '62 21 00 00',
@@ -161,7 +171,8 @@ class Command(BaseCommand):
             },
             {
                 'name': 'Nordvestskolen',
-                'location': 'Nordvestgade 8, 8800 Viborg',
+                'adresse': 'Nordvestgade 8, 8800 Viborg',
+                'kommune': 'Viborg',
                 'contact_name': 'Henrik Thomsen',
                 'contact_email': 'ht@nordvestskolen.dk',
                 'contact_phone': '86 62 45 00',
@@ -169,7 +180,8 @@ class Command(BaseCommand):
             },
             {
                 'name': 'Kildeskovskolen',
-                'location': 'Kildeskovvej 15, 4700 Næstved',
+                'adresse': 'Kildeskovvej 15, 4700 Næstved',
+                'kommune': 'Næstved',
                 'contact_name': 'Marie Kjær',
                 'contact_email': 'mk@kildeskovskolen.dk',
                 'contact_phone': '55 77 15 00',

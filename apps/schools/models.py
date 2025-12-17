@@ -21,8 +21,9 @@ class School(models.Model):
     BASE_SEATS = 3
     FORANKRING_SEATS = 1
 
-    name = models.CharField(max_length=255)
-    location = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, verbose_name='Navn')
+    adresse = models.CharField(max_length=255, verbose_name='Adresse')
+    kommune = models.CharField(max_length=100, verbose_name='Kommune')
     enrolled_at = models.DateField(
         null=True,
         blank=True,
