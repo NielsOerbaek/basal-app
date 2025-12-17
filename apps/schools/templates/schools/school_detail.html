@@ -52,10 +52,9 @@
                 <li class="list-group-item">
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="flex-grow-1">
-                            <div class="d-flex align-items-center mb-1">
-                                {% if person.is_primary %}<i class="bi bi-star-fill text-warning me-1" title="Primær kontakt"></i>{% endif %}
-                                <strong>{{ person.name }}</strong>
-                                <span class="badge bg-secondary ms-2">{{ person.display_role }}</span>
+                            <div class="mb-1">
+                                <strong>{{ person.name }}</strong><span class="text-muted">, {{ person.display_role|lower }}</span>
+                                {% if person.is_primary %}<span class="badge bg-primary ms-2">primær kontakt</span>{% endif %}
                             </div>
                             <div class="small text-muted">
                                 {% if person.email %}<i class="bi bi-envelope me-1"></i><a href="mailto:{{ person.email }}">{{ person.email }}</a>{% endif %}
@@ -64,16 +63,9 @@
                             </div>
                             {% if person.comment %}<div class="small mt-1">{{ person.comment }}</div>{% endif %}
                         </div>
-                        <div class="btn-group btn-group-sm ms-2">
-                            <a href="{% url 'schools:person-update' person.pk %}" class="btn btn-outline-secondary" title="Rediger">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <button type="button" class="btn btn-outline-danger" title="Slet"
-                                    hx-get="{% url 'schools:person-delete' person.pk %}"
-                                    hx-target="#modal-container">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
-                        </div>
+                        <a href="{% url 'schools:person-update' person.pk %}" class="btn btn-sm btn-outline-secondary" title="Rediger">
+                            <i class="bi bi-pencil"></i>
+                        </a>
                     </div>
                 </li>
                 {% empty %}

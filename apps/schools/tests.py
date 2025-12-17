@@ -370,3 +370,319 @@ class SchoolCommentViewTest(TestCase):
         response = self.client.post(reverse('schools:comment-delete', kwargs={'pk': comment_pk}))
         self.assertEqual(response.status_code, 200)  # JSON response
         self.assertFalse(SchoolComment.objects.filter(pk=comment_pk).exists())
+
+
+class SeatPurchaseModelTest(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(
+            name='Test School',
+            location='Test Location',
+            enrolled_at=date.today()
+        )
+
+    def test_create_seat_purchase(self):
+        """SeatPurchase model can be created and saved."""
+        purchase = SeatPurchase.objects.create(
+            school=self.school,
+            seats=5,
+            purchased_at=date.today(),
+            notes='Test purchase'
+        )
+        self.assertEqual(purchase.seats, 5)
+        self.assertEqual(purchase.school, self.school)
+
+    def test_purchased_seats_aggregation(self):
+        """School.purchased_seats aggregates all seat purchases."""
+        SeatPurchase.objects.create(school=self.school, seats=3)
+        SeatPurchase.objects.create(school=self.school, seats=2)
+        self.assertEqual(self.school.purchased_seats, 5)
+
+    def test_total_seats_calculation(self):
+        """School.total_seats includes base + forankring + purchased."""
+        SeatPurchase.objects.create(school=self.school, seats=5)
+        expected = School.BASE_SEATS + 0 + 5  # No forankring (not 1 year old)
+        self.assertEqual(self.school.total_seats, expected)
+
+    def test_remaining_seats_calculation(self):
+        """School.remaining_seats is total minus used."""
+        SeatPurchase.objects.create(school=self.school, seats=5)
+        # No signups, so remaining = total
+        self.assertEqual(self.school.remaining_seats, self.school.total_seats)
+
+    def test_has_available_seats(self):
+        """School.has_available_seats returns True when seats available."""
+        self.assertTrue(self.school.has_available_seats)
+
+    def test_seat_purchase_ordering(self):
+        """SeatPurchases are ordered by purchased_at descending."""
+        purchase1 = SeatPurchase.objects.create(
+            school=self.school,
+            seats=1,
+            purchased_at=date.today() - timedelta(days=10)
+        )
+        purchase2 = SeatPurchase.objects.create(
+            school=self.school,
+            seats=2,
+            purchased_at=date.today()
+        )
+        purchases = list(self.school.seat_purchases.all())
+        self.assertEqual(purchases[0], purchase2)  # Most recent first
+        self.assertEqual(purchases[1], purchase1)
+
+
+class SchoolDeleteViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpass123',
+            is_staff=True
+        )
+        self.school = School.objects.create(
+            name='Test School',
+            location='Test Location',
+        )
+
+    def test_delete_requires_login(self):
+        """School delete should redirect unauthenticated users."""
+        response = self.client.get(reverse('schools:delete', kwargs={'pk': self.school.pk}))
+        self.assertEqual(response.status_code, 302)
+
+    def test_delete_modal_loads(self):
+        """School delete modal should load for staff users."""
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(reverse('schools:delete', kwargs={'pk': self.school.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    def test_delete_post_soft_deletes(self):
+        """School delete POST soft deletes the school."""
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.post(reverse('schools:delete', kwargs={'pk': self.school.pk}))
+        self.assertEqual(response.status_code, 200)  # JSON response
+        self.school.refresh_from_db()
+        self.assertFalse(self.school.is_active)
+
+
+class SchoolSearchViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpass123',
+            is_staff=True
+        )
+        self.school1 = School.objects.create(
+            name='Alpha School',
+            location='Copenhagen',
+        )
+        self.school2 = School.objects.create(
+            name='Beta School',
+            location='Aarhus',
+        )
+        # Add person to school1
+        Person.objects.create(
+            school=self.school1,
+            name='John Doe',
+            email='john@example.com',
+            role=PersonRole.KOORDINATOR
+        )
+
+    def test_search_by_school_name(self):
+        """Search finds schools by name."""
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(reverse('schools:list'), {'search': 'Alpha'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Alpha School')
+        self.assertNotContains(response, 'Beta School')
+
+    def test_search_by_location(self):
+        """Search finds schools by location."""
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(reverse('schools:list'), {'search': 'Copenhagen'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Alpha School')
+        self.assertNotContains(response, 'Beta School')
+
+    def test_search_by_person_name(self):
+        """Search finds schools by person name."""
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(reverse('schools:list'), {'search': 'John'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Alpha School')
+        self.assertNotContains(response, 'Beta School')
+
+    def test_search_by_person_email(self):
+        """Search finds schools by person email."""
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(reverse('schools:list'), {'search': 'john@example'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Alpha School')
+        self.assertNotContains(response, 'Beta School')
+
+    def test_search_no_results(self):
+        """Search with no matches shows empty state."""
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(reverse('schools:list'), {'search': 'Nonexistent'})
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Alpha School')
+        self.assertNotContains(response, 'Beta School')
+
+
+class AddSeatsViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpass123',
+            is_staff=True
+        )
+        self.school = School.objects.create(
+            name='Test School',
+            location='Test Location',
+            enrolled_at=date.today()
+        )
+
+    def test_add_seats_requires_login(self):
+        """Add seats should redirect unauthenticated users."""
+        response = self.client.get(reverse('schools:add-seats', kwargs={'pk': self.school.pk}))
+        self.assertEqual(response.status_code, 302)
+
+    def test_add_seats_loads(self):
+        """Add seats form should load for staff users."""
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(reverse('schools:add-seats', kwargs={'pk': self.school.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'schools/add_seats.html')
+
+    def test_add_seats_post(self):
+        """Seats can be added via POST."""
+        self.client.login(username='testuser', password='testpass123')
+        initial_seats = self.school.purchased_seats
+        response = self.client.post(
+            reverse('schools:add-seats', kwargs={'pk': self.school.pk}),
+            {
+                'seats': 5,
+                'purchased_at': date.today().isoformat(),
+                'notes': 'Test purchase'
+            }
+        )
+        self.assertEqual(response.status_code, 302)  # Redirect on success
+        self.school.refresh_from_db()
+        self.assertEqual(self.school.purchased_seats, initial_seats + 5)
+
+
+class FormValidationTest(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(
+            name='Test School',
+            location='Test Location',
+        )
+
+    def test_school_form_valid(self):
+        """SchoolForm accepts valid data."""
+        from .forms import SchoolForm
+        form = SchoolForm(data={
+            'name': 'New School',
+            'location': 'New Location',
+        })
+        self.assertTrue(form.is_valid())
+
+    def test_school_form_requires_name(self):
+        """SchoolForm requires name field."""
+        from .forms import SchoolForm
+        form = SchoolForm(data={
+            'location': 'Location',
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('name', form.errors)
+
+    def test_school_form_requires_location(self):
+        """SchoolForm requires location field."""
+        from .forms import SchoolForm
+        form = SchoolForm(data={
+            'name': 'School Name',
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('location', form.errors)
+
+    def test_person_form_valid(self):
+        """PersonForm accepts valid data."""
+        from .forms import PersonForm
+        form = PersonForm(data={
+            'name': 'Test Person',
+            'role': PersonRole.KOORDINATOR,
+        })
+        self.assertTrue(form.is_valid())
+
+    def test_person_form_requires_name(self):
+        """PersonForm requires name field."""
+        from .forms import PersonForm
+        form = PersonForm(data={
+            'role': PersonRole.KOORDINATOR,
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('name', form.errors)
+
+    def test_person_form_with_other_role(self):
+        """PersonForm accepts OTHER role with role_other."""
+        from .forms import PersonForm
+        form = PersonForm(data={
+            'name': 'Test Person',
+            'role': PersonRole.OTHER,
+            'role_other': 'Custom Role',
+        })
+        self.assertTrue(form.is_valid())
+
+    def test_person_form_validates_email(self):
+        """PersonForm validates email format."""
+        from .forms import PersonForm
+        form = PersonForm(data={
+            'name': 'Test Person',
+            'role': PersonRole.KOORDINATOR,
+            'email': 'invalid-email',
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('email', form.errors)
+
+    def test_comment_form_valid(self):
+        """SchoolCommentForm accepts valid data."""
+        from .forms import SchoolCommentForm
+        form = SchoolCommentForm(data={
+            'comment': 'This is a test comment',
+        })
+        self.assertTrue(form.is_valid())
+
+    def test_comment_form_requires_comment(self):
+        """SchoolCommentForm requires comment field."""
+        from .forms import SchoolCommentForm
+        form = SchoolCommentForm(data={})
+        self.assertFalse(form.is_valid())
+        self.assertIn('comment', form.errors)
+
+    def test_seat_purchase_form_valid(self):
+        """SeatPurchaseForm accepts valid data."""
+        from .forms import SeatPurchaseForm
+        form = SeatPurchaseForm(data={
+            'seats': 5,
+            'purchased_at': date.today().isoformat(),
+        })
+        self.assertTrue(form.is_valid())
+
+    def test_seat_purchase_form_requires_seats(self):
+        """SeatPurchaseForm requires seats field."""
+        from .forms import SeatPurchaseForm
+        form = SeatPurchaseForm(data={
+            'purchased_at': date.today().isoformat(),
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('seats', form.errors)
+
+    def test_seat_purchase_form_positive_seats(self):
+        """SeatPurchaseForm requires positive seats value."""
+        from .forms import SeatPurchaseForm
+        form = SeatPurchaseForm(data={
+            'seats': -1,
+            'purchased_at': date.today().isoformat(),
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('seats', form.errors)

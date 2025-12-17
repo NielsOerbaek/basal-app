@@ -26,6 +26,15 @@
                     {% crispy form %}
                 </form>
             </div>
+            {% if person %}
+            <div class="card-footer bg-transparent">
+                <button type="button" class="btn btn-outline-danger btn-sm"
+                        hx-get="{% url 'schools:person-delete' person.pk %}"
+                        hx-target="#modal-container">
+                    <i class="bi bi-trash me-1"></i>Slet person
+                </button>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
