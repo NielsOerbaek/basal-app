@@ -104,7 +104,7 @@ class CronSendRemindersView(View):
 
 class CronBackupView(View):
     """
-    Protected endpoint for database backup via cron job.
+    Protected endpoint for database and media backup via cron job.
     Requires CRON_SECRET token in Authorization header or query param.
     """
 
@@ -118,7 +118,7 @@ class CronBackupView(View):
         error_output = StringIO()
 
         try:
-            call_command('backup_database', stdout=output, stderr=error_output)
+            call_command('backup', stdout=output, stderr=error_output)
             return JsonResponse({
                 'success': True,
                 'output': output.getvalue(),

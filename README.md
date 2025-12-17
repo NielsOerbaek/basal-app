@@ -108,14 +108,28 @@ python manage.py create_demo_data
 python manage.py create_demo_data --clear  # Clear existing data first
 ```
 
-### `backup_database`
-Backs up the PostgreSQL database to Backblaze B2 with automatic cleanup.
+### `backup`
+Backs up the PostgreSQL database and media files to Backblaze B2 with automatic cleanup.
 ```bash
-python manage.py backup_database
-python manage.py backup_database --retention-days 60
-python manage.py backup_database --local-only  # Skip B2 upload
+python manage.py backup
+python manage.py backup --retention-days 60
+python manage.py backup --local-only  # Skip B2 upload
+python manage.py backup --skip-media  # Database only
 ```
+Backups are stored as timestamped directories (e.g., `backup_20241217_123456/`) containing `database.sql.gz` and `media.tar.gz`.
+
 Requires: `B2_KEY_ID`, `B2_APPLICATION_KEY`, `B2_BUCKET_NAME`, `B2_ENDPOINT`
+
+### `restore_backup`
+Restores database and media files from a backup. Creates a safety backup before restoring.
+```bash
+python manage.py restore_backup backup_20241217_123456
+python manage.py restore_backup 20241217_123456  # backup_ prefix optional
+python manage.py restore_backup backup_20241217_123456 --from-b2  # Download from B2
+python manage.py restore_backup backup_20241217_123456 --skip-media  # Database only
+python manage.py restore_backup backup_20241217_123456 --skip-pre-backup  # Skip safety backup
+python manage.py restore_backup backup_20241217_123456 --yes  # Skip confirmation
+```
 
 ### `import_schools`
 Imports schools from Excel files.
@@ -148,7 +162,7 @@ GitHub Actions workflows handle scheduled tasks:
 | Workflow | Schedule | Description |
 |----------|----------|-------------|
 | `send-reminders.yml` | Daily 08:00 UTC | Sends course reminders |
-| `backup-database.yml` | Daily 01:00 UTC | Database backups to B2 |
+| `backup.yml` | Daily 01:00 UTC | Database and media backups to B2 |
 
 Both use authenticated endpoints with `CRON_SECRET` bearer token.
 

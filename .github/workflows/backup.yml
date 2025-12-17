@@ -1,4 +1,4 @@
-name: Database Backup
+name: Backup
 
 on:
   schedule:
@@ -11,7 +11,7 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger database backup
+      - name: Trigger database and media backup
         run: |
           response=$(curl -s -w "\n%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
