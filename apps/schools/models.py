@@ -44,6 +44,11 @@ class School(models.Model):
 
     class Meta:
         ordering = ['name']
+        indexes = [
+            models.Index(fields=['is_active', 'name']),
+            models.Index(fields=['kommune']),
+            models.Index(fields=['is_active', 'kommune']),
+        ]
 
     def __str__(self):
         return self.name

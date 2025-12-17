@@ -2,7 +2,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Row, Column, Submit, Field, HTML
 from django import forms
 
-from .models import School, SeatPurchase, Person, SchoolComment, PersonRole
+from .models import School, SeatPurchase, Person, SchoolComment, PersonRole, Invoice
 
 
 class SchoolForm(forms.ModelForm):
@@ -93,4 +93,30 @@ class SeatPurchaseForm(forms.ModelForm):
             ),
             'notes',
             Submit('submit', 'Tilføj pladser', css_class='btn btn-primary'),
+        )
+
+
+class InvoiceForm(forms.ModelForm):
+    class Meta:
+        model = Invoice
+        fields = ['invoice_number', 'amount', 'date', 'status', 'comment']
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date'}),
+            'comment': forms.Textarea(attrs={'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Row(
+                Column('invoice_number', css_class='col-md-6'),
+                Column('amount', css_class='col-md-6'),
+            ),
+            Row(
+                Column('date', css_class='col-md-6'),
+                Column('status', css_class='col-md-6'),
+            ),
+            'comment',
+            Submit('submit', 'Gem faktura', css_class='btn btn-primary'),
         )

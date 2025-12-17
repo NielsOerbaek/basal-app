@@ -51,7 +51,7 @@
                     <td>{% with primary=school.people.all|first %}{{ primary.name|default:"-" }}{% endwith %}</td>
                     <td>
                         {% if school.enrolled_at %}
-                        {{ school.remaining_seats }} / {{ school.total_seats }}
+                        {{ school.remaining_seats }} <small class="text-muted">ud af {{ school.total_seats }}</small>
                         {% else %}
                         <span class="text-muted">-</span>
                         {% endif %}

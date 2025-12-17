@@ -1,0 +1,29 @@
+name: Send Course Reminders
+
+on:
+  schedule:
+    # Run daily at 08:00 UTC (09:00 or 10:00 Danish time depending on DST)
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    # Allow manual triggering from GitHub Actions UI
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send course reminders
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/cron/send-reminders/")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "Response: $body"
+          echo "HTTP Code: $http_code"
+
+          if [ "$http_code" != "200" ]; then
+            echo "Failed with HTTP $http_code"
+            exit 1
+          fi

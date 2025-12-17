@@ -3,9 +3,13 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
+from apps.core.views import CronSendRemindersView
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('summernote/', include('django_summernote.urls')),
+    # Cron endpoints
+    path('cron/send-reminders/', CronSendRemindersView.as_view(), name='cron-send-reminders'),
     path('', include('apps.core.urls')),
     path('schools/', include('apps.schools.urls')),
     path('courses/', include('apps.courses.urls')),

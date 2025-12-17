@@ -11,8 +11,8 @@ from apps.core.export import export_queryset_to_excel
 from apps.core.decorators import staff_required
 from apps.core.mixins import SortableMixin
 
-from .forms import SchoolForm, SeatPurchaseForm, PersonForm, SchoolCommentForm
-from .models import School, SeatPurchase, Person, SchoolComment
+from .forms import SchoolForm, SeatPurchaseForm, PersonForm, SchoolCommentForm, InvoiceForm
+from .models import School, SeatPurchase, Person, SchoolComment, Invoice
 
 
 @method_decorator(staff_required, name='dispatch')
@@ -131,6 +131,7 @@ class SchoolDetailView(DetailView):
         context['seat_purchases'] = self.object.seat_purchases.all()
         context['people'] = self.object.people.all()
         context['school_comments'] = self.object.school_comments.select_related('created_by').all()
+        context['invoices'] = self.object.invoices.all()
         context['person_form'] = PersonForm()
         context['comment_form'] = SchoolCommentForm()
         context['recent_activities'] = self.object.activity_logs.select_related(
@@ -333,4 +334,48 @@ class SchoolCommentDeleteView(View):
         school_pk = comment.school.pk
         comment.delete()
         messages.success(request, 'Kommentar er blevet slettet.')
+        return JsonResponse({'success': True, 'redirect': str(reverse_lazy('schools:detail', kwargs={'pk': school_pk}))})
+
+
+@method_decorator(staff_required, name='dispatch')
+class InvoiceCreateView(View):
+    def get(self, request, school_pk):
+        school = get_object_or_404(School, pk=school_pk)
+        form = InvoiceForm()
+        return render(request, 'schools/invoice_form.html', {
+            'school': school,
+            'form': form,
+        })
+
+    def post(self, request, school_pk):
+        school = get_object_or_404(School, pk=school_pk)
+        form = InvoiceForm(request.POST)
+        if form.is_valid():
+            invoice = form.save(commit=False)
+            invoice.school = school
+            invoice.save()
+            messages.success(request, f'Faktura "{invoice.invoice_number}" tilføjet.')
+            return redirect('schools:detail', pk=school.pk)
+        return render(request, 'schools/invoice_form.html', {
+            'school': school,
+            'form': form,
+        })
+
+
+@method_decorator(staff_required, name='dispatch')
+class InvoiceDeleteView(View):
+    def get(self, request, pk):
+        invoice = get_object_or_404(Invoice, pk=pk)
+        return render(request, 'core/components/confirm_delete_modal.html', {
+            'title': 'Slet faktura',
+            'message': f'Er du sikker på, at du vil slette faktura <strong>{invoice.invoice_number}</strong>?',
+            'delete_url': reverse_lazy('schools:invoice-delete', kwargs={'pk': pk}),
+        })
+
+    def post(self, request, pk):
+        invoice = get_object_or_404(Invoice, pk=pk)
+        school_pk = invoice.school.pk
+        invoice_number = invoice.invoice_number
+        invoice.delete()
+        messages.success(request, f'Faktura "{invoice_number}" er blevet slettet.')
         return JsonResponse({'success': True, 'redirect': str(reverse_lazy('schools:detail', kwargs={'pk': school_pk}))})

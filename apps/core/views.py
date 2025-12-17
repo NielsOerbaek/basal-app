@@ -1,6 +1,10 @@
+from django.conf import settings
+from django.core.management import call_command
 from django.db.models import Count
+from django.http import JsonResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
+from django.views import View
 from django.views.generic import TemplateView
 
 from apps.contacts.models import ContactTime
@@ -48,3 +52,45 @@ class DashboardView(TemplateView):
         ).order_by('-enrolled_at')[:10]
 
         return context
+
+
+class CronSendRemindersView(View):
+    """
+    Protected endpoint for sending course reminders via cron job.
+    Requires CRON_SECRET token in Authorization header or query param.
+    """
+
+    def get(self, request):
+        # Verify secret token
+        cron_secret = getattr(settings, 'CRON_SECRET', None)
+        if not cron_secret:
+            return JsonResponse({'error': 'CRON_SECRET not configured'}, status=500)
+
+        # Check Authorization header or query param
+        auth_header = request.headers.get('Authorization', '')
+        token_param = request.GET.get('token', '')
+
+        provided_token = None
+        if auth_header.startswith('Bearer '):
+            provided_token = auth_header[7:]
+        elif token_param:
+            provided_token = token_param
+
+        if provided_token != cron_secret:
+            return JsonResponse({'error': 'Unauthorized'}, status=401)
+
+        # Run the management command
+        from io import StringIO
+        output = StringIO()
+
+        try:
+            call_command('send_course_reminders', stdout=output)
+            return JsonResponse({
+                'success': True,
+                'output': output.getvalue(),
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e),
+            }, status=500)
