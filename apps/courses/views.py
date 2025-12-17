@@ -219,13 +219,17 @@ class PublicSignUpView(View):
     def post(self, request):
         form = PublicSignUpForm(request.POST)
         if form.is_valid():
-            CourseSignUp.objects.create(
+            signup = CourseSignUp.objects.create(
                 course=form.cleaned_data['course'],
                 school=form.cleaned_data['school'],
                 participant_name=form.cleaned_data['participant_name'],
                 participant_email=form.cleaned_data['participant_email'],
                 participant_title=form.cleaned_data.get('participant_title', ''),
             )
+            # Send confirmation email
+            from apps.emails.services import send_signup_confirmation
+            send_signup_confirmation(signup)
+
             return redirect('signup-success')
 
         return render(request, self.template_name, {'form': form})

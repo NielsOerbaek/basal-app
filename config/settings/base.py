@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     'crispy_forms',
     'crispy_bootstrap5',
     'django_htmx',
+    'django_summernote',
     # Local apps
     'apps.core',
     'apps.accounts',
@@ -29,6 +30,7 @@ INSTALLED_APPS = [
     'apps.courses',
     'apps.contacts',
     'apps.audit',
+    'apps.emails',
 ]
 
 MIDDLEWARE = [
@@ -81,6 +83,9 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Crispy Forms
@@ -94,3 +99,5 @@ LOGOUT_REDIRECT_URL = '/login/'
 
 # Email (override in production)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Basal <noreply@basal.dk>')
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')

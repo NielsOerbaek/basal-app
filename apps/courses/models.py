@@ -17,6 +17,12 @@ class Course(models.Model):
     undervisere = models.CharField(max_length=255, blank=True, verbose_name='Undervisere')
     capacity = models.PositiveIntegerField(default=30)
     comment = models.TextField(blank=True)
+    materials = models.FileField(
+        upload_to='course_materials/',
+        blank=True,
+        verbose_name='Kursusmateriale',
+        help_text='PDF med kursusmateriale (sendes med påmindelses-e-mail)'
+    )
     is_published = models.BooleanField(
         default=False,
         help_text='Offentliggjorte kurser vises på offentlige tilmeldingsformularer'

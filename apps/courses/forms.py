@@ -11,7 +11,7 @@ from .models import Course, CourseSignUp
 class CourseForm(forms.ModelForm):
     class Meta:
         model = Course
-        fields = ['title', 'start_date', 'end_date', 'location', 'undervisere', 'capacity', 'is_published', 'comment']
+        fields = ['title', 'start_date', 'end_date', 'location', 'undervisere', 'capacity', 'is_published', 'materials', 'comment']
         widgets = {
             'start_date': forms.DateInput(attrs={'type': 'date'}),
             'end_date': forms.DateInput(attrs={'type': 'date'}),
@@ -32,6 +32,7 @@ class CourseForm(forms.ModelForm):
             ),
             'capacity',
             'is_published',
+            'materials',
             'comment',
             Submit('submit', 'Gem kursus', css_class='btn btn-primary'),
         )
