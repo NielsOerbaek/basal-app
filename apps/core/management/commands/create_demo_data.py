@@ -459,6 +459,9 @@ class Command(BaseCommand):
                 'is_staff': True,
             }
         )
+        esther.set_password('hejhejhej')
+        esther.save()
+
         caroline, _ = User.objects.get_or_create(
             username='caroline',
             defaults={
@@ -468,6 +471,9 @@ class Command(BaseCommand):
                 'is_staff': True,
             }
         )
+        caroline.set_password('hejhejhej')
+        caroline.save()
+
         staff_users = [esther, caroline]
 
         comments = [
