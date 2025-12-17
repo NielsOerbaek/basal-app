@@ -133,25 +133,12 @@ class ActivityLog(models.Model):
         """Return a meaningful description of the activity."""
         model_name = self.content_type.model
 
-        # For comments and contact times, show first 100 chars of comment text
+        # For comments and contact times, object_repr contains the comment text
         if model_name in ('schoolcomment', 'contacttime'):
-            # Try to get comment from the actual object
-            try:
-                obj = self.content_object
-                if obj and hasattr(obj, 'comment'):
-                    text = obj.comment or ''
-                    if len(text) > 100:
-                        return text[:100] + '...'
-                    return text
-            except Exception:
-                pass
-            # Fallback: try changes dict
-            if self.changes and 'comment' in self.changes:
-                text = self.changes['comment'].get('new', '')
-                if len(text) > 100:
-                    return text[:100] + '...'
-                return text
-            return self.object_repr
+            text = self.object_repr
+            if len(text) > 100:
+                return text[:100] + '...'
+            return text
 
         # For persons, show the name
         if model_name == 'person':

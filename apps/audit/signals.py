@@ -13,6 +13,23 @@ from apps.audit.registry import get_audit_config, is_audited
 _pre_save_state = {}
 
 
+def _get_object_repr(instance):
+    """Get a meaningful representation of the object for audit logging."""
+    model_name = instance._meta.model_name
+
+    # For comments and contact times, store the comment text
+    if model_name in ('schoolcomment', 'contacttime'):
+        comment = getattr(instance, 'comment', '')
+        if comment:
+            # Truncate to 255 chars (field limit)
+            if len(comment) > 252:
+                return comment[:252] + '...'
+            return comment
+
+    # Default: use str representation
+    return str(instance)[:255]
+
+
 @receiver(pre_save)
 def capture_pre_save_state(sender, instance, **kwargs):
     """Capture the state before save for comparison."""
@@ -70,7 +87,7 @@ def log_save(sender, instance, created, **kwargs):
         user=user if user and user.is_authenticated else None,
         content_type=ContentType.objects.get_for_model(sender),
         object_id=instance.pk,
-        object_repr=str(instance)[:255],
+        object_repr=_get_object_repr(instance),
         action=action,
         changes=changes,
         related_school=related_school,
@@ -110,7 +127,7 @@ def log_delete(sender, instance, **kwargs):
         user=user if user and user.is_authenticated else None,
         content_type=ContentType.objects.get_for_model(sender),
         object_id=instance.pk,
-        object_repr=str(instance)[:255],
+        object_repr=_get_object_repr(instance),
         action=ActionType.DELETE,
         changes={},
         related_school=related_school,
