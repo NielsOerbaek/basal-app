@@ -33,12 +33,6 @@ class EmailTemplate(models.Model):
         verbose_name='Indhold (HTML)',
         help_text='HTML-indhold. Kan indeholde variabler som {{ participant_name }}'
     )
-    attachment = models.FileField(
-        upload_to='email_attachments/',
-        blank=True,
-        verbose_name='Vedhæftet fil',
-        help_text='PDF eller anden fil der vedhæftes alle e-mails af denne type'
-    )
     is_active = models.BooleanField(
         default=True,
         verbose_name='Aktiv',

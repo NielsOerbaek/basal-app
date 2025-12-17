@@ -44,7 +44,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--attachment',
             type=str,
-            help='Sti til PDF fil at vedhæfte (kun for course_reminder)',
+            help='Sti til PDF fil at vedhæfte (simulerer kursusmateriale)',
         )
 
     def handle(self, *args, **options):
@@ -94,25 +94,8 @@ class Command(BaseCommand):
         self.stdout.write(body_html)
         self.stdout.write('-' * 60 + '\n')
 
-        # Prepare attachments
+        # Prepare attachments (simulating course materials)
         attachments = []
-
-        # Add template attachment if present
-        if template.attachment:
-            try:
-                with template.attachment.open('rb') as f:
-                    content = f.read()
-                    attachments.append({
-                        'filename': template.attachment.name.split('/')[-1],
-                        'content': list(content),
-                    })
-                self.stdout.write(self.style.SUCCESS(
-                    f'Vedhæfter fra skabelon: {template.attachment.name.split("/")[-1]} ({len(content)} bytes)'
-                ))
-            except Exception as e:
-                self.stderr.write(self.style.WARNING(f'Kunne ikke læse skabelon-vedhæftning: {e}'))
-
-        # Add extra attachment if provided via command line
         attachment_path = options.get('attachment')
         if attachment_path:
             try:
@@ -124,7 +107,7 @@ class Command(BaseCommand):
                         'content': list(content),
                     })
                 self.stdout.write(self.style.SUCCESS(
-                    f'Vedhæfter: {os.path.basename(attachment_path)} ({len(content)} bytes)'
+                    f'Vedhæfter kursusmateriale: {os.path.basename(attachment_path)} ({len(content)} bytes)'
                 ))
             except Exception as e:
                 self.stderr.write(self.style.ERROR(f'Kunne ikke læse fil: {e}'))

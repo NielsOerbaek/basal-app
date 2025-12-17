@@ -51,19 +51,19 @@ class Command(BaseCommand):
                 self.stdout.write('  Ingen tilmeldinger med e-mail')
                 continue
 
-            # Prepare extra attachments if course has materials (in addition to template attachment)
-            extra_attachments = None
+            # Prepare attachments from course materials
+            attachments = None
             if course.materials:
                 try:
                     filename = course.materials.name.split('/')[-1]
                     with course.materials.open('rb') as f:
                         content = f.read()
-                        extra_attachments = [{
+                        attachments = [{
                             'filename': filename,
                             'content': list(content),
                         }]
                     self.stdout.write(self.style.SUCCESS(
-                        f'  Kursus-materiale: {filename} ({len(content)} bytes)'
+                        f'  Kursusmateriale: {filename} ({len(content)} bytes)'
                     ))
                 except Exception as e:
                     self.stderr.write(self.style.ERROR(f'  Kunne ikke læse kursusmateriale: {e}'))
@@ -85,7 +85,7 @@ class Command(BaseCommand):
                     self.stdout.write(f'  [DRY-RUN] Ville sende til: {signup.participant_email}')
                     total_sent += 1
                 else:
-                    success = send_course_reminder(signup, extra_attachments=extra_attachments)
+                    success = send_course_reminder(signup, attachments=attachments)
                     if success:
                         self.stdout.write(self.style.SUCCESS(
                             f'  Sendt til: {signup.participant_email}'

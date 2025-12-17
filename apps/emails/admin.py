@@ -19,11 +19,7 @@ class EmailTemplateAdmin(SummernoteModelAdmin):
         }),
         ('Indhold', {
             'fields': ('subject', 'body_html'),
-            'description': 'Brug variabler som {{ participant_name }} i teksten'
-        }),
-        ('Vedhæftet fil', {
-            'fields': ('attachment',),
-            'description': 'Upload en PDF eller anden fil der sendes med alle e-mails af denne type'
+            'description': 'Brug variabler som {{ participant_name }} i teksten. Kursusmateriale vedhæftes automatisk fra kurset.'
         }),
         ('Tilgængelige variabler', {
             'fields': ('available_variables',),

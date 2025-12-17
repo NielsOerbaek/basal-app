@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: basal-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: basal
+      POSTGRES_USER: basal
+      POSTGRES_PASSWORD: basal_local_2024
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U basal -d basal"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
