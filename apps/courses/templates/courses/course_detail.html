@@ -67,6 +67,9 @@
                             hx-target="#modal-container">
                         <i class="bi bi-upload me-1"></i>Bulk Import
                     </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="copy-emails-btn" title="Kopiér alle e-mails">
+                        <i class="bi bi-clipboard me-1"></i>Kopiér e-mails
+                    </button>
                     <a href="{% url 'courses:signup-export' %}?course={{ course.pk }}" class="btn btn-sm btn-outline-success">
                         <i class="bi bi-file-earmark-excel me-1"></i>Eksportér
                     </a>
@@ -77,6 +80,7 @@
                     <thead class="table-light">
                         <tr>
                             <th>Navn</th>
+                            <th>E-mail</th>
                             <th>Titel</th>
                             <th>Skole</th>
                             <th>Fremmøde</th>
@@ -87,6 +91,13 @@
                         {% for signup in signups %}
                         <tr>
                             <td>{{ signup.participant_name }}</td>
+                            <td>
+                                {% if signup.participant_email %}
+                                <a href="mailto:{{ signup.participant_email }}">{{ signup.participant_email }}</a>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
                             <td>{{ signup.participant_title|default:"-" }}</td>
                             <td><a href="{% url 'schools:detail' signup.school.pk %}">{{ signup.school.name }}</a></td>
                             <td>
@@ -104,13 +115,15 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-3">Ingen tilmeldinger endnu.</td>
+                            <td colspan="6" class="text-center text-muted py-3">Ingen tilmeldinger endnu.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
+        <input type="hidden" id="all-emails" value="{% for signup in signups %}{% if signup.participant_email %}{{ signup.participant_email }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}"
+        >
 
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -123,4 +136,28 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('copy-emails-btn').addEventListener('click', function() {
+    const emails = document.getElementById('all-emails').value;
+    if (!emails) {
+        alert('Ingen e-mails at kopiere');
+        return;
+    }
+    navigator.clipboard.writeText(emails).then(() => {
+        const btn = this;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check me-1"></i>Kopieret!';
+        btn.classList.remove('btn-outline-secondary');
+        btn.classList.add('btn-success');
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-secondary');
+        }, 2000);
+    });
+});
+</script>
 {% endblock %}

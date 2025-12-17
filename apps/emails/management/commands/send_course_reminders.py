@@ -51,17 +51,22 @@ class Command(BaseCommand):
                 self.stdout.write('  Ingen tilmeldinger med e-mail')
                 continue
 
-            # Prepare attachments if course has materials
-            attachments = None
-            if hasattr(course, 'materials') and course.materials:
+            # Prepare extra attachments if course has materials (in addition to template attachment)
+            extra_attachments = None
+            if course.materials:
                 try:
+                    filename = course.materials.name.split('/')[-1]
                     with course.materials.open('rb') as f:
-                        attachments = [{
-                            'filename': course.materials.name.split('/')[-1],
-                            'content': list(f.read()),
+                        content = f.read()
+                        extra_attachments = [{
+                            'filename': filename,
+                            'content': list(content),
                         }]
+                    self.stdout.write(self.style.SUCCESS(
+                        f'  Kursus-materiale: {filename} ({len(content)} bytes)'
+                    ))
                 except Exception as e:
-                    self.stderr.write(f'  Kunne ikke læse kursusmateriale: {e}')
+                    self.stderr.write(self.style.ERROR(f'  Kunne ikke læse kursusmateriale: {e}'))
 
             for signup in signups:
                 # Check if reminder already sent
@@ -80,7 +85,7 @@ class Command(BaseCommand):
                     self.stdout.write(f'  [DRY-RUN] Ville sende til: {signup.participant_email}')
                     total_sent += 1
                 else:
-                    success = send_course_reminder(signup, attachments=attachments)
+                    success = send_course_reminder(signup, extra_attachments=extra_attachments)
                     if success:
                         self.stdout.write(self.style.SUCCESS(
                             f'  Sendt til: {signup.participant_email}'
