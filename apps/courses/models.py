@@ -14,6 +14,7 @@ class Course(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     location = models.CharField(max_length=255)
+    undervisere = models.CharField(max_length=255, blank=True, verbose_name='Undervisere')
     capacity = models.PositiveIntegerField(default=30)
     comment = models.TextField(blank=True)
     is_published = models.BooleanField(

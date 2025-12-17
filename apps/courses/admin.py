@@ -5,9 +5,9 @@ from .models import Course, CourseSignUp
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ['title', 'start_date', 'end_date', 'location', 'capacity', 'signup_count', 'is_published']
+    list_display = ['title', 'start_date', 'end_date', 'location', 'undervisere', 'capacity', 'signup_count', 'is_published']
     list_filter = ['is_published', 'start_date']
-    search_fields = ['title', 'location']
+    search_fields = ['title', 'location', 'undervisere']
     readonly_fields = ['created_at', 'updated_at']
 
 
