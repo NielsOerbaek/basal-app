@@ -21,7 +21,7 @@ COPY . .
 RUN adduser --disabled-password --gecos '' appuser
 
 # Create directories and set permissions
-RUN mkdir -p /app/staticfiles /app/backups && chown -R appuser /app
+RUN mkdir -p /app/staticfiles /app/backups /app/media && chown -R appuser /app
 
 USER appuser
 
