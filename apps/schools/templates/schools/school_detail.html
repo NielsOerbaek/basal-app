@@ -182,7 +182,7 @@
             </ul>
         </div>
 
-        <div class="card">
+        <div class="card mb-4">
             <div class="card-header">Tilmeldinger</div>
             <ul class="list-group list-group-flush">
                 {% for signup in course_signups %}
@@ -197,6 +197,16 @@
                 <li class="list-group-item text-muted">Ingen tilmeldinger.</li>
                 {% endfor %}
             </ul>
+        </div>
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-clock-history me-2"></i>Seneste aktivitet</span>
+                <a href="{% url 'audit:school_activity' school.pk %}" class="btn btn-sm btn-outline-primary">
+                    Se alle
+                </a>
+            </div>
+            {% include "audit/includes/activity_table.html" with activities=recent_activities limit=5 %}
         </div>
     </div>
 </div>

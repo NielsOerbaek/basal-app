@@ -11,6 +11,7 @@ urlpatterns = [
     path('contacts/', include('apps.contacts.urls')),
     path('accounts/', include('apps.accounts.urls')),
     path('signup/', include('apps.courses.public_urls')),
+    path('aktivitet/', include('apps.audit.urls')),
     # Authentication
     path('login/', auth_views.LoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),

@@ -88,6 +88,9 @@ class SchoolDetailView(DetailView):
         context['school_comments'] = self.object.school_comments.select_related('created_by').all()
         context['person_form'] = PersonForm()
         context['comment_form'] = SchoolCommentForm()
+        context['recent_activities'] = self.object.activity_logs.select_related(
+            'user', 'content_type'
+        )[:5]
         return context
 
 
