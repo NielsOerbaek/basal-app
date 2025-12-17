@@ -5,9 +5,10 @@ from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from apps.audit.models import ActivityLog
 from apps.contacts.models import ContactTime
 from apps.courses.models import AttendanceStatus, Course, CourseSignUp
-from apps.schools.models import School, SeatPurchase
+from apps.schools.models import School, SeatPurchase, Person, PersonRole, SchoolComment
 
 
 class Command(BaseCommand):
@@ -23,15 +24,23 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if options['clear']:
             self.stdout.write('Sletter eksisterende data...')
+            # Delete in order to avoid foreign key constraints
+            ActivityLog.objects.all().delete()
             CourseSignUp.objects.all().delete()
             ContactTime.objects.all().delete()
             Course.objects.all().delete()
+            SchoolComment.objects.all().delete()
+            Person.objects.all().delete()
             SeatPurchase.objects.all().delete()
-            School.objects.filter(is_active=True).update(is_active=False)
             School.objects.all().delete()
             self.stdout.write(self.style.SUCCESS('Eksisterende data slettet'))
 
         self.stdout.write('Opretter demo data...')
+
+        # Create admin user
+        admin = self.create_admin_user()
+        if admin:
+            self.stdout.write(self.style.SUCCESS('  Admin bruger oprettet (admin/admin)'))
 
         # Create schools
         schools = self.create_schools()
@@ -51,6 +60,23 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS('\nDemo data oprettet!'))
 
+    def create_admin_user(self):
+        """Create admin superuser for development."""
+        from django.contrib.auth.hashers import make_password
+        admin, created = User.objects.get_or_create(
+            username='admin',
+            defaults={
+                'email': 'admin@example.com',
+                'first_name': 'Admin',
+                'last_name': 'User',
+                'is_staff': True,
+                'is_superuser': True,
+                'is_active': True,
+                'password': make_password('admin'),
+            }
+        )
+        return admin if created else None
+
     def create_schools(self):
         schools_data = [
             {
@@ -59,6 +85,7 @@ class Command(BaseCommand):
                 'contact_name': 'Lars Pedersen',
                 'contact_email': 'lp@sonderbro-skole.dk',
                 'contact_phone': '32 54 12 34',
+                'contact_role': PersonRole.KOORDINATOR,
             },
             {
                 'name': 'Vesterbro Skole',
@@ -66,6 +93,7 @@ class Command(BaseCommand):
                 'contact_name': 'Mette Hansen',
                 'contact_email': 'mh@vesterbro-skole.dk',
                 'contact_phone': '33 21 45 67',
+                'contact_role': PersonRole.SKOLELEDER,
             },
             {
                 'name': 'Hasle Skole',
@@ -73,6 +101,7 @@ class Command(BaseCommand):
                 'contact_name': 'Søren Nielsen',
                 'contact_email': 'sn@hasle-skole.dk',
                 'contact_phone': '86 15 23 45',
+                'contact_role': PersonRole.KOORDINATOR,
             },
             {
                 'name': 'Munkebjerg Skole',
@@ -80,6 +109,7 @@ class Command(BaseCommand):
                 'contact_name': 'Anne Christensen',
                 'contact_email': 'ac@munkebjerg-skole.dk',
                 'contact_phone': '65 91 23 45',
+                'contact_role': PersonRole.UDSKOLINGSLEDER,
             },
             {
                 'name': 'Nørre Boulevard Skole',
@@ -87,6 +117,7 @@ class Command(BaseCommand):
                 'contact_name': 'Peter Mortensen',
                 'contact_email': 'pm@nb-skole.dk',
                 'contact_phone': '98 12 34 56',
+                'contact_role': PersonRole.KOORDINATOR,
             },
             {
                 'name': 'Bakkeskolen',
@@ -94,6 +125,7 @@ class Command(BaseCommand):
                 'contact_name': 'Kirsten Larsen',
                 'contact_email': 'kl@bakkeskolen.dk',
                 'contact_phone': '46 35 12 00',
+                'contact_role': PersonRole.KOORDINATOR,
             },
             {
                 'name': 'Strandskolen',
@@ -101,6 +133,7 @@ class Command(BaseCommand):
                 'contact_name': 'Michael Jensen',
                 'contact_email': 'mj@strandskolen.dk',
                 'contact_phone': '75 12 34 56',
+                'contact_role': PersonRole.SKOLELEDER,
             },
             {
                 'name': 'Engdalskolen',
@@ -108,6 +141,7 @@ class Command(BaseCommand):
                 'contact_name': 'Louise Andersen',
                 'contact_email': 'la@engdalskolen.dk',
                 'contact_phone': '86 52 12 34',
+                'contact_role': PersonRole.KOORDINATOR,
             },
             {
                 'name': 'Skovvangskolen',
@@ -115,6 +149,7 @@ class Command(BaseCommand):
                 'contact_name': 'Thomas Rasmussen',
                 'contact_email': 'tr@skovvangskolen.dk',
                 'contact_phone': '97 12 34 56',
+                'contact_role': PersonRole.KOORDINATOR,
             },
             {
                 'name': 'Østervangskolen',
@@ -122,6 +157,7 @@ class Command(BaseCommand):
                 'contact_name': 'Camilla Olsen',
                 'contact_email': 'co@ostervangskolen.dk',
                 'contact_phone': '62 21 00 00',
+                'contact_role': PersonRole.UDSKOLINGSLEDER,
             },
             {
                 'name': 'Nordvestskolen',
@@ -129,6 +165,7 @@ class Command(BaseCommand):
                 'contact_name': 'Henrik Thomsen',
                 'contact_email': 'ht@nordvestskolen.dk',
                 'contact_phone': '86 62 45 00',
+                'contact_role': PersonRole.KOORDINATOR,
             },
             {
                 'name': 'Kildeskovskolen',
@@ -136,12 +173,19 @@ class Command(BaseCommand):
                 'contact_name': 'Marie Kjær',
                 'contact_email': 'mk@kildeskovskolen.dk',
                 'contact_phone': '55 77 15 00',
+                'contact_role': PersonRole.KOORDINATOR,
             },
         ]
 
         schools = []
         today = date.today()
         for i, data in enumerate(schools_data):
+            # Extract contact info before creating school
+            contact_name = data.pop('contact_name')
+            contact_email = data.pop('contact_email')
+            contact_phone = data.pop('contact_phone')
+            contact_role = data.pop('contact_role')
+
             # Most schools enrolled, some recently, some over a year ago
             if i < 4:
                 # Enrolled over a year ago (has forankringsplads)
@@ -159,6 +203,25 @@ class Command(BaseCommand):
             )
             if created:
                 schools.append(school)
+                # Create primary contact person
+                Person.objects.create(
+                    school=school,
+                    name=contact_name,
+                    email=contact_email,
+                    phone=contact_phone,
+                    role=contact_role,
+                    is_primary=True,
+                )
+                # Add a second person for some schools
+                if random.random() > 0.5:
+                    second_names = ['Jonas Mikkelsen', 'Lise Holm', 'Frederik Lund', 'Maria Krogh']
+                    Person.objects.create(
+                        school=school,
+                        name=random.choice(second_names),
+                        email=f'kontakt@{school.name.lower().replace(" ", "-")}.dk',
+                        role=random.choice([PersonRole.SKOLELEDER, PersonRole.UDSKOLINGSLEDER]),
+                        is_primary=False,
+                    )
 
         # Add some seat purchases for a few schools
         enrolled_schools = [s for s in schools if s.enrolled_at]
@@ -330,7 +393,12 @@ class Command(BaseCommand):
                 name = f'{first} {last}'
                 # Generate email from name and school domain
                 email_name = f'{first.lower()}.{last.lower()}'
-                school_domain = school.contact_email.split('@')[1] if '@' in school.contact_email else 'skole.dk'
+                # Get domain from primary person's email
+                primary_person = school.people.filter(is_primary=True).first()
+                if primary_person and primary_person.email and '@' in primary_person.email:
+                    school_domain = primary_person.email.split('@')[1]
+                else:
+                    school_domain = f'{school.name.lower().replace(" ", "-")}.dk'
                 email = f'{email_name}@{school_domain}'
 
                 try:
