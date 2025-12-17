@@ -53,15 +53,22 @@ class Command(BaseCommand):
 
             # Prepare attachments if course has materials
             attachments = None
-            if hasattr(course, 'materials') and course.materials:
+            if course.materials:
                 try:
+                    filename = course.materials.name.split('/')[-1]
                     with course.materials.open('rb') as f:
+                        content = f.read()
                         attachments = [{
-                            'filename': course.materials.name.split('/')[-1],
-                            'content': list(f.read()),
+                            'filename': filename,
+                            'content': list(content),
                         }]
+                    self.stdout.write(self.style.SUCCESS(
+                        f'  Vedhæfter: {filename} ({len(content)} bytes)'
+                    ))
                 except Exception as e:
-                    self.stderr.write(f'  Kunne ikke læse kursusmateriale: {e}')
+                    self.stderr.write(self.style.ERROR(f'  Kunne ikke læse kursusmateriale: {e}'))
+            else:
+                self.stdout.write(self.style.WARNING('  Ingen kursusmateriale vedhæftet'))
 
             for signup in signups:
                 # Check if reminder already sent

@@ -41,6 +41,11 @@ class Command(BaseCommand):
             default='Introduktion til Basal - Test',
             help='Test kursus titel',
         )
+        parser.add_argument(
+            '--attachment',
+            type=str,
+            help='Sti til PDF fil at vedhæfte (kun for course_reminder)',
+        )
 
     def handle(self, *args, **options):
         email_type = options['email_type']
@@ -89,6 +94,25 @@ class Command(BaseCommand):
         self.stdout.write(body_html)
         self.stdout.write('-' * 60 + '\n')
 
+        # Prepare attachment if provided
+        attachments = None
+        attachment_path = options.get('attachment')
+        if attachment_path:
+            try:
+                import os
+                with open(attachment_path, 'rb') as f:
+                    content = f.read()
+                    attachments = [{
+                        'filename': os.path.basename(attachment_path),
+                        'content': list(content),
+                    }]
+                self.stdout.write(self.style.SUCCESS(
+                    f'Vedhæfter: {os.path.basename(attachment_path)} ({len(content)} bytes)'
+                ))
+            except Exception as e:
+                self.stderr.write(self.style.ERROR(f'Kunne ikke læse fil: {e}'))
+                return
+
         # Send if recipient provided
         if recipient:
             if not settings.RESEND_API_KEY:
@@ -102,12 +126,16 @@ class Command(BaseCommand):
 
             try:
                 resend.api_key = settings.RESEND_API_KEY
-                result = resend.Emails.send({
+                email_params = {
                     "from": settings.DEFAULT_FROM_EMAIL,
                     "to": [recipient],
                     "subject": f"[TEST] {subject}",
                     "html": body_html,
-                })
+                }
+                if attachments:
+                    email_params["attachments"] = attachments
+
+                result = resend.Emails.send(email_params)
                 self.stdout.write(self.style.SUCCESS(f'E-mail sendt! ID: {result.get("id", "unknown")}'))
             except Exception as e:
                 self.stderr.write(self.style.ERROR(f'Fejl ved afsendelse: {e}'))
