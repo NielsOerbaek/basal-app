@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import School, SeatPurchase, Person, SchoolComment
+from .models import School, SeatPurchase, Person, SchoolComment, Invoice
 
 
 class SeatPurchaseInline(admin.TabularInline):
@@ -22,13 +22,19 @@ class SchoolCommentInline(admin.TabularInline):
     readonly_fields = ['created_at']
 
 
+class InvoiceInline(admin.TabularInline):
+    model = Invoice
+    extra = 0
+    fields = ['invoice_number', 'amount', 'status', 'date', 'comment']
+
+
 @admin.register(School)
 class SchoolAdmin(admin.ModelAdmin):
     list_display = ['name', 'kommune', 'enrolled_at', 'total_seats', 'remaining_seats', 'is_active']
     list_filter = ['is_active', 'enrolled_at', 'created_at', 'kommune']
     search_fields = ['name', 'adresse', 'kommune']
     readonly_fields = ['created_at', 'updated_at', 'total_seats', 'remaining_seats']
-    inlines = [PersonInline, SchoolCommentInline, SeatPurchaseInline]
+    inlines = [PersonInline, SchoolCommentInline, SeatPurchaseInline, InvoiceInline]
 
     def total_seats(self, obj):
         return obj.total_seats
@@ -61,3 +67,11 @@ class SchoolCommentAdmin(admin.ModelAdmin):
     list_filter = ['created_at']
     search_fields = ['school__name', 'comment']
     raw_id_fields = ['school', 'created_by']
+
+
+@admin.register(Invoice)
+class InvoiceAdmin(admin.ModelAdmin):
+    list_display = ['invoice_number', 'school', 'amount', 'status', 'date']
+    list_filter = ['status', 'date']
+    search_fields = ['invoice_number', 'school__name', 'comment']
+    raw_id_fields = ['school']
