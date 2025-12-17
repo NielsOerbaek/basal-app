@@ -73,9 +73,10 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = 'da'
+TIME_ZONE = 'Europe/Copenhagen'
 USE_I18N = True
+USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
