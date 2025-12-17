@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
+from django.utils.html import format_html
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
@@ -161,7 +162,7 @@ class SchoolDeleteView(View):
         school = School.objects.get(pk=pk)
         return render(request, 'core/components/confirm_delete_modal.html', {
             'title': 'Deaktiver skole',
-            'message': f'Er du sikker på, at du vil deaktivere <strong>{school.name}</strong>?',
+            'message': format_html('Er du sikker på, at du vil deaktivere <strong>{}</strong>?', school.name),
             'warning': 'Skolen vil blive skjult, men dens data bevares.',
             'delete_url': reverse_lazy('schools:delete', kwargs={'pk': pk}),
             'button_text': 'Deaktiver',
@@ -189,6 +190,7 @@ class SchoolExportView(View):
         return export_queryset_to_excel(queryset, fields, 'schools')
 
 
+@method_decorator(staff_required, name='dispatch')
 class SchoolAutocompleteView(View):
     def get(self, request):
         query = request.GET.get('q', '')
@@ -278,7 +280,7 @@ class PersonDeleteView(View):
         person = get_object_or_404(Person, pk=pk)
         return render(request, 'core/components/confirm_delete_modal.html', {
             'title': 'Slet person',
-            'message': f'Er du sikker på, at du vil slette <strong>{person.name}</strong>?',
+            'message': format_html('Er du sikker på, at du vil slette <strong>{}</strong>?', person.name),
             'delete_url': reverse_lazy('schools:person-delete', kwargs={'pk': pk}),
             'button_text': 'Slet',
         })
@@ -368,7 +370,7 @@ class InvoiceDeleteView(View):
         invoice = get_object_or_404(Invoice, pk=pk)
         return render(request, 'core/components/confirm_delete_modal.html', {
             'title': 'Slet faktura',
-            'message': f'Er du sikker på, at du vil slette faktura <strong>{invoice.invoice_number}</strong>?',
+            'message': format_html('Er du sikker på, at du vil slette faktura <strong>{}</strong>?', invoice.invoice_number),
             'delete_url': reverse_lazy('schools:invoice-delete', kwargs={'pk': pk}),
         })
 

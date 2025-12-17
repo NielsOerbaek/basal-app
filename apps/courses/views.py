@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.decorators import method_decorator
+from django.utils.html import format_html
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView
 
@@ -90,7 +91,7 @@ class CourseDeleteView(View):
         course = get_object_or_404(Course, pk=pk)
         return render(request, 'core/components/confirm_delete_modal.html', {
             'title': 'Slet kursus',
-            'message': f'Er du sikker på, at du vil slette <strong>{course.title}</strong>?',
+            'message': format_html('Er du sikker på, at du vil slette <strong>{}</strong>?', course.title),
             'warning': 'Dette vil også slette alle tilmeldinger til dette kursus. Denne handling kan ikke fortrydes.',
             'delete_url': reverse_lazy('courses:delete', kwargs={'pk': pk}),
         })
@@ -197,7 +198,7 @@ class SignUpDeleteView(View):
         signup = get_object_or_404(CourseSignUp, pk=pk)
         return render(request, 'core/components/confirm_delete_modal.html', {
             'title': 'Slet tilmelding',
-            'message': f'Er du sikker på, at du vil slette tilmeldingen for <strong>{signup.participant_name}</strong>?',
+            'message': format_html('Er du sikker på, at du vil slette tilmeldingen for <strong>{}</strong>?', signup.participant_name),
             'delete_url': reverse('courses:signup-delete', kwargs={'pk': pk}),
         })
 
