@@ -21,27 +21,25 @@
                     <th>Tidspunkt</th>
                     <th>Bruger</th>
                     <th>Handling</th>
-                    <th>Type</th>
-                    <th>Objekt</th>
+                    <th>Beskrivelse</th>
                     <th>Ændringer</th>
                 </tr>
             </thead>
             <tbody>
                 {% for activity in activities %}
                 <tr>
-                    <td>{{ activity.timestamp|date:"d/m/Y H:i" }}</td>
-                    <td>{{ activity.user.username|default:"System" }}</td>
-                    <td>
+                    <td class="text-nowrap">{{ activity.timestamp|date:"d/m/Y H:i" }}</td>
+                    <td>{% if activity.user %}{{ activity.user.get_full_name|default:activity.user.username }}{% else %}System{% endif %}</td>
+                    <td class="text-nowrap">
                         {% if activity.action == 'CREATE' %}
-                            <span class="badge bg-success">Oprettet</span>
+                            <span class="badge bg-success">{{ activity.action_description }}</span>
                         {% elif activity.action == 'UPDATE' %}
-                            <span class="badge bg-warning text-dark">Opdateret</span>
+                            <span class="badge bg-warning text-dark">{{ activity.action_description }}</span>
                         {% elif activity.action == 'DELETE' %}
-                            <span class="badge bg-danger">Slettet</span>
+                            <span class="badge bg-danger">{{ activity.action_description }}</span>
                         {% endif %}
                     </td>
-                    <td>{{ activity.content_type.model|title }}</td>
-                    <td>{{ activity.object_repr }}</td>
+                    <td>{{ activity.description }}</td>
                     <td>
                         {% if activity.changes %}
                             <button class="btn btn-sm btn-outline-secondary"
@@ -68,7 +66,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-4">
+                    <td colspan="5" class="text-center text-muted py-4">
                         Ingen aktivitet fundet for denne skole
                     </td>
                 </tr>

@@ -8,23 +8,23 @@ Usage: {% include "audit/includes/activity_table.html" with activities=recent_ac
             <tr>
                 <th>Tidspunkt</th>
                 <th>Handling</th>
-                <th>Objekt</th>
+                <th>Beskrivelse</th>
             </tr>
         </thead>
         <tbody>
             {% for activity in activities|slice:limit %}
             <tr>
-                <td class="small">{{ activity.timestamp|date:"d/m H:i" }}</td>
-                <td>
+                <td class="small text-nowrap">{{ activity.timestamp|date:"d/m H:i" }}</td>
+                <td class="text-nowrap">
                     {% if activity.action == 'CREATE' %}
-                        <span class="badge bg-success">Oprettet</span>
+                        <span class="badge bg-success">{{ activity.action_description }}</span>
                     {% elif activity.action == 'UPDATE' %}
-                        <span class="badge bg-warning text-dark">Opdateret</span>
+                        <span class="badge bg-warning text-dark">{{ activity.action_description }}</span>
                     {% elif activity.action == 'DELETE' %}
-                        <span class="badge bg-danger">Slettet</span>
+                        <span class="badge bg-danger">{{ activity.action_description }}</span>
                     {% endif %}
                 </td>
-                <td class="small">{{ activity.object_repr|truncatewords:5 }}</td>
+                <td class="small">{{ activity.description|truncatewords:10 }}</td>
             </tr>
             {% empty %}
             <tr>

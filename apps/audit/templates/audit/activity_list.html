@@ -25,6 +25,8 @@
                 <select name="type" class="form-select">
                     <option value="">Alle</option>
                     <option value="school" {% if request.GET.type == 'school' %}selected{% endif %}>Skole</option>
+                    <option value="person" {% if request.GET.type == 'person' %}selected{% endif %}>Person</option>
+                    <option value="schoolcomment" {% if request.GET.type == 'schoolcomment' %}selected{% endif %}>Kommentar</option>
                     <option value="course" {% if request.GET.type == 'course' %}selected{% endif %}>Kursus</option>
                     <option value="coursesignup" {% if request.GET.type == 'coursesignup' %}selected{% endif %}>Tilmelding</option>
                     <option value="seatpurchase" {% if request.GET.type == 'seatpurchase' %}selected{% endif %}>Pladskøb</option>
@@ -48,28 +50,26 @@
                     <th>Tidspunkt</th>
                     <th>Bruger</th>
                     <th>Handling</th>
-                    <th>Type</th>
-                    <th>Objekt</th>
+                    <th>Beskrivelse</th>
                     <th>Ændringer</th>
                 </tr>
             </thead>
             <tbody>
                 {% for activity in activities %}
                 <tr>
-                    <td>{{ activity.timestamp|date:"d/m/Y H:i" }}</td>
-                    <td>{{ activity.user.username|default:"System" }}</td>
-                    <td>
+                    <td class="text-nowrap">{{ activity.timestamp|date:"d/m/Y H:i" }}</td>
+                    <td>{% if activity.user %}{{ activity.user.get_full_name|default:activity.user.username }}{% else %}System{% endif %}</td>
+                    <td class="text-nowrap">
                         {% if activity.action == 'CREATE' %}
-                            <span class="badge bg-success">Oprettet</span>
+                            <span class="badge bg-success">{{ activity.action_description }}</span>
                         {% elif activity.action == 'UPDATE' %}
-                            <span class="badge bg-warning text-dark">Opdateret</span>
+                            <span class="badge bg-warning text-dark">{{ activity.action_description }}</span>
                         {% elif activity.action == 'DELETE' %}
-                            <span class="badge bg-danger">Slettet</span>
+                            <span class="badge bg-danger">{{ activity.action_description }}</span>
                         {% endif %}
                     </td>
-                    <td>{{ activity.content_type.model|title }}</td>
                     <td>
-                        {{ activity.object_repr }}
+                        {{ activity.description }}
                         {% if activity.related_school %}
                             <br><small class="text-muted">Skole: {{ activity.related_school }}</small>
                         {% endif %}
@@ -100,7 +100,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-4">
+                    <td colspan="5" class="text-center text-muted py-4">
                         Ingen aktivitet fundet
                     </td>
                 </tr>
