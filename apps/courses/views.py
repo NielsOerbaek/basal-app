@@ -233,3 +233,21 @@ class PublicSignUpView(View):
 
 class SignUpSuccessView(TemplateView):
     template_name = 'courses/signup_success.html'
+
+
+class CheckSchoolSeatsView(View):
+    """AJAX endpoint to check if a school has available seats."""
+
+    def get(self, request):
+        from apps.schools.models import School
+        school_id = request.GET.get('school_id')
+        if not school_id:
+            return JsonResponse({'error': 'Missing school_id'}, status=400)
+        try:
+            school = School.objects.get(pk=school_id)
+            return JsonResponse({
+                'has_available_seats': school.has_available_seats,
+                'remaining_seats': school.remaining_seats,
+            })
+        except School.DoesNotExist:
+            return JsonResponse({'error': 'School not found'}, status=404)

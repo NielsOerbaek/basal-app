@@ -9,7 +9,7 @@ class AuditConfig(AppConfig):
         from apps.audit import signals  # noqa
         from apps.audit.registry import register_for_audit, AuditConfig as AuditCfg
 
-        from apps.schools.models import School, SeatPurchase, Person, SchoolComment
+        from apps.schools.models import School, SeatPurchase, Person, SchoolComment, Invoice
         from apps.courses.models import Course, CourseSignUp
         from apps.contacts.models import ContactTime
 
@@ -28,6 +28,10 @@ class AuditConfig(AppConfig):
 
         register_for_audit(SchoolComment, AuditCfg(
             excluded_fields=['id', 'created_at', 'created_by'],
+            get_school=lambda instance: instance.school,
+        ))
+
+        register_for_audit(Invoice, AuditCfg(
             get_school=lambda instance: instance.school,
         ))
 

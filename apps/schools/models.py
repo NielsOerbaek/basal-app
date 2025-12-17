@@ -12,6 +12,12 @@ class PersonRole(models.TextChoices):
     OTHER = 'other', 'Andet'
 
 
+class InvoiceStatus(models.TextChoices):
+    PLANNED = 'planned', 'Planlagt'
+    SENT = 'sent', 'Sendt'
+    PAID = 'paid', 'Betalt'
+
+
 class SchoolManager(models.Manager):
     def active(self):
         return self.filter(is_active=True)
@@ -179,3 +185,43 @@ class SchoolComment(models.Model):
 
     def __str__(self):
         return f"{self.school.name} - {self.created_at.strftime('%Y-%m-%d')}"
+
+
+class Invoice(models.Model):
+    school = models.ForeignKey(
+        School,
+        on_delete=models.CASCADE,
+        related_name='invoices'
+    )
+    invoice_number = models.CharField(
+        max_length=50,
+        verbose_name='Fakturanummer'
+    )
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name='Beløb'
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=InvoiceStatus.choices,
+        default=InvoiceStatus.PLANNED,
+        verbose_name='Status'
+    )
+    date = models.DateField(
+        default=date.today,
+        verbose_name='Dato'
+    )
+    comment = models.TextField(
+        blank=True,
+        verbose_name='Kommentar'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date']
+        verbose_name = 'Faktura'
+        verbose_name_plural = 'Fakturaer'
+
+    def __str__(self):
+        return f"{self.invoice_number} - {self.school.name}"
