@@ -21,7 +21,7 @@
 </div>
 
 <div class="row">
-    <div class="col-lg-5">
+    <div class="col-lg-6">
         <div class="card mb-4">
             <div class="card-header">Kursusoplysninger</div>
             <div class="card-body">
@@ -36,6 +36,8 @@
                     </dd>
                     <dt class="col-sm-4">Sted</dt>
                     <dd class="col-sm-8">{{ course.location }}</dd>
+                    <dt class="col-sm-4">Undervisere</dt>
+                    <dd class="col-sm-8">{{ course.undervisere|default:"-" }}</dd>
                     <dt class="col-sm-4">Kapacitet</dt>
                     <dd class="col-sm-8">{{ course.capacity }}</dd>
                     <dt class="col-sm-4">Tilmeldinger</dt>
@@ -50,6 +52,16 @@
                         <span class="badge bg-secondary">Kladde</span>
                         {% endif %}
                     </dd>
+                    <dt class="col-sm-4">Materiale</dt>
+                    <dd class="col-sm-8">
+                        {% if course.materials %}
+                        <a href="{{ course.materials.url }}" target="_blank">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>Download
+                        </a>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </dd>
                     <dt class="col-sm-4">Kommentarer</dt>
                     <dd class="col-sm-8">{{ course.comment|default:"-"|linebreaks }}</dd>
                 </dl>
@@ -57,7 +69,21 @@
         </div>
     </div>
 
-    <div class="col-lg-7">
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-clock-history me-2"></i>Seneste aktivitet</span>
+                <a href="{% url 'audit:course_activity' course.pk %}" class="btn btn-sm btn-outline-primary">
+                    Se alle
+                </a>
+            </div>
+            {% include "audit/includes/activity_table.html" with activities=recent_activities limit=5 %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span>Deltagere ({{ signups.count }})</span>
@@ -122,18 +148,7 @@
                 </table>
             </div>
         </div>
-        <input type="hidden" id="all-emails" value="{% for signup in signups %}{% if signup.participant_email %}{{ signup.participant_email }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}"
-        >
-
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-clock-history me-2"></i>Seneste aktivitet</span>
-                <a href="{% url 'audit:course_activity' course.pk %}" class="btn btn-sm btn-outline-primary">
-                    Se alle
-                </a>
-            </div>
-            {% include "audit/includes/activity_table.html" with activities=recent_activities limit=5 %}
-        </div>
+        <input type="hidden" id="all-emails" value="{% for signup in signups %}{% if signup.participant_email %}{{ signup.participant_email }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}">
     </div>
 </div>
 {% endblock %}
