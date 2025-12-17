@@ -31,14 +31,14 @@ def get_signup_context(signup):
     }
 
 
-def send_email(email_type, signup, attachments=None):
+def send_email(email_type, signup, extra_attachments=None):
     """
     Send an email using a template.
 
     Args:
         email_type: EmailType value
         signup: CourseSignUp instance
-        attachments: Optional list of dicts with 'filename', 'content' (bytes), 'content_type'
+        extra_attachments: Optional list of dicts with 'filename', 'content' (bytes)
 
     Returns:
         True if successful, False otherwise
@@ -52,6 +52,24 @@ def send_email(email_type, signup, attachments=None):
     context = get_signup_context(signup)
     subject = render_template(template.subject, context)
     body_html = render_template(template.body_html, context)
+
+    # Build attachments list from template + any extra attachments
+    attachments = []
+
+    # Add template attachment if present
+    if template.attachment:
+        try:
+            with template.attachment.open('rb') as f:
+                attachments.append({
+                    'filename': template.attachment.name.split('/')[-1],
+                    'content': list(f.read()),
+                })
+        except Exception as e:
+            logger.error(f"Failed to read template attachment: {e}")
+
+    # Add any extra attachments (e.g., course-specific materials)
+    if extra_attachments:
+        attachments.extend(extra_attachments)
 
     # Check if we have a Resend API key
     if not settings.RESEND_API_KEY:
@@ -117,6 +135,6 @@ def send_signup_confirmation(signup):
     return send_email(EmailType.SIGNUP_CONFIRMATION, signup)
 
 
-def send_course_reminder(signup, attachments=None):
-    """Send course reminder email with optional PDF attachments."""
-    return send_email(EmailType.COURSE_REMINDER, signup, attachments=attachments)
+def send_course_reminder(signup, extra_attachments=None):
+    """Send course reminder email with optional extra attachments."""
+    return send_email(EmailType.COURSE_REMINDER, signup, extra_attachments=extra_attachments)
