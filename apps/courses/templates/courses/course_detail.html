@@ -52,20 +52,39 @@
                         <span class="badge bg-secondary">Kladde</span>
                         {% endif %}
                     </dd>
-                    <dt class="col-sm-4">Materiale</dt>
-                    <dd class="col-sm-8">
-                        {% if course.materials %}
-                        <a href="{{ course.materials.url }}" target="_blank">
-                            <i class="bi bi-file-earmark-pdf me-1"></i>Download
-                        </a>
-                        {% else %}
-                        -
-                        {% endif %}
-                    </dd>
                     <dt class="col-sm-4">Kommentarer</dt>
                     <dd class="col-sm-8">{{ course.comment|default:"-"|linebreaks }}</dd>
                 </dl>
             </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-file-earmark me-2"></i>Kursusmaterialer</span>
+                <a href="{% url 'courses:material-create' course.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-lg me-1"></i>Tilføj materiale
+                </a>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for material in course_materials %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <a href="{{ material.file.url }}" target="_blank">
+                            <i class="bi bi-file-earmark me-1"></i>{{ material.display_name }}
+                        </a>
+                        <br>
+                        <small class="text-muted">Tilføjet {{ material.uploaded_at|date:"d. M Y" }}</small>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger" title="Slet"
+                            hx-get="{% url 'courses:material-delete' material.pk %}"
+                            hx-target="#modal-container">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted">Ingen kursusmaterialer. <a href="{% url 'courses:material-create' course.pk %}">Tilføj et materiale</a>.</li>
+                {% endfor %}
+            </ul>
         </div>
     </div>
 

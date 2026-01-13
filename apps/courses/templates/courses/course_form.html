@@ -10,10 +10,25 @@
 
 <div class="card">
     <div class="card-body">
-        <form method="post" enctype="multipart/form-data">
+        <form method="post">
             {% csrf_token %}
             {% crispy form %}
+            <button type="submit" class="btn btn-primary">Gem kursus</button>
+            {% if object %}
+            <a href="{% url 'courses:detail' object.pk %}" class="btn btn-outline-secondary">Annuller</a>
+            {% else %}
+            <a href="{% url 'courses:list' %}" class="btn btn-outline-secondary">Annuller</a>
+            {% endif %}
         </form>
     </div>
 </div>
+
+{% if object %}
+<div class="mt-4">
+    <p class="text-muted">
+        <i class="bi bi-info-circle me-1"></i>
+        Kursusmaterialer administreres fra <a href="{% url 'courses:detail' object.pk %}">kursusdetaljesiden</a>.
+    </p>
+</div>
+{% endif %}
 {% endblock %}

@@ -5,13 +5,13 @@ from django.utils import timezone
 
 from apps.schools.models import School
 
-from .models import Course, CourseSignUp
+from .models import Course, CourseSignUp, CourseMaterial
 
 
 class CourseForm(forms.ModelForm):
     class Meta:
         model = Course
-        fields = ['title', 'start_date', 'end_date', 'location', 'undervisere', 'capacity', 'is_published', 'materials', 'comment']
+        fields = ['title', 'start_date', 'end_date', 'location', 'undervisere', 'capacity', 'is_published', 'comment']
         widgets = {
             'start_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'end_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
@@ -20,6 +20,7 @@ class CourseForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
+        self.helper.form_tag = False
         self.helper.layout = Layout(
             'title',
             Row(
@@ -32,9 +33,7 @@ class CourseForm(forms.ModelForm):
             ),
             'capacity',
             'is_published',
-            'materials',
             'comment',
-            Submit('submit', 'Gem kursus', css_class='btn btn-primary'),
         )
 
     def clean(self):
@@ -44,6 +43,23 @@ class CourseForm(forms.ModelForm):
         if start_date and end_date and end_date < start_date:
             raise forms.ValidationError('Slutdato kan ikke være før startdato.')
         return cleaned_data
+
+
+class CourseMaterialForm(forms.ModelForm):
+    class Meta:
+        model = CourseMaterial
+        fields = ['file', 'name']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.layout = Layout(
+            Row(
+                Column('file', css_class='col-md-8'),
+                Column('name', css_class='col-md-4'),
+            ),
+        )
 
 
 class CourseSignUpForm(forms.ModelForm):
@@ -81,7 +97,7 @@ class PublicSignUpForm(forms.Form):
         empty_label='Vælg et kursus...'
     )
     school = SchoolChoiceField(
-        queryset=School.objects.active().exclude(enrolled_at__isnull=True).order_by('name'),
+        queryset=School.objects.none(),  # Set dynamically in __init__
         label='Vælg din skole',
         empty_label='Vælg en skole...'
     )
@@ -91,6 +107,18 @@ class PublicSignUpForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Filter schools that are currently enrolled
+        from apps.schools.models import SchoolYear
+        current_year = SchoolYear.objects.get_current()
+        if current_year:
+            self.fields['school'].queryset = School.objects.active().filter(
+                enrollments__school_year=current_year
+            ).order_by('name')
+        else:
+            # Fallback to old behavior if no current school year is defined
+            self.fields['school'].queryset = School.objects.active().exclude(
+                enrolled_at__isnull=True
+            ).order_by('name')
         self.helper = FormHelper()
         self.helper.layout = Layout(
             'course',

@@ -9,8 +9,8 @@ class AuditConfig(AppConfig):
         from apps.audit import signals  # noqa
         from apps.audit.registry import register_for_audit, AuditConfig as AuditCfg
 
-        from apps.schools.models import School, SeatPurchase, Person, SchoolComment, Invoice
-        from apps.courses.models import Course, CourseSignUp
+        from apps.schools.models import School, SeatPurchase, Person, SchoolComment, Invoice, SchoolYear, SchoolYearEnrollment
+        from apps.courses.models import Course, CourseSignUp, CourseMaterial
         from apps.contacts.models import ContactTime
 
         # School and related models
@@ -47,4 +47,16 @@ class AuditConfig(AppConfig):
         register_for_audit(ContactTime, AuditCfg(
             excluded_fields=['id', 'created_at', 'created_by'],
             get_school=lambda instance: instance.school,
+        ))
+
+        # School year and enrollment tracking
+        register_for_audit(SchoolYear, AuditCfg())
+
+        register_for_audit(SchoolYearEnrollment, AuditCfg(
+            get_school=lambda instance: instance.school,
+        ))
+
+        # Course materials
+        register_for_audit(CourseMaterial, AuditCfg(
+            get_course=lambda instance: instance.course,
         ))

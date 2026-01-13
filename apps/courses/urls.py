@@ -18,4 +18,7 @@ urlpatterns = [
     path('signups/<int:pk>/attendance/', views.MarkAttendanceView.as_view(), name='mark-attendance'),
     path('signups/<int:pk>/delete/', views.SignUpDeleteView.as_view(), name='signup-delete'),
     path('signups/export/', views.SignUpExportView.as_view(), name='signup-export'),
+    # Course Material URLs
+    path('<int:course_pk>/material/add/', views.CourseMaterialCreateView.as_view(), name='material-create'),
+    path('material/<int:pk>/delete/', views.CourseMaterialDeleteView.as_view(), name='material-delete'),
 ]

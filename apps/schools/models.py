@@ -18,6 +18,47 @@ class InvoiceStatus(models.TextChoices):
     PAID = 'paid', 'Betalt'
 
 
+class SchoolYearManager(models.Manager):
+    def get_current(self):
+        """Hent det aktuelle skoleår baseret på dags dato."""
+        today = date.today()
+        return self.filter(start_date__lte=today, end_date__gte=today).first()
+
+
+class SchoolYear(models.Model):
+    name = models.CharField(
+        max_length=20,
+        unique=True,
+        verbose_name='Skoleår',
+        help_text='F.eks. "2024-2025"'
+    )
+    start_date = models.DateField(
+        verbose_name='Startdato',
+        help_text='Typisk 1. august'
+    )
+    end_date = models.DateField(
+        verbose_name='Slutdato',
+        help_text='Typisk 31. juli'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = SchoolYearManager()
+
+    class Meta:
+        ordering = ['start_date']
+        verbose_name = 'Skoleår'
+        verbose_name_plural = 'Skoleår'
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def is_current(self):
+        """Udregnes dynamisk baseret på dags dato."""
+        today = date.today()
+        return self.start_date <= today <= self.end_date
+
+
 class SchoolManager(models.Manager):
     def active(self):
         return self.filter(is_active=True)
@@ -58,9 +99,27 @@ class School(models.Model):
         self.save()
 
     @property
+    def is_currently_enrolled(self):
+        """Tjek om skolen er tilmeldt i nuværende skoleår."""
+        current_year = SchoolYear.objects.get_current()
+        if not current_year:
+            return False
+        return self.enrollments.filter(school_year=current_year).exists()
+
+    @property
+    def enrollment_years_count(self):
+        """Antal skoleår skolen har været tilmeldt."""
+        return self.enrollments.count()
+
+    @property
+    def was_previously_enrolled(self):
+        """Tjek om skolen har været tilmeldt før (men ikke er nu)."""
+        return not self.is_currently_enrolled and self.enrollments.exists()
+
+    @property
     def base_seats(self):
         """Base seats included with enrollment."""
-        return self.BASE_SEATS if self.enrolled_at else 0
+        return self.BASE_SEATS if self.is_currently_enrolled else 0
 
     @property
     def has_forankringsplads(self):
@@ -72,7 +131,9 @@ class School(models.Model):
 
     @property
     def forankring_seats(self):
-        """Forankringsplads seats (1 if enrolled > 1 year)."""
+        """Forankringsplads seats (1 if enrolled > 1 year and currently enrolled)."""
+        if not self.is_currently_enrolled:
+            return 0
         return self.FORANKRING_SEATS if self.has_forankringsplads else 0
 
     @property
@@ -230,3 +291,32 @@ class Invoice(models.Model):
 
     def __str__(self):
         return f"{self.invoice_number} - {self.school.name}"
+
+
+class SchoolYearEnrollment(models.Model):
+    school = models.ForeignKey(
+        School,
+        on_delete=models.CASCADE,
+        related_name='enrollments'
+    )
+    school_year = models.ForeignKey(
+        SchoolYear,
+        on_delete=models.PROTECT,
+        related_name='enrollments',
+        verbose_name='Skoleår'
+    )
+    enrolled_at = models.DateField(
+        default=date.today,
+        verbose_name='Tilmeldingsdato',
+        help_text='Dato for tilmelding dette skoleår'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['school_year__start_date']
+        unique_together = ['school', 'school_year']
+        verbose_name = 'Skoleårstilmelding'
+        verbose_name_plural = 'Skoleårstilmeldinger'
+
+    def __str__(self):
+        return f"{self.school.name} - {self.school_year.name}"

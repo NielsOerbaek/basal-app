@@ -13,8 +13,8 @@ from apps.core.decorators import staff_required
 from apps.core.export import export_queryset_to_excel
 from apps.core.mixins import SortableMixin
 
-from .forms import CourseForm, CourseSignUpForm, PublicSignUpForm
-from .models import AttendanceStatus, Course, CourseSignUp
+from .forms import CourseForm, CourseSignUpForm, PublicSignUpForm, CourseMaterialForm
+from .models import AttendanceStatus, Course, CourseSignUp, CourseMaterial
 
 
 @method_decorator(staff_required, name='dispatch')
@@ -64,6 +64,7 @@ class CourseDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['signups'] = self.object.signups.select_related('school').all()
+        context['course_materials'] = self.object.course_materials.all()
         context['recent_activities'] = self.object.activity_logs.select_related(
             'user', 'content_type'
         )[:5]
@@ -419,3 +420,46 @@ class BulkImportConfirmView(View):
                 messages.warning(request, error)
 
         return redirect('courses:detail', pk=course.pk)
+
+
+@method_decorator(staff_required, name='dispatch')
+class CourseMaterialCreateView(View):
+    def get(self, request, course_pk):
+        course = get_object_or_404(Course, pk=course_pk)
+        form = CourseMaterialForm()
+        return render(request, 'courses/material_form.html', {
+            'course': course,
+            'form': form,
+        })
+
+    def post(self, request, course_pk):
+        course = get_object_or_404(Course, pk=course_pk)
+        form = CourseMaterialForm(request.POST, request.FILES)
+        if form.is_valid():
+            material = form.save(commit=False)
+            material.course = course
+            material.save()
+            messages.success(request, 'Kursusmateriale tilføjet.')
+            return redirect('courses:detail', pk=course.pk)
+        return render(request, 'courses/material_form.html', {
+            'course': course,
+            'form': form,
+        })
+
+
+@method_decorator(staff_required, name='dispatch')
+class CourseMaterialDeleteView(View):
+    def get(self, request, pk):
+        material = get_object_or_404(CourseMaterial, pk=pk)
+        return render(request, 'core/components/confirm_delete_modal.html', {
+            'title': 'Slet kursusmateriale',
+            'message': format_html('Er du sikker på, at du vil slette <strong>{}</strong>?', material.display_name),
+            'delete_url': reverse('courses:material-delete', kwargs={'pk': pk}),
+        })
+
+    def post(self, request, pk):
+        material = get_object_or_404(CourseMaterial, pk=pk)
+        course_pk = material.course.pk
+        material.delete()
+        messages.success(request, 'Kursusmateriale er blevet slettet.')
+        return JsonResponse({'success': True, 'redirect': reverse('courses:detail', kwargs={'pk': course_pk})})

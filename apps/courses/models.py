@@ -98,3 +98,36 @@ class CourseSignUp(models.Model):
 
     def __str__(self):
         return f"{self.participant_name} ({self.school.name})"
+
+
+class CourseMaterial(models.Model):
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name='course_materials'
+    )
+    file = models.FileField(
+        upload_to='course_materials/',
+        verbose_name='Fil'
+    )
+    name = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Navn',
+        help_text='Valgfrit navn til filen'
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['uploaded_at']
+        verbose_name = 'Kursusmateriale'
+        verbose_name_plural = 'Kursusmaterialer'
+
+    def __str__(self):
+        return self.display_name
+
+    @property
+    def display_name(self):
+        if self.name:
+            return self.name
+        return self.file.name.split('/')[-1] if self.file else ''

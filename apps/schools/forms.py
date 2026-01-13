@@ -2,7 +2,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Row, Column, Submit, Field, HTML
 from django import forms
 
-from .models import School, SeatPurchase, Person, SchoolComment, PersonRole, Invoice
+from .models import School, SeatPurchase, Person, SchoolComment, PersonRole, Invoice, SchoolYear, SchoolYearEnrollment
 
 
 class SchoolForm(forms.ModelForm):
@@ -119,4 +119,44 @@ class InvoiceForm(forms.ModelForm):
             ),
             'comment',
             Submit('submit', 'Gem faktura', css_class='btn btn-primary'),
+        )
+
+
+class SchoolYearForm(forms.ModelForm):
+    class Meta:
+        model = SchoolYear
+        fields = ['name', 'start_date', 'end_date']
+        widgets = {
+            'start_date': forms.DateInput(attrs={'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'type': 'date'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'name',
+            Row(
+                Column('start_date', css_class='col-md-6'),
+                Column('end_date', css_class='col-md-6'),
+            ),
+            Submit('submit', 'Gem skoleår', css_class='btn btn-primary'),
+        )
+
+
+class SchoolYearEnrollmentForm(forms.ModelForm):
+    class Meta:
+        model = SchoolYearEnrollment
+        fields = ['school_year', 'enrolled_at']
+        widgets = {
+            'enrolled_at': forms.DateInput(attrs={'type': 'date'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'school_year',
+            'enrolled_at',
+            Submit('submit', 'Tilføj tilmelding', css_class='btn btn-primary'),
         )

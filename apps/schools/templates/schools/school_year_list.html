@@ -1,0 +1,62 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Skoleår - Basal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-calendar-range me-2"></i>Skoleår</h1>
+    <a href="{% url 'schools:school-year-create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Tilføj skoleår
+    </a>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Skoleår</th>
+                    <th>Startdato</th>
+                    <th>Slutdato</th>
+                    <th>Status</th>
+                    <th>Tilmeldte skoler</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for school_year in school_years %}
+                <tr>
+                    <td><strong>{{ school_year.name }}</strong></td>
+                    <td>{{ school_year.start_date|date:"d. M Y" }}</td>
+                    <td>{{ school_year.end_date|date:"d. M Y" }}</td>
+                    <td>
+                        {% if school_year.is_current %}
+                        <span class="badge bg-success">Nuværende</span>
+                        {% else %}
+                        <span class="badge bg-secondary">-</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ school_year.enrollments.count }}</td>
+                    <td class="text-end">
+                        <a href="{% url 'schools:school-year-update' school_year.pk %}" class="btn btn-sm btn-outline-primary" title="Rediger">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-danger" title="Slet"
+                                hx-get="{% url 'schools:school-year-delete' school_year.pk %}"
+                                hx-target="#modal-container">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        Ingen skoleår oprettet. <a href="{% url 'schools:school-year-create' %}">Opret det første skoleår</a>.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

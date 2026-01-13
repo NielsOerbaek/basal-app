@@ -26,4 +26,12 @@ urlpatterns = [
     # Invoice URLs
     path('<int:school_pk>/invoice/add/', views.InvoiceCreateView.as_view(), name='invoice-create'),
     path('invoice/<int:pk>/delete/', views.InvoiceDeleteView.as_view(), name='invoice-delete'),
+    # School Year URLs
+    path('skoleaar/', views.SchoolYearListView.as_view(), name='school-year-list'),
+    path('skoleaar/create/', views.SchoolYearCreateView.as_view(), name='school-year-create'),
+    path('skoleaar/<int:pk>/edit/', views.SchoolYearUpdateView.as_view(), name='school-year-update'),
+    path('skoleaar/<int:pk>/delete/', views.SchoolYearDeleteView.as_view(), name='school-year-delete'),
+    # Enrollment URLs
+    path('<int:school_pk>/enrollment/add/', views.EnrollmentCreateView.as_view(), name='enrollment-create'),
+    path('enrollment/<int:pk>/delete/', views.EnrollmentDeleteView.as_view(), name='enrollment-delete'),
 ]
