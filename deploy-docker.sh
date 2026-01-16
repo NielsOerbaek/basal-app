@@ -2,43 +2,83 @@
 set -e
 
 # Deployment script for Docker-based deployment
-# Usage: ./deploy-docker.sh [user@host]
+# Usage: ./deploy-docker.sh [--prod] [user@host]
+#
+# By default deploys to dev (DEV_HOST from .env)
+# Use --prod to deploy to production (PRODUCTION_HOST from .env)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REMOTE_PATH="/opt/basal"
 
-# Read PRODUCTION_HOST from .env if no argument provided
-if [ -z "$1" ] && [ -f "$SCRIPT_DIR/.env" ]; then
-    PRODUCTION_HOST=$(grep -E '^PRODUCTION_HOST=' "$SCRIPT_DIR/.env" | cut -d'=' -f2)
-    if [ -n "$PRODUCTION_HOST" ]; then
-        SERVER="root@$PRODUCTION_HOST"
-    else
-        echo "Error: PRODUCTION_HOST not set in .env and no server argument provided"
-        exit 1
-    fi
+# Parse arguments
+DEPLOY_ENV="dev"
+EXPLICIT_SERVER=""
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --prod)
+      DEPLOY_ENV="prod"
+      shift
+      ;;
+    *)
+      EXPLICIT_SERVER="$1"
+      shift
+      ;;
+  esac
+done
+
+# Determine server based on environment or explicit argument
+if [ -n "$EXPLICIT_SERVER" ]; then
+  SERVER="$EXPLICIT_SERVER"
+elif [ -f "$SCRIPT_DIR/.env" ]; then
+  if [ "$DEPLOY_ENV" = "prod" ]; then
+    HOST=$(grep -E '^PRODUCTION_HOST=' "$SCRIPT_DIR/.env" | cut -d'=' -f2)
+    ENV_VAR="PRODUCTION_HOST"
+  else
+    HOST=$(grep -E '^DEV_HOST=' "$SCRIPT_DIR/.env" | cut -d'=' -f2)
+    ENV_VAR="DEV_HOST"
+  fi
+
+  if [ -n "$HOST" ]; then
+    SERVER="root@$HOST"
+  else
+    echo "Error: $ENV_VAR not set in .env"
+    exit 1
+  fi
 else
-    SERVER="${1:-root@localhost}"
+  echo "Error: .env file not found and no server argument provided"
+  exit 1
 fi
 
-echo "==> Deploying to $SERVER..."
+echo "==> Deploying to $DEPLOY_ENV ($SERVER)..."
+
+# Confirmation for production deployments
+if [ "$DEPLOY_ENV" = "prod" ]; then
+  read -p "⚠️  You are about to deploy to PRODUCTION. Continue? [y/N] " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Deployment cancelled."
+    exit 0
+  fi
+fi
 
 # Sync code to server (excluding local dev files)
 echo "==> Syncing code..."
 rsync -avz --delete \
-    --exclude='.venv' \
-    --exclude='__pycache__' \
-    --exclude='*.pyc' \
-    --exclude='.git' \
-    --exclude='db.sqlite3' \
-    --exclude='.env' \
-    --exclude='.env2' \
-    --exclude='staticfiles' \
-    --exclude='media' \
-    --exclude='*.egg-info' \
-    --exclude='build' \
-    --exclude='venv' \
-    --exclude='todo.md' \
-    ./ "$SERVER:$REMOTE_PATH/"
+  --exclude='.venv' \
+  --exclude='__pycache__' \
+  --exclude='*.pyc' \
+  --exclude='.git' \
+  --exclude='db.sqlite3' \
+  --exclude='.env' \
+  --exclude='.env2' \
+  --exclude='staticfiles' \
+  --exclude='media' \
+  --exclude='*.egg-info' \
+  --exclude='build' \
+  --exclude='venv' \
+  --exclude='todo.md' \
+  ./ "$SERVER:$REMOTE_PATH/"
 
 # Build and restart containers
 echo "==> Building and starting containers..."
