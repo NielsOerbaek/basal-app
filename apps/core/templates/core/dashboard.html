@@ -111,9 +111,9 @@
                         {% for school in recent_enrollments %}
                         <tr>
                             <td><a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a></td>
-                            <td>{{ school.location }}</td>
-                            <td>{{ school.contact_name }}</td>
-                            <td>{{ school.remaining_seats }} / {{ school.total_seats }}</td>
+                            <td>{{ school.adresse }}, {{ school.kommune }}</td>
+                            <td>{% with contact=school.people.first %}{% if contact %}{{ contact.name }}{% if contact.email %} ({{ contact.email }}){% endif %}{% else %}-{% endif %}{% endwith %}</td>
+                            <td>{{ school.remaining_seats }} <small class="text-muted">ud af {{ school.total_seats }}</small></td>
                         </tr>
                         {% endfor %}
                     </tbody>

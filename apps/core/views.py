@@ -49,7 +49,7 @@ class DashboardView(TemplateView):
 
         context['recent_enrollments'] = School.objects.active().filter(
             enrolled_at__isnull=False
-        ).order_by('-enrolled_at')[:10]
+        ).prefetch_related('people').order_by('-enrolled_at')[:10]
 
         return context
 
