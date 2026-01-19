@@ -12,8 +12,8 @@ from apps.core.export import export_queryset_to_excel
 from apps.core.decorators import staff_required
 from apps.core.mixins import SortableMixin
 
-from .forms import SchoolForm, SeatPurchaseForm, PersonForm, SchoolCommentForm, InvoiceForm, SchoolYearForm, SchoolYearEnrollmentForm
-from .models import School, SeatPurchase, Person, SchoolComment, Invoice, SchoolYear, SchoolYearEnrollment
+from .forms import SchoolForm, SeatPurchaseForm, PersonForm, SchoolCommentForm, InvoiceForm, SchoolYearForm
+from .models import School, SeatPurchase, Person, SchoolComment, Invoice, SchoolYear
 
 
 @method_decorator(staff_required, name='dispatch')
@@ -133,7 +133,7 @@ class SchoolDetailView(DetailView):
         context['people'] = self.object.people.all()
         context['school_comments'] = self.object.school_comments.select_related('created_by').all()
         context['invoices'] = self.object.invoices.all()
-        context['enrollments'] = self.object.enrollments.select_related('school_year').all()
+        context['enrollment_history'] = self.object.get_enrollment_history()
         context['person_form'] = PersonForm()
         context['comment_form'] = SchoolCommentForm()
         context['recent_activities'] = self.object.activity_logs.select_related(
@@ -344,7 +344,7 @@ class SchoolCommentDeleteView(View):
 class InvoiceCreateView(View):
     def get(self, request, school_pk):
         school = get_object_or_404(School, pk=school_pk)
-        form = InvoiceForm()
+        form = InvoiceForm(school=school)
         return render(request, 'schools/invoice_form.html', {
             'school': school,
             'form': form,
@@ -352,7 +352,7 @@ class InvoiceCreateView(View):
 
     def post(self, request, school_pk):
         school = get_object_or_404(School, pk=school_pk)
-        form = InvoiceForm(request.POST)
+        form = InvoiceForm(request.POST, school=school)
         if form.is_valid():
             invoice = form.save(commit=False)
             invoice.school = school
@@ -382,6 +382,32 @@ class InvoiceDeleteView(View):
         invoice.delete()
         messages.success(request, f'Faktura "{invoice_number}" er blevet slettet.')
         return JsonResponse({'success': True, 'redirect': str(reverse_lazy('schools:detail', kwargs={'pk': school_pk}))})
+
+
+@method_decorator(staff_required, name='dispatch')
+class MissingInvoicesView(ListView):
+    template_name = 'schools/missing_invoices.html'
+    context_object_name = 'missing_invoices'
+
+    def get_queryset(self):
+        # For hvert skoleår, find skoler der var tilmeldt men ikke har faktura
+        missing = []
+        for school_year in SchoolYear.objects.all().order_by('-start_date'):
+            enrolled_schools = school_year.get_enrolled_schools()
+            for school in enrolled_schools:
+                # Tjek om skolen har en faktura for dette skoleår
+                has_invoice = school.invoices.filter(school_years=school_year).exists()
+                if not has_invoice:
+                    missing.append({
+                        'school': school,
+                        'school_year': school_year,
+                    })
+        return missing
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['school_years'] = SchoolYear.objects.all().order_by('-start_date')
+        return context
 
 
 @method_decorator(staff_required, name='dispatch')
@@ -437,50 +463,3 @@ class SchoolYearDeleteView(View):
         return JsonResponse({'success': True, 'redirect': str(reverse_lazy('schools:school-year-list'))})
 
 
-@method_decorator(staff_required, name='dispatch')
-class EnrollmentCreateView(View):
-    def get(self, request, school_pk):
-        school = get_object_or_404(School, pk=school_pk)
-        form = SchoolYearEnrollmentForm()
-        return render(request, 'schools/enrollment_form.html', {
-            'school': school,
-            'form': form,
-        })
-
-    def post(self, request, school_pk):
-        school = get_object_or_404(School, pk=school_pk)
-        form = SchoolYearEnrollmentForm(request.POST)
-        if form.is_valid():
-            enrollment = form.save(commit=False)
-            enrollment.school = school
-            enrollment.save()
-            # Opdater enrolled_at på skolen hvis det ikke er sat
-            if not school.enrolled_at:
-                school.enrolled_at = enrollment.enrolled_at
-                school.save()
-            messages.success(request, f'Tilmelding til {enrollment.school_year.name} tilføjet.')
-            return redirect('schools:detail', pk=school.pk)
-        return render(request, 'schools/enrollment_form.html', {
-            'school': school,
-            'form': form,
-        })
-
-
-@method_decorator(staff_required, name='dispatch')
-class EnrollmentDeleteView(View):
-    def get(self, request, pk):
-        enrollment = get_object_or_404(SchoolYearEnrollment, pk=pk)
-        return render(request, 'core/components/confirm_delete_modal.html', {
-            'title': 'Slet tilmelding',
-            'message': format_html('Er du sikker på, at du vil slette tilmeldingen til <strong>{}</strong>?', enrollment.school_year.name),
-            'delete_url': reverse_lazy('schools:enrollment-delete', kwargs={'pk': pk}),
-            'button_text': 'Slet',
-        })
-
-    def post(self, request, pk):
-        enrollment = get_object_or_404(SchoolYearEnrollment, pk=pk)
-        school_pk = enrollment.school.pk
-        school_year_name = enrollment.school_year.name
-        enrollment.delete()
-        messages.success(request, f'Tilmelding til "{school_year_name}" er blevet slettet.')
-        return JsonResponse({'success': True, 'redirect': str(reverse_lazy('schools:detail', kwargs={'pk': school_pk}))})

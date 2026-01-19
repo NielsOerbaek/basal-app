@@ -58,6 +58,22 @@ class SchoolYear(models.Model):
         today = date.today()
         return self.start_date <= today <= self.end_date
 
+    def get_enrolled_schools(self):
+        """Hent alle skoler der var tilmeldt i dette skoleår."""
+        # Tilmeldt hvis: enrolled_at <= end_date OG (ikke frameldt ELLER frameldt efter start_date)
+        from django.db.models import Q
+        return School.objects.active().filter(
+            enrolled_at__isnull=False,
+            enrolled_at__lte=self.end_date
+        ).filter(
+            Q(opted_out_at__isnull=True) | Q(opted_out_at__gt=self.start_date)
+        )
+
+    @property
+    def enrolled_schools_count(self):
+        """Antal skoler tilmeldt i dette skoleår."""
+        return self.get_enrolled_schools().count()
+
 
 class SchoolManager(models.Manager):
     def active(self):
@@ -78,6 +94,12 @@ class School(models.Model):
         help_text='Dato for skolens tilmelding til Basal'
     )
     is_active = models.BooleanField(default=True)
+    opted_out_at = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name='Frameldt dato',
+        help_text='Dato for framelding fra Basal (permanent)'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -99,27 +121,109 @@ class School(models.Model):
         self.save()
 
     @property
-    def is_currently_enrolled(self):
-        """Tjek om skolen er tilmeldt i nuværende skoleår."""
-        current_year = SchoolYear.objects.get_current()
-        if not current_year:
+    def is_enrolled(self):
+        """Tjek om skolen er tilmeldt Basal."""
+        return self.enrolled_at is not None and self.opted_out_at is None
+
+    @property
+    def is_opted_out(self):
+        """Tjek om skolen har frameldt sig."""
+        return self.opted_out_at is not None
+
+    def was_enrolled_in_year(self, school_year):
+        """Tjek om skolen var tilmeldt i et givent skoleår."""
+        if not self.enrolled_at:
             return False
-        return self.enrollments.filter(school_year=current_year).exists()
+        # Tilmeldt hvis enrolled_at <= year.end_date OG (ikke frameldt ELLER frameldt efter year.start_date)
+        if self.enrolled_at > school_year.end_date:
+            return False
+        if self.opted_out_at and self.opted_out_at <= school_year.start_date:
+            return False
+        return True
 
-    @property
-    def enrollment_years_count(self):
-        """Antal skoleår skolen har været tilmeldt."""
-        return self.enrollments.count()
+    def get_enrolled_years(self):
+        """Hent alle skoleår skolen var/er tilmeldt i."""
+        if not self.enrolled_at:
+            return SchoolYear.objects.none()
+        qs = SchoolYear.objects.filter(end_date__gte=self.enrolled_at)
+        if self.opted_out_at:
+            qs = qs.filter(start_date__lt=self.opted_out_at)
+        return qs
 
-    @property
-    def was_previously_enrolled(self):
-        """Tjek om skolen har været tilmeldt før (men ikke er nu)."""
-        return not self.is_currently_enrolled and self.enrollments.exists()
+    def get_enrollment_history(self):
+        """
+        Hent historik over til- og frameldinger fra ActivityLog.
+        Returnerer en liste af dicts med 'date', 'event_type' ('enrolled'/'opted_out'), og 'label'.
+        """
+        from apps.audit.models import ActivityLog
+        from django.contrib.contenttypes.models import ContentType
+        from datetime import datetime
+
+        history = []
+        school_ct = ContentType.objects.get_for_model(School)
+
+        # Hent alle ændringer til denne skole
+        logs = ActivityLog.objects.filter(
+            content_type=school_ct,
+            object_id=self.pk
+        ).order_by('timestamp')
+
+        for log in logs:
+            changes = log.changes or {}
+
+            # Tjek for ændring af enrolled_at
+            if 'enrolled_at' in changes:
+                old_val = changes['enrolled_at'].get('old')
+                new_val = changes['enrolled_at'].get('new')
+                if new_val and not old_val:
+                    # Ny tilmelding
+                    history.append({
+                        'date': datetime.strptime(new_val, '%Y-%m-%d').date(),
+                        'event_type': 'enrolled',
+                        'label': 'Tilmeldt',
+                    })
+
+            # Tjek for ændring af opted_out_at
+            if 'opted_out_at' in changes:
+                old_val = changes['opted_out_at'].get('old')
+                new_val = changes['opted_out_at'].get('new')
+                if new_val and not old_val:
+                    # Framelding
+                    history.append({
+                        'date': datetime.strptime(new_val, '%Y-%m-%d').date(),
+                        'event_type': 'opted_out',
+                        'label': 'Frameldt',
+                    })
+                elif old_val and not new_val:
+                    # Fjernelse af framelding = gentilmelding
+                    history.append({
+                        'date': log.timestamp.date(),
+                        'event_type': 'enrolled',
+                        'label': 'Tilmeldt igen',
+                    })
+
+        # Hvis ingen historik men skolen har enrolled_at, tilføj det som første event
+        if not history and self.enrolled_at:
+            history.append({
+                'date': self.enrolled_at,
+                'event_type': 'enrolled',
+                'label': 'Tilmeldt',
+            })
+            if self.opted_out_at:
+                history.append({
+                    'date': self.opted_out_at,
+                    'event_type': 'opted_out',
+                    'label': 'Frameldt',
+                })
+
+        # Sortér efter dato
+        history.sort(key=lambda x: x['date'])
+        return history
 
     @property
     def base_seats(self):
         """Base seats included with enrollment."""
-        return self.BASE_SEATS if self.is_currently_enrolled else 0
+        return self.BASE_SEATS if self.is_enrolled else 0
 
     @property
     def has_forankringsplads(self):
@@ -132,7 +236,7 @@ class School(models.Model):
     @property
     def forankring_seats(self):
         """Forankringsplads seats (1 if enrolled > 1 year and currently enrolled)."""
-        if not self.is_currently_enrolled:
+        if not self.is_enrolled:
             return 0
         return self.FORANKRING_SEATS if self.has_forankringsplads else 0
 
@@ -259,6 +363,12 @@ class Invoice(models.Model):
         on_delete=models.CASCADE,
         related_name='invoices'
     )
+    school_years = models.ManyToManyField(
+        SchoolYear,
+        related_name='invoices',
+        verbose_name='Skoleår',
+        blank=True
+    )
     invoice_number = models.CharField(
         max_length=50,
         verbose_name='Fakturanummer'
@@ -293,30 +403,3 @@ class Invoice(models.Model):
         return f"{self.invoice_number} - {self.school.name}"
 
 
-class SchoolYearEnrollment(models.Model):
-    school = models.ForeignKey(
-        School,
-        on_delete=models.CASCADE,
-        related_name='enrollments'
-    )
-    school_year = models.ForeignKey(
-        SchoolYear,
-        on_delete=models.PROTECT,
-        related_name='enrollments',
-        verbose_name='Skoleår'
-    )
-    enrolled_at = models.DateField(
-        default=date.today,
-        verbose_name='Tilmeldingsdato',
-        help_text='Dato for tilmelding dette skoleår'
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['school_year__start_date']
-        unique_together = ['school', 'school_year']
-        verbose_name = 'Skoleårstilmelding'
-        verbose_name_plural = 'Skoleårstilmeldinger'
-
-    def __str__(self):
-        return f"{self.school.name} - {self.school_year.name}"

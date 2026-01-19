@@ -107,18 +107,11 @@ class PublicSignUpForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Filter schools that are currently enrolled
-        from apps.schools.models import SchoolYear
-        current_year = SchoolYear.objects.get_current()
-        if current_year:
-            self.fields['school'].queryset = School.objects.active().filter(
-                enrollments__school_year=current_year
-            ).order_by('name')
-        else:
-            # Fallback to old behavior if no current school year is defined
-            self.fields['school'].queryset = School.objects.active().exclude(
-                enrolled_at__isnull=True
-            ).order_by('name')
+        # Filter schools that are currently enrolled (enrolled_at set, opted_out_at not set)
+        self.fields['school'].queryset = School.objects.active().filter(
+            enrolled_at__isnull=False,
+            opted_out_at__isnull=True
+        ).order_by('name')
         self.helper = FormHelper()
         self.helper.layout = Layout(
             'course',

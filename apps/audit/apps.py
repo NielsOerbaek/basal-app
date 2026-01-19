@@ -9,7 +9,7 @@ class AuditConfig(AppConfig):
         from apps.audit import signals  # noqa
         from apps.audit.registry import register_for_audit, AuditConfig as AuditCfg
 
-        from apps.schools.models import School, SeatPurchase, Person, SchoolComment, Invoice, SchoolYear, SchoolYearEnrollment
+        from apps.schools.models import School, SeatPurchase, Person, SchoolComment, Invoice, SchoolYear
         from apps.courses.models import Course, CourseSignUp, CourseMaterial
         from apps.contacts.models import ContactTime
 
@@ -49,12 +49,8 @@ class AuditConfig(AppConfig):
             get_school=lambda instance: instance.school,
         ))
 
-        # School year and enrollment tracking
+        # School year tracking
         register_for_audit(SchoolYear, AuditCfg())
-
-        register_for_audit(SchoolYearEnrollment, AuditCfg(
-            get_school=lambda instance: instance.school,
-        ))
 
         # Course materials
         register_for_audit(CourseMaterial, AuditCfg(

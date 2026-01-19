@@ -36,7 +36,7 @@
                         <span class="badge bg-secondary">-</span>
                         {% endif %}
                     </td>
-                    <td>{{ school_year.enrollments.count }}</td>
+                    <td>{{ school_year.enrolled_schools_count }}</td>
                     <td class="text-end">
                         <a href="{% url 'schools:school-year-update' school_year.pk %}" class="btn btn-sm btn-outline-primary" title="Rediger">
                             <i class="bi bi-pencil"></i>

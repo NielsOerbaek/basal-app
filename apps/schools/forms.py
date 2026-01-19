@@ -2,18 +2,24 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Row, Column, Submit, Field, HTML
 from django import forms
 
-from .models import School, SeatPurchase, Person, SchoolComment, PersonRole, Invoice, SchoolYear, SchoolYearEnrollment
+from .models import School, SeatPurchase, Person, SchoolComment, PersonRole, Invoice, SchoolYear
 
 
 class SchoolForm(forms.ModelForm):
     class Meta:
         model = School
-        fields = ['name', 'adresse', 'kommune', 'enrolled_at']
+        fields = ['name', 'adresse', 'kommune', 'enrolled_at', 'opted_out_at']
         widgets = {
             'enrolled_at': forms.DateInput(attrs={'type': 'date'}),
+            'opted_out_at': forms.DateInput(attrs={'type': 'date'}),
         }
         labels = {
-            'enrolled_at': 'Tilmeldt Basal',
+            'enrolled_at': 'Tilmeldt siden',
+            'opted_out_at': 'Frameldt dato',
+        }
+        help_texts = {
+            'enrolled_at': 'Dato for tilmelding til Basal',
+            'opted_out_at': 'Udfyld kun hvis skolen har frameldt sig permanent',
         }
 
     def __init__(self, *args, **kwargs):
@@ -25,7 +31,10 @@ class SchoolForm(forms.ModelForm):
                 Column('adresse', css_class='col-md-8'),
                 Column('kommune', css_class='col-md-4'),
             ),
-            'enrolled_at',
+            Row(
+                Column('enrolled_at', css_class='col-md-6'),
+                Column('opted_out_at', css_class='col-md-6'),
+            ),
             Submit('submit', 'Gem skole', css_class='btn btn-primary'),
         )
 
@@ -99,16 +108,18 @@ class SeatPurchaseForm(forms.ModelForm):
 class InvoiceForm(forms.ModelForm):
     class Meta:
         model = Invoice
-        fields = ['invoice_number', 'amount', 'date', 'status', 'comment']
+        fields = ['school_years', 'invoice_number', 'amount', 'date', 'status', 'comment']
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),
             'comment': forms.Textarea(attrs={'rows': 2}),
+            'school_years': forms.CheckboxSelectMultiple(),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, school=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.layout = Layout(
+            'school_years',
             Row(
                 Column('invoice_number', css_class='col-md-6'),
                 Column('amount', css_class='col-md-6'),
@@ -120,6 +131,9 @@ class InvoiceForm(forms.ModelForm):
             'comment',
             Submit('submit', 'Gem faktura', css_class='btn btn-primary'),
         )
+        # Limit school_years choices to years the school is enrolled in
+        if school:
+            self.fields['school_years'].queryset = school.get_enrolled_years().order_by('-start_date')
 
 
 class SchoolYearForm(forms.ModelForm):
@@ -144,19 +158,3 @@ class SchoolYearForm(forms.ModelForm):
         )
 
 
-class SchoolYearEnrollmentForm(forms.ModelForm):
-    class Meta:
-        model = SchoolYearEnrollment
-        fields = ['school_year', 'enrolled_at']
-        widgets = {
-            'enrolled_at': forms.DateInput(attrs={'type': 'date'}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.layout = Layout(
-            'school_year',
-            'enrolled_at',
-            Submit('submit', 'Tilføj tilmelding', css_class='btn btn-primary'),
-        )
