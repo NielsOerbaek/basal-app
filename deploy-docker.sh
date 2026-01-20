@@ -2,10 +2,11 @@
 set -e
 
 # Deployment script for Docker-based deployment
-# Usage: ./deploy-docker.sh [--prod] [user@host]
+# Usage: ./deploy-docker.sh [--prod] [--restart-caddy] [user@host]
 #
 # By default deploys to dev (DEV_HOST from .env)
 # Use --prod to deploy to production (PRODUCTION_HOST from .env)
+# Use --restart-caddy to restart Caddy after deploy (for config changes)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REMOTE_PATH="/opt/basal"
@@ -13,11 +14,16 @@ REMOTE_PATH="/opt/basal"
 # Parse arguments
 DEPLOY_ENV="dev"
 EXPLICIT_SERVER=""
+RESTART_CADDY=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     --prod)
       DEPLOY_ENV="prod"
+      shift
+      ;;
+    --restart-caddy)
+      RESTART_CADDY=true
       shift
       ;;
     *)
@@ -91,6 +97,12 @@ ssh "$SERVER" "cd $REMOTE_PATH && docker compose exec -T app python manage.py mi
 # Collect static files
 echo "==> Collecting static files..."
 ssh "$SERVER" "cd $REMOTE_PATH && docker compose exec -T app python manage.py collectstatic --noinput"
+
+# Restart Caddy if requested (for Caddyfile changes)
+if [ "$RESTART_CADDY" = true ]; then
+  echo "==> Restarting Caddy..."
+  ssh "$SERVER" "cd $REMOTE_PATH && docker compose restart caddy"
+fi
 
 echo "==> Done!"
 echo ""
