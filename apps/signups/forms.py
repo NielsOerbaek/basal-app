@@ -26,16 +26,15 @@ class DynamicFieldsMixin:
             field_name = field_config.field_name
 
             if field_config.field_type == FieldType.CHECKBOX:
+                # Build label with download link if attachment exists
+                label = field_config.label
+                if field_config.attachment:
+                    label += f' <a href="{field_config.attachment.url}" target="_blank" class="text-decoration-underline">(Download dokument)</a>'
+
                 self.fields[field_name] = forms.BooleanField(
                     required=field_config.is_required,
-                    label=mark_safe(field_config.label),
+                    label=mark_safe(label),
                     help_text=field_config.help_text,
-                )
-            elif field_config.field_type == FieldType.FILE_UPLOAD:
-                self.fields[field_name] = forms.FileField(
-                    required=field_config.is_required,
-                    label=field_config.label,
-                    help_text=field_config.help_text or f"Tilladte filtyper: {field_config.allowed_extensions}",
                 )
 
             self.dynamic_fields.append(
@@ -44,34 +43,6 @@ class DynamicFieldsMixin:
                     "config": field_config,
                 }
             )
-
-    def clean_dynamic_fields(self):
-        """Validate dynamic file fields."""
-        for field_info in getattr(self, "dynamic_fields", []):
-            field_config = field_info["config"]
-            field_name = field_info["name"]
-
-            if field_config.field_type == FieldType.FILE_UPLOAD:
-                uploaded_file = self.cleaned_data.get(field_name)
-                if uploaded_file:
-                    # Validate file extension
-                    allowed_exts = [ext.strip().lower() for ext in field_config.allowed_extensions.split(",")]
-                    file_ext = uploaded_file.name.split(".")[-1].lower() if "." in uploaded_file.name else ""
-                    if file_ext not in allowed_exts:
-                        raise ValidationError(
-                            {
-                                field_name: f"Filtypen '.{file_ext}' er ikke tilladt. Tilladte typer: {field_config.allowed_extensions}"
-                            }
-                        )
-
-                    # Validate file size
-                    max_size = field_config.max_file_size_mb * 1024 * 1024
-                    if uploaded_file.size > max_size:
-                        raise ValidationError(
-                            {field_name: f"Filen er for stor. Maksimum er {field_config.max_file_size_mb} MB."}
-                        )
-
-        return self.cleaned_data
 
     def get_dynamic_field_layout(self):
         """Return layout items for dynamic fields."""
@@ -136,13 +107,6 @@ class CourseSignupForm(DynamicFieldsMixin, forms.Form):
 
         self.helper = FormHelper()
         self.helper.layout = Layout(*layout_items)
-
-    def clean(self):
-        cleaned_data = super().clean()
-        # Validate dynamic fields
-        self.clean_dynamic_fields()
-        return cleaned_data
-
 
 class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
     """School signup form for joining the Basal project."""
@@ -238,6 +202,4 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
             if not school:
                 raise ValidationError({"school": "Vælg venligst en skole eller marker at din skole ikke er på listen."})
 
-        # Validate dynamic fields
-        self.clean_dynamic_fields()
         return cleaned_data

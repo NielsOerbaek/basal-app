@@ -2,13 +2,13 @@ from django.contrib import admin
 from django.utils import timezone
 from django_summernote.admin import SummernoteModelAdmin
 
-from .models import SchoolSignup, SignupAttachment, SignupFormField, SignupPage
+from .models import SchoolSignup, SignupFormField, SignupPage
 
 
 class SignupFormFieldInline(admin.TabularInline):
     model = SignupFormField
     extra = 0
-    fields = ["field_type", "label", "help_text", "is_required", "allowed_extensions", "max_file_size_mb", "order"]
+    fields = ["field_type", "label", "help_text", "is_required", "attachment", "order"]
     ordering = ["order", "id"]
 
 
@@ -38,15 +38,6 @@ class SignupFormFieldAdmin(admin.ModelAdmin):
     list_filter = ["signup_page", "field_type", "is_required"]
     search_fields = ["label", "help_text"]
     ordering = ["signup_page", "order", "id"]
-
-
-@admin.register(SignupAttachment)
-class SignupAttachmentAdmin(admin.ModelAdmin):
-    list_display = ["original_filename", "content_type", "form_field", "uploaded_at"]
-    list_filter = ["content_type", "uploaded_at"]
-    search_fields = ["original_filename"]
-    readonly_fields = ["content_type", "object_id", "uploaded_at"]
-    date_hierarchy = "uploaded_at"
 
 
 @admin.register(SchoolSignup)

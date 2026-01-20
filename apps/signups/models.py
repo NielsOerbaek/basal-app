@@ -1,6 +1,4 @@
 from django.contrib.auth.models import User
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 
@@ -41,7 +39,6 @@ class SignupPage(models.Model):
 
 class FieldType(models.TextChoices):
     CHECKBOX = "checkbox", "Afkrydsningsfelt"
-    FILE_UPLOAD = "file", "Filupload"
 
 
 class SignupFormField(models.Model):
@@ -52,18 +49,15 @@ class SignupFormField(models.Model):
     )
     field_type = models.CharField(max_length=20, choices=FieldType.choices, verbose_name="Felttype")
     label = models.CharField(
-        max_length=500, verbose_name="Label", help_text="Feltnavn/tekst (HTML tilladt for afkrydsningsfelter)"
+        max_length=500, verbose_name="Label", help_text="Feltnavn/tekst (HTML tilladt)"
     )
     help_text = models.CharField(max_length=500, blank=True, verbose_name="Hjælpetekst")
     is_required = models.BooleanField(default=True, verbose_name="Påkrævet")
-    allowed_extensions = models.CharField(
-        max_length=100,
-        default="pdf,doc,docx,jpg,png",
-        verbose_name="Tilladte filtyper",
-        help_text="Kommasepareret liste (kun for filupload)",
-    )
-    max_file_size_mb = models.PositiveIntegerField(
-        default=10, verbose_name="Maks. filstørrelse (MB)", help_text="Kun for filupload"
+    attachment = models.FileField(
+        upload_to="signup_attachments/",
+        blank=True,
+        verbose_name="Vedhæftet fil",
+        help_text="Dokument som brugeren kan downloade (f.eks. vilkår og betingelser)",
     )
     order = models.PositiveIntegerField(default=0, verbose_name="Rækkefølge")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -80,33 +74,6 @@ class SignupFormField(models.Model):
     def field_name(self):
         """Generate a unique field name for form usage."""
         return f"custom_{self.field_type}_{self.pk}"
-
-
-class SignupAttachment(models.Model):
-    """Uploaded files attached to signup records."""
-
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, verbose_name="Indholdstype")
-    object_id = models.PositiveIntegerField()
-    content_object = GenericForeignKey("content_type", "object_id")
-
-    form_field = models.ForeignKey(
-        SignupFormField,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="attachments",
-        verbose_name="Formularfelt",
-    )
-    file = models.FileField(upload_to="signup_attachments/%Y/%m/", verbose_name="Fil")
-    original_filename = models.CharField(max_length=255, verbose_name="Originalt filnavn")
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = "Vedhæftet fil"
-        verbose_name_plural = "Vedhæftede filer"
-
-    def __str__(self):
-        return self.original_filename
 
 
 class SchoolSignup(models.Model):

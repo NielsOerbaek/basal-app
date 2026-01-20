@@ -1,4 +1,3 @@
-from django.contrib.contenttypes.models import ContentType
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.views import View
@@ -8,7 +7,7 @@ from apps.courses.models import CourseSignUp
 from apps.schools.models import School
 
 from .forms import CourseSignupForm, SchoolSignupForm
-from .models import FieldType, SchoolSignup, SignupAttachment, SignupPage, SignupPageType
+from .models import SchoolSignup, SignupPage, SignupPageType
 
 
 class SignupPageMixin:
@@ -63,9 +62,6 @@ class CourseSignupView(View):
                 participant_title=form.cleaned_data.get("participant_title", ""),
             )
 
-            # Save any uploaded files
-            self._save_attachments(signup, form)
-
             # Send confirmation email
             from apps.emails.services import send_signup_confirmation
 
@@ -74,22 +70,6 @@ class CourseSignupView(View):
             return redirect("signup:course-success")
 
         return render(request, self.template_name, {"form": form, "page": page})
-
-    def _save_attachments(self, signup, form):
-        """Save uploaded files as SignupAttachment records."""
-        content_type = ContentType.objects.get_for_model(CourseSignUp)
-
-        for field_info in getattr(form, "dynamic_fields", []):
-            if field_info["config"].field_type == FieldType.FILE_UPLOAD:
-                uploaded_file = form.cleaned_data.get(field_info["name"])
-                if uploaded_file:
-                    SignupAttachment.objects.create(
-                        content_type=content_type,
-                        object_id=signup.pk,
-                        form_field=field_info["config"],
-                        file=uploaded_file,
-                        original_filename=uploaded_file.name,
-                    )
 
 
 class CourseSignupSuccessView(TemplateView):
@@ -163,28 +143,9 @@ class SchoolSignupView(View):
                 comments=form.cleaned_data.get("comments", ""),
             )
 
-            # Save any uploaded files
-            self._save_attachments(school_signup, form)
-
             return redirect("signup:school-success")
 
         return render(request, self.template_name, {"form": form, "page": page})
-
-    def _save_attachments(self, school_signup, form):
-        """Save uploaded files as SignupAttachment records."""
-        content_type = ContentType.objects.get_for_model(SchoolSignup)
-
-        for field_info in getattr(form, "dynamic_fields", []):
-            if field_info["config"].field_type == FieldType.FILE_UPLOAD:
-                uploaded_file = form.cleaned_data.get(field_info["name"])
-                if uploaded_file:
-                    SignupAttachment.objects.create(
-                        content_type=content_type,
-                        object_id=school_signup.pk,
-                        form_field=field_info["config"],
-                        file=uploaded_file,
-                        original_filename=uploaded_file.name,
-                    )
 
 
 class SchoolSignupSuccessView(TemplateView):

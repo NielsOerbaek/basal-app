@@ -1,8 +1,6 @@
-import tempfile
 from datetime import date, timedelta
 
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase, override_settings
+from django.test import Client, TestCase
 from django.urls import reverse
 
 from apps.courses.models import Course, CourseSignUp
@@ -11,7 +9,6 @@ from apps.schools.models import School
 from .models import (
     FieldType,
     SchoolSignup,
-    SignupAttachment,
     SignupFormField,
     SignupPage,
     SignupPageType,
@@ -43,17 +40,6 @@ class SignupFormFieldModelTest(TestCase):
             is_required=True,
         )
         self.assertEqual(field.field_name, f"custom_checkbox_{field.pk}")
-
-    def test_create_file_field(self):
-        """File upload field can be created."""
-        field = SignupFormField.objects.create(
-            signup_page=self.page,
-            field_type=FieldType.FILE_UPLOAD,
-            label="Upload CV",
-            allowed_extensions="pdf,doc",
-            max_file_size_mb=5,
-        )
-        self.assertIn("pdf", field.allowed_extensions)
 
 
 class CourseSignupViewTest(TestCase):
@@ -119,7 +105,6 @@ class CourseSignupViewTest(TestCase):
         self.assertTemplateUsed(response, "signups/page_unavailable.html")
 
 
-@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
 class CourseSignupWithDynamicFieldsTest(TestCase):
     def setUp(self):
         self.client = Client()
@@ -180,34 +165,6 @@ class CourseSignupWithDynamicFieldsTest(TestCase):
             },
         )
         self.assertRedirects(response, reverse("signup:course-success"))
-
-    def test_file_upload_saved(self):
-        """Uploaded file should be saved as SignupAttachment."""
-        file_field = SignupFormField.objects.create(
-            signup_page=self.page,
-            field_type=FieldType.FILE_UPLOAD,
-            label="Upload document",
-            allowed_extensions="pdf",
-            is_required=False,
-        )
-
-        pdf_content = b"%PDF-1.4 test content"
-        test_file = SimpleUploadedFile("test.pdf", pdf_content, content_type="application/pdf")
-
-        response = self.client.post(
-            reverse("signup:course"),
-            {
-                "course": self.course.pk,
-                "school": self.school.pk,
-                "participant_name": "Test Person",
-                "participant_email": "test@example.com",
-                file_field.field_name: test_file,
-            },
-        )
-        self.assertRedirects(response, reverse("signup:course-success"))
-        self.assertEqual(SignupAttachment.objects.count(), 1)
-        attachment = SignupAttachment.objects.first()
-        self.assertEqual(attachment.original_filename, "test.pdf")
 
 
 class SchoolSignupViewTest(TestCase):
