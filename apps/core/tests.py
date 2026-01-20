@@ -152,8 +152,8 @@ class ViewSmokeTests:
     # Public URLs (no auth required)
     PUBLIC_URLS = [
         ("login", {}),
-        ("public-signup", {}),
-        ("signup-success", {}),
+        ("signup:course", {}),
+        ("signup:course-success", {}),
     ]
 
 

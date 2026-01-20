@@ -1,0 +1,94 @@
+{% extends 'signups/base_signup.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ page.title|default:'Tilmeld din skole' }} - Basal{% endblock %}
+
+{% block signup_content %}
+<div class="text-center mb-4">
+    <h2>{{ page.title|default:'Tilmeld din skole' }}</h2>
+    {% if page.subtitle %}
+    <p class="text-muted">{{ page.subtitle }}</p>
+    {% endif %}
+</div>
+
+{% if page.intro_text %}
+<div class="mb-4">
+    {{ page.intro_text|safe }}
+</div>
+{% endif %}
+
+{% if form.errors %}
+<div class="alert alert-danger">Ret venligst fejlene nedenfor.</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% crispy form %}
+</form>
+{% endblock %}
+
+{% block signup_footer %}
+<p class="text-center mt-3">
+    <a href="{% url 'signup:course' %}" class="text-muted">Allerede tilmeldt? Tilmeld dig et kursus</a>
+    &nbsp;|&nbsp;
+    <a href="{% url 'login' %}" class="text-muted">Medarbejder login</a>
+</p>
+{% endblock %}
+
+{% block signup_extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const municipalitySelect = document.getElementById('id_municipality');
+        const schoolSelect = document.getElementById('id_school');
+        const schoolNotListedCheckbox = document.getElementById('id_school_not_listed');
+        const schoolSelection = document.getElementById('school-selection');
+        const newSchoolFields = document.getElementById('new-school-fields');
+
+        function updateSchoolDropdown() {
+            const kommune = municipalitySelect.value;
+            if (!kommune) {
+                schoolSelect.innerHTML = '<option value="">Vælg en skole...</option>';
+                return;
+            }
+
+            fetch('{% url "signup:schools-by-kommune" %}?kommune=' + encodeURIComponent(kommune))
+                .then(response => response.json())
+                .then(data => {
+                    schoolSelect.innerHTML = '<option value="">Vælg en skole...</option>';
+                    data.schools.forEach(school => {
+                        const option = document.createElement('option');
+                        option.value = school.id;
+                        option.textContent = school.name;
+                        schoolSelect.appendChild(option);
+                    });
+                })
+                .catch(() => {
+                    schoolSelect.innerHTML = '<option value="">Fejl ved hentning af skoler</option>';
+                });
+        }
+
+        function toggleNewSchoolFields() {
+            if (schoolNotListedCheckbox && schoolNotListedCheckbox.checked) {
+                if (schoolSelect) schoolSelect.closest('.mb-3')?.style.setProperty('display', 'none');
+                if (newSchoolFields) newSchoolFields.style.display = 'block';
+            } else {
+                if (schoolSelect) schoolSelect.closest('.mb-3')?.style.removeProperty('display');
+                if (newSchoolFields) newSchoolFields.style.display = 'none';
+            }
+        }
+
+        if (municipalitySelect) {
+            municipalitySelect.addEventListener('change', updateSchoolDropdown);
+            // Load schools if municipality is already selected
+            if (municipalitySelect.value) {
+                updateSchoolDropdown();
+            }
+        }
+
+        if (schoolNotListedCheckbox) {
+            schoolNotListedCheckbox.addEventListener('change', toggleNewSchoolFields);
+            toggleNewSchoolFields();
+        }
+    });
+</script>
+{% endblock %}

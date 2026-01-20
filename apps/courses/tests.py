@@ -124,14 +124,14 @@ class CourseViewTest(TestCase):
 
     def test_public_signup_loads(self):
         """Public signup should load without authentication."""
-        response = self.client.get(reverse("public-signup"))
+        response = self.client.get(reverse("signup:course"))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "courses/public_signup.html")
+        self.assertTemplateUsed(response, "signups/course_signup.html")
 
     def test_public_signup_submit(self):
         """Public signup form submission should work."""
         response = self.client.post(
-            reverse("public-signup"),
+            reverse("signup:course"),
             {
                 "course": self.course.pk,
                 "school": self.school.pk,
@@ -139,7 +139,7 @@ class CourseViewTest(TestCase):
                 "participant_email": "test@example.com",
             },
         )
-        self.assertRedirects(response, reverse("signup-success"))
+        self.assertRedirects(response, reverse("signup:course-success"))
         self.assertEqual(CourseSignUp.objects.count(), 1)
 
 

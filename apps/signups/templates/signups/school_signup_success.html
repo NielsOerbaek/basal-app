@@ -1,0 +1,26 @@
+{% extends 'signups/base_signup.html' %}
+
+{% block title %}{{ page.success_title|default:'Tak for din interesse' }} - Basal{% endblock %}
+
+{% block signup_content %}
+<div class="text-center">
+    <i class="bi bi-check-circle text-success" style="font-size: 5rem;"></i>
+    <h2 class="mt-3">{{ page.success_title|default:'Tak for din interesse!' }}</h2>
+    <div class="text-muted mb-4">
+        {% if page.success_message %}
+            {{ page.success_message|safe }}
+        {% else %}
+            <p>Vi har modtaget din henvendelse og vender tilbage hurtigst muligt.</p>
+        {% endif %}
+    </div>
+    <a href="{% url 'signup:school' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Tilbage til tilmelding
+    </a>
+</div>
+{% endblock %}
+
+{% block signup_footer %}
+<p class="text-center mt-3">
+    <a href="{% url 'login' %}" class="text-muted">Medarbejder login</a>
+</p>
+{% endblock %}

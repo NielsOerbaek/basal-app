@@ -1,0 +1,73 @@
+{% extends 'signups/base_signup.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ page.title|default:'Tilmelding' }} - Basal{% endblock %}
+
+{% block signup_content %}
+<div class="text-center mb-4">
+    <h2>{{ page.title|default:'Tilmelding' }}</h2>
+    {% if page.subtitle %}
+    <p class="text-muted">{{ page.subtitle }}</p>
+    {% endif %}
+</div>
+
+{% if page.intro_text %}
+<div class="mb-4">
+    {{ page.intro_text|safe }}
+</div>
+{% endif %}
+
+{% if form.errors %}
+<div class="alert alert-danger">Ret venligst fejlene nedenfor.</div>
+{% endif %}
+
+<div id="seats-warning" class="alert alert-warning" style="display: none;">
+    <strong><i class="bi bi-exclamation-triangle me-2"></i>Bemærk:</strong>
+    Din skole har ikke flere ledige pladser i jeres abonnement.
+    I kan stadig tilmelde jer, og Basal vil kontakte jer angående udvidelse af jeres abonnement.
+    <br><br>
+    En ekstra plads koster ca. 8.000 kr.
+</div>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% crispy form %}
+</form>
+{% endblock %}
+
+{% block signup_extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const schoolSelect = document.getElementById('id_school');
+        const seatsWarning = document.getElementById('seats-warning');
+
+        function checkSchoolSeats() {
+            if (!schoolSelect || !schoolSelect.value) {
+                seatsWarning.style.display = 'none';
+                return;
+            }
+
+            fetch('{% url "signup:check-school-seats" %}?school_id=' + schoolSelect.value)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.has_available_seats === false) {
+                        seatsWarning.style.display = 'block';
+                    } else {
+                        seatsWarning.style.display = 'none';
+                    }
+                })
+                .catch(() => {
+                    seatsWarning.style.display = 'none';
+                });
+        }
+
+        if (schoolSelect) {
+            schoolSelect.addEventListener('change', checkSchoolSeats);
+            // Check seats on page load if school is already selected
+            if (schoolSelect.value) {
+                checkSchoolSeats();
+            }
+        }
+    });
+</script>
+{% endblock %}

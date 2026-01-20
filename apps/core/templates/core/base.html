@@ -93,7 +93,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'public-signup' %}" target="_blank">
+                        <a class="nav-link" href="{% url 'signup:course' %}" target="_blank">
                             <i class="bi bi-box-arrow-up-right me-1"></i>Tilmelding
                         </a>
                     </li>
@@ -105,6 +105,8 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{% url 'audit:activity_list' %}"><i class="bi bi-clock-history me-2"></i>Aktivitet</a></li>
+                            <li><a class="dropdown-item" href="{% url 'schools:missing-invoices' %}"><i class="bi bi-receipt me-2"></i>Manglende fakturaer</a></li>
+                            <li><a class="dropdown-item" href="{% url 'schools:school-year-list' %}"><i class="bi bi-calendar-range me-2"></i>Skoleår</a></li>
                             {% if user.is_superuser %}
                             <li><a class="dropdown-item" href="{% url 'accounts:user-list' %}"><i class="bi bi-people me-2"></i>Brugere</a></li>
                             {% endif %}
