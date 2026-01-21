@@ -60,15 +60,16 @@ class SchoolChoiceField(forms.ModelChoiceField):
 
 
 class CourseSignupForm(DynamicFieldsMixin, forms.Form):
-    """Public course signup form with dynamic fields support."""
+    """Public course signup form with dynamic fields support.
+
+    Note: Participant fields are rendered manually in the template to allow
+    adding multiple participants dynamically with JavaScript.
+    """
 
     course = forms.ModelChoiceField(
         queryset=Course.objects.none(), label="Vælg et kursus", empty_label="Vælg et kursus..."
     )
     school = SchoolChoiceField(queryset=School.objects.none(), label="Vælg din skole", empty_label="Vælg en skole...")
-    participant_name = forms.CharField(max_length=255, label="Navn")
-    participant_email = forms.EmailField(label="E-mail")
-    participant_title = forms.CharField(max_length=255, required=False, label="Stilling")
 
     def __init__(self, *args, signup_page=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -85,17 +86,10 @@ class CourseSignupForm(DynamicFieldsMixin, forms.Form):
         if signup_page:
             self.add_dynamic_fields(signup_page)
 
-        # Build layout
-        submit_text = signup_page.submit_button_text if signup_page else "Tilmeld"
+        # Build layout - participant fields are rendered manually in template
         layout_items = [
             "course",
             "school",
-            HTML("<hr><h5>Deltagerinformation</h5>"),
-            "participant_name",
-            Row(
-                Column("participant_email", css_class="col-md-6"),
-                Column("participant_title", css_class="col-md-6"),
-            ),
         ]
 
         # Add dynamic fields to layout
@@ -103,9 +97,8 @@ class CourseSignupForm(DynamicFieldsMixin, forms.Form):
             layout_items.append(HTML("<hr>"))
             layout_items.extend(self.get_dynamic_field_layout())
 
-        layout_items.append(Submit("submit", submit_text, css_class="btn btn-primary btn-lg"))
-
         self.helper = FormHelper()
+        self.helper.form_tag = False  # We'll handle form tag in template
         self.helper.layout = Layout(*layout_items)
 
 

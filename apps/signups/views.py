@@ -52,24 +52,73 @@ class CourseSignupView(View):
             return render(request, "signups/page_unavailable.html", {"page": page})
 
         form = CourseSignupForm(request.POST, request.FILES, signup_page=page)
-        if form.is_valid():
-            # Create the signup
-            signup = CourseSignUp.objects.create(
-                course=form.cleaned_data["course"],
-                school=form.cleaned_data["school"],
-                participant_name=form.cleaned_data["participant_name"],
-                participant_email=form.cleaned_data["participant_email"],
-                participant_title=form.cleaned_data.get("participant_title", ""),
+
+        # Extract participant data from POST (participant fields are not in the form)
+        participants = self._extract_participants(request.POST)
+
+        # Validate we have at least one participant
+        if not participants:
+            return render(
+                request,
+                self.template_name,
+                {"form": form, "page": page, "participant_error": "Mindst én deltager er påkrævet."},
             )
 
-            # Send confirmation email
+        # Validate all participants have required fields
+        for i, p in enumerate(participants):
+            if not p.get("name") or not p.get("email"):
+                return render(
+                    request,
+                    self.template_name,
+                    {"form": form, "page": page, "participant_error": f"Deltager {i + 1} mangler navn eller e-mail."},
+                )
+
+        if form.is_valid():
             from apps.emails.services import send_signup_confirmation
 
-            send_signup_confirmation(signup)
+            course = form.cleaned_data["course"]
+            school = form.cleaned_data["school"]
+
+            # Create a signup for each participant
+            for participant in participants:
+                signup = CourseSignUp.objects.create(
+                    course=course,
+                    school=school,
+                    participant_name=participant["name"],
+                    participant_email=participant["email"],
+                    participant_title=participant.get("title", ""),
+                )
+                # Send confirmation email to each participant
+                send_signup_confirmation(signup)
 
             return redirect("signup:course-success")
 
         return render(request, self.template_name, {"form": form, "page": page})
+
+    def _extract_participants(self, post_data):
+        """Extract participant data from POST data with indexed field names."""
+        participants = []
+        index = 0
+
+        while True:
+            name_key = f"participant_name_{index}"
+            email_key = f"participant_email_{index}"
+            title_key = f"participant_title_{index}"
+
+            if name_key not in post_data:
+                break
+
+            name = post_data.get(name_key, "").strip()
+            email = post_data.get(email_key, "").strip()
+            title = post_data.get(title_key, "").strip()
+
+            # Only add if at least name or email is provided
+            if name or email:
+                participants.append({"name": name, "email": email, "title": title})
+
+            index += 1
+
+        return participants
 
 
 class CourseSignupSuccessView(TemplateView):
@@ -132,7 +181,7 @@ class SchoolSignupView(View):
         form = SchoolSignupForm(request.POST, request.FILES, signup_page=page)
         if form.is_valid():
             # Create the school signup
-            school_signup = SchoolSignup.objects.create(
+            SchoolSignup.objects.create(
                 school=form.cleaned_data.get("school") if not form.cleaned_data.get("school_not_listed") else None,
                 new_school_name=form.cleaned_data.get("new_school_name", ""),
                 municipality=form.cleaned_data["municipality"],

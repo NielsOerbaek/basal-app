@@ -81,12 +81,37 @@ class CourseSignupViewTest(TestCase):
             {
                 "course": self.course.pk,
                 "school": self.school.pk,
-                "participant_name": "Test Person",
-                "participant_email": "test@example.com",
+                "participant_name_0": "Test Person",
+                "participant_email_0": "test@example.com",
             },
         )
         self.assertRedirects(response, reverse("signup:course-success"))
         self.assertEqual(CourseSignUp.objects.count(), 1)
+
+    def test_course_signup_multiple_participants(self):
+        """Course signup with multiple participants should create multiple signups."""
+        response = self.client.post(
+            reverse("signup:course"),
+            {
+                "course": self.course.pk,
+                "school": self.school.pk,
+                "participant_name_0": "First Person",
+                "participant_email_0": "first@example.com",
+                "participant_title_0": "Teacher",
+                "participant_name_1": "Second Person",
+                "participant_email_1": "second@example.com",
+                "participant_title_1": "Assistant",
+            },
+        )
+        self.assertRedirects(response, reverse("signup:course-success"))
+        self.assertEqual(CourseSignUp.objects.count(), 2)
+
+        # Verify both participants were created correctly
+        signups = CourseSignUp.objects.all().order_by("participant_name")
+        self.assertEqual(signups[0].participant_name, "First Person")
+        self.assertEqual(signups[0].participant_email, "first@example.com")
+        self.assertEqual(signups[1].participant_name, "Second Person")
+        self.assertEqual(signups[1].participant_email, "second@example.com")
 
     def test_course_signup_success_loads(self):
         """Course signup success page should load."""
@@ -137,8 +162,8 @@ class CourseSignupWithDynamicFieldsTest(TestCase):
             {
                 "course": self.course.pk,
                 "school": self.school.pk,
-                "participant_name": "Test Person",
-                "participant_email": "test@example.com",
+                "participant_name_0": "Test Person",
+                "participant_email_0": "test@example.com",
                 # Missing checkbox field
             },
         )
@@ -159,8 +184,8 @@ class CourseSignupWithDynamicFieldsTest(TestCase):
             {
                 "course": self.course.pk,
                 "school": self.school.pk,
-                "participant_name": "Test Person",
-                "participant_email": "test@example.com",
+                "participant_name_0": "Test Person",
+                "participant_email_0": "test@example.com",
                 checkbox.field_name: "on",
             },
         )

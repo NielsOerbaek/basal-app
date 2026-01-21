@@ -17,57 +17,187 @@
 </div>
 {% endif %}
 
-{% if form.errors %}
-<div class="alert alert-danger">Ret venligst fejlene nedenfor.</div>
+{% if form.errors or participant_error %}
+<div class="alert alert-danger">
+    {% if participant_error %}{{ participant_error }}{% else %}Ret venligst fejlene nedenfor.{% endif %}
+</div>
 {% endif %}
 
 <div id="seats-warning" class="alert alert-warning" style="display: none;">
     <strong><i class="bi bi-exclamation-triangle me-2"></i>Bemærk:</strong>
-    Din skole har ikke flere ledige pladser i jeres abonnement.
+    <span id="seats-warning-text">
+        Din skole har ikke flere ledige pladser i jeres abonnement.
+    </span>
+    <br>
     I kan stadig tilmelde jer, og Basal vil kontakte jer angående udvidelse af jeres abonnement.
     <br><br>
     En ekstra plads koster ca. 8.000 kr.
 </div>
 
-<form method="post" enctype="multipart/form-data">
+<form method="post" enctype="multipart/form-data" id="signup-form">
     {% csrf_token %}
+
+    {# Course and school selection via crispy #}
     {% crispy form %}
+
+    {# Participant section - rendered manually for dynamic cloning #}
+    <hr>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Deltagerinformation</h5>
+        <span class="badge bg-secondary" id="participant-count">1 deltager</span>
+    </div>
+
+    <div id="participants-container">
+        <div class="participant-entry card mb-3" data-index="0">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="participant-number text-muted small">Deltager 1</span>
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-participant" style="display: none;">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Navn <span class="text-danger">*</span></label>
+                    <input type="text" name="participant_name_0" class="form-control" required>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">E-mail <span class="text-danger">*</span></label>
+                        <input type="email" name="participant_email_0" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Stilling</label>
+                        <input type="text" name="participant_title_0" class="form-control">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button type="button" class="btn btn-outline-primary mb-4" id="add-participant">
+        <i class="bi bi-plus-lg me-1"></i>Tilføj person
+    </button>
+
+    <div>
+        <button type="submit" class="btn btn-primary btn-lg">
+            {{ page.submit_button_text|default:'Tilmeld' }}
+        </button>
+    </div>
 </form>
 {% endblock %}
 
 {% block signup_extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const schoolSelect = document.getElementById('id_school');
-        const seatsWarning = document.getElementById('seats-warning');
+document.addEventListener('DOMContentLoaded', function() {
+    const schoolSelect = document.getElementById('id_school');
+    const seatsWarning = document.getElementById('seats-warning');
+    const seatsWarningText = document.getElementById('seats-warning-text');
+    const participantsContainer = document.getElementById('participants-container');
+    const addParticipantBtn = document.getElementById('add-participant');
+    const participantCountBadge = document.getElementById('participant-count');
 
-        function checkSchoolSeats() {
-            if (!schoolSelect || !schoolSelect.value) {
-                seatsWarning.style.display = 'none';
-                return;
-            }
+    let participantIndex = 1;
+    let availableSeats = null;
 
-            fetch('{% url "signup:check-school-seats" %}?school_id=' + schoolSelect.value)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.has_available_seats === false) {
-                        seatsWarning.style.display = 'block';
+    function getParticipantCount() {
+        return participantsContainer.querySelectorAll('.participant-entry').length;
+    }
+
+    function updateParticipantCount() {
+        const count = getParticipantCount();
+        participantCountBadge.textContent = count === 1 ? '1 deltager' : count + ' deltagere';
+
+        // Update participant numbers and show/hide remove buttons
+        const entries = participantsContainer.querySelectorAll('.participant-entry');
+        entries.forEach((entry, i) => {
+            entry.querySelector('.participant-number').textContent = 'Deltager ' + (i + 1);
+            const removeBtn = entry.querySelector('.remove-participant');
+            removeBtn.style.display = entries.length > 1 ? 'block' : 'none';
+        });
+
+        // Re-check seats when participant count changes
+        checkSchoolSeats();
+    }
+
+    function addParticipant() {
+        const template = participantsContainer.querySelector('.participant-entry');
+        const newEntry = template.cloneNode(true);
+
+        // Update data-index and field names
+        newEntry.dataset.index = participantIndex;
+        newEntry.querySelectorAll('input').forEach(input => {
+            const baseName = input.name.replace(/_\d+$/, '');
+            input.name = baseName + '_' + participantIndex;
+            input.value = '';
+        });
+
+        participantsContainer.appendChild(newEntry);
+        participantIndex++;
+        updateParticipantCount();
+
+        // Add remove event listener
+        newEntry.querySelector('.remove-participant').addEventListener('click', function() {
+            newEntry.remove();
+            updateParticipantCount();
+        });
+
+        // Focus on the name field
+        newEntry.querySelector('input[name^="participant_name"]').focus();
+    }
+
+    function checkSchoolSeats() {
+        if (!schoolSelect || !schoolSelect.value) {
+            seatsWarning.style.display = 'none';
+            availableSeats = null;
+            return;
+        }
+
+        fetch('{% url "signup:check-school-seats" %}?school_id=' + schoolSelect.value)
+            .then(response => response.json())
+            .then(data => {
+                availableSeats = data.remaining_seats;
+                const participantCount = getParticipantCount();
+
+                if (availableSeats < participantCount) {
+                    const missing = participantCount - availableSeats;
+                    if (availableSeats <= 0) {
+                        seatsWarningText.textContent = 'Din skole har ikke flere ledige pladser i jeres abonnement.';
                     } else {
-                        seatsWarning.style.display = 'none';
+                        seatsWarningText.textContent = 'Din skole har kun ' + availableSeats + ' ledige plads' +
+                            (availableSeats === 1 ? '' : 'er') + ', men du tilmelder ' + participantCount + ' personer.';
                     }
-                })
-                .catch(() => {
+                    seatsWarning.style.display = 'block';
+                } else {
                     seatsWarning.style.display = 'none';
-                });
-        }
+                }
+            })
+            .catch(() => {
+                seatsWarning.style.display = 'none';
+                availableSeats = null;
+            });
+    }
 
-        if (schoolSelect) {
-            schoolSelect.addEventListener('change', checkSchoolSeats);
-            // Check seats on page load if school is already selected
-            if (schoolSelect.value) {
-                checkSchoolSeats();
-            }
+    // Event listeners
+    if (addParticipantBtn) {
+        addParticipantBtn.addEventListener('click', addParticipant);
+    }
+
+    if (schoolSelect) {
+        schoolSelect.addEventListener('change', checkSchoolSeats);
+        // Check seats on page load if school is already selected
+        if (schoolSelect.value) {
+            checkSchoolSeats();
         }
-    });
+    }
+
+    // Add remove listener to initial participant (hidden by default since it's the only one)
+    const initialRemoveBtn = participantsContainer.querySelector('.remove-participant');
+    if (initialRemoveBtn) {
+        initialRemoveBtn.addEventListener('click', function() {
+            this.closest('.participant-entry').remove();
+            updateParticipantCount();
+        });
+    }
+});
 </script>
 {% endblock %}
