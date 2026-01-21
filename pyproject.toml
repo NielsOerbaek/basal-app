@@ -24,6 +24,7 @@ dev = [
     "pytest>=8.0",
     "pytest-django>=4.5",
     "pytest-cov>=4.0",
+    "pytest-xdist>=3.5",
     "factory-boy>=3.3",
     "ruff>=0.1",
     "pre-commit>=3.0",
@@ -40,7 +41,7 @@ packages = []
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.development"
 python_files = ["test_*.py", "*_test.py", "tests.py"]
-addopts = "-v --tb=short --cov=apps --cov-fail-under=80"
+addopts = "-v --tb=short -n auto --reuse-db --cov=apps --cov-fail-under=80"
 
 [tool.coverage.run]
 source = ["apps"]
