@@ -19,8 +19,30 @@
 <div class="card mb-4">
     <div class="card-body">
         <form method="get" class="row g-3">
-            <div class="col-md-10">
+            <div class="col-md-4">
                 <input type="text" name="search" value="{{ request.GET.search }}" class="form-control" placeholder="Søg skoler...">
+            </div>
+            <div class="col-md-2">
+                <select name="enrolled" class="form-select">
+                    <option value="">Alle (tilmeldt)</option>
+                    <option value="yes" {% if request.GET.enrolled == 'yes' %}selected{% endif %}>Tilmeldt Basal</option>
+                    <option value="no" {% if request.GET.enrolled == 'no' %}selected{% endif %}>Ikke tilmeldt</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="kommune" class="form-select">
+                    <option value="">Alle kommuner</option>
+                    {% for k in kommuner %}
+                    <option value="{{ k }}" {% if request.GET.kommune == k %}selected{% endif %}>{{ k }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="unused_seats" class="form-select">
+                    <option value="">Alle (pladser)</option>
+                    <option value="yes" {% if request.GET.unused_seats == 'yes' %}selected{% endif %}>Har ubrugte pladser</option>
+                    <option value="no" {% if request.GET.unused_seats == 'no' %}selected{% endif %}>Ingen ubrugte pladser</option>
+                </select>
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-outline-primary w-100">
@@ -38,7 +60,8 @@
                 <tr>
                     <th>{% sort_header 'name' 'Navn' %}</th>
                     <th>{% sort_header 'kommune' 'Kommune' %}</th>
-                    <th>Kontaktperson</th>
+                    <th>Status</th>
+                    <th>{% sort_header 'contact' 'Seneste henvendelse' %}</th>
                     <th>{% sort_header 'seats' 'Ubrugte pladser' %}</th>
                     <th class="table-actions">Handlinger</th>
                 </tr>
@@ -48,10 +71,25 @@
                 <tr>
                     <td><a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a></td>
                     <td>{{ school.kommune }}</td>
-                    <td>{% with primary=school.people.all|first %}{{ primary.name|default:"-" }}{% endwith %}</td>
                     <td>
-                        {% if school.enrolled_at %}
-                        {{ school.remaining_seats }} <small class="text-muted">ud af {{ school.total_seats }}</small>
+                        {% if school.opted_out_at %}
+                        <span class="badge bg-secondary">Frameldt</span>
+                        {% elif school.enrolled_at %}
+                        <span class="badge bg-success">Tilmeldt</span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark">Ikke tilmeldt</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if school.last_contact_date %}
+                        {{ school.last_contact_date|date:"d. M Y" }}
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if school.enrolled_at and not school.opted_out_at %}
+                        {{ school.remaining_seats }} <small class="text-muted">/ {{ school.total_seats }}</small>
                         {% else %}
                         <span class="text-muted">-</span>
                         {% endif %}
@@ -67,7 +105,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="text-center text-muted py-4">Ingen skoler fundet.</td>
+                    <td colspan="6" class="text-center text-muted py-4">Ingen skoler fundet.</td>
                 </tr>
                 {% endfor %}
             </tbody>

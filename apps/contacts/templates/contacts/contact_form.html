@@ -17,3 +17,76 @@
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const schoolSelect = document.getElementById('id_school');
+    const personsSection = document.getElementById('persons-section');
+
+    if (!schoolSelect || !personsSection) return;
+
+    function updatePersons(schoolId) {
+        if (!schoolId) {
+            // Hide persons section if no school selected
+            personsSection.style.display = 'none';
+            return;
+        }
+
+        fetch('{% url "contacts:school-persons" %}?school_id=' + schoolId)
+            .then(response => response.json())
+            .then(data => {
+                // Find or create the contacted_persons container
+                let personsContainer = personsSection.querySelector('#div_id_contacted_persons');
+                if (!personsContainer) {
+                    personsContainer = document.createElement('div');
+                    personsContainer.id = 'div_id_contacted_persons';
+                    personsContainer.className = 'mb-3';
+                    // Insert after the label
+                    const label = personsSection.querySelector('label.form-label');
+                    if (label) {
+                        label.after(personsContainer);
+                    } else {
+                        personsSection.prepend(personsContainer);
+                    }
+                }
+
+                if (data.persons.length === 0) {
+                    personsContainer.innerHTML = '<p class="text-muted small">Ingen kontaktpersoner registreret for denne skole.</p>';
+                } else {
+                    let html = '';
+                    data.persons.forEach(person => {
+                        const title = person.title ? ` (${person.title})` : '';
+                        html += `
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="contacted_persons" value="${person.id}" id="person_${person.id}">
+                                <label class="form-check-label" for="person_${person.id}">
+                                    ${person.name}${title}
+                                </label>
+                            </div>
+                        `;
+                    });
+                    personsContainer.innerHTML = html;
+                }
+
+                personsSection.style.display = 'block';
+            })
+            .catch(() => {
+                personsSection.style.display = 'none';
+            });
+    }
+
+    // Update when school selection changes
+    schoolSelect.addEventListener('change', function() {
+        updatePersons(this.value);
+    });
+
+    // Initial load if school is already selected
+    if (schoolSelect.value) {
+        personsSection.style.display = 'block';
+    } else {
+        personsSection.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

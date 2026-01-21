@@ -2,13 +2,14 @@ from django.urls import path
 
 from . import views
 
-app_name = 'contacts'
+app_name = "contacts"
 
 urlpatterns = [
-    path('', views.ContactListView.as_view(), name='list'),
-    path('create/', views.ContactCreateView.as_view(), name='create'),
-    path('<int:pk>/', views.ContactDetailView.as_view(), name='detail'),
-    path('<int:pk>/edit/', views.ContactUpdateView.as_view(), name='update'),
-    path('<int:pk>/delete/', views.ContactDeleteView.as_view(), name='delete'),
-    path('export/', views.ContactExportView.as_view(), name='export'),
+    path("", views.ContactListView.as_view(), name="list"),
+    path("create/", views.ContactCreateView.as_view(), name="create"),
+    path("school-persons/", views.SchoolPersonsView.as_view(), name="school-persons"),
+    path("<int:pk>/", views.ContactDetailView.as_view(), name="detail"),
+    path("<int:pk>/edit/", views.ContactUpdateView.as_view(), name="update"),
+    path("<int:pk>/delete/", views.ContactDeleteView.as_view(), name="delete"),
+    path("export/", views.ContactExportView.as_view(), name="export"),
 ]
