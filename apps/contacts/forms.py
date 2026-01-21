@@ -64,14 +64,17 @@ class ContactTimeForm(forms.ModelForm):
             "school",
             Row(
                 Column("contacted_date", css_class="col-md-6"),
-                Column("contacted_time", css_class="col-md-6"),
+                Column(
+                    Field("contacted_time", wrapper_class="time-field-wrapper"),
+                    css_class="col-md-6",
+                ),
             ),
+            "inbound",
             Div(
                 Field("contacted_persons", wrapper_class="mb-2"),
                 "contacted_other",
                 css_id="persons-section",
             ),
-            "inbound",
             "comment",
             Submit("submit", "Gem henvendelse", css_class="btn btn-primary"),
         )

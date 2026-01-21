@@ -23,12 +23,43 @@
 document.addEventListener('DOMContentLoaded', function() {
     const schoolSelect = document.getElementById('id_school');
     const personsSection = document.getElementById('persons-section');
+    const timeInput = document.getElementById('id_contacted_time');
+    const dateInput = document.getElementById('id_contacted_date');
+
+    // Add "Nu" button next to time field
+    if (timeInput) {
+        const wrapper = timeInput.closest('.time-field-wrapper') || timeInput.parentElement;
+        const inputGroup = document.createElement('div');
+        inputGroup.className = 'input-group';
+        timeInput.parentNode.insertBefore(inputGroup, timeInput);
+        inputGroup.appendChild(timeInput);
+
+        const nowBtn = document.createElement('button');
+        nowBtn.type = 'button';
+        nowBtn.className = 'btn btn-outline-secondary';
+        nowBtn.innerHTML = '<i class="bi bi-clock"></i> Nu';
+        nowBtn.addEventListener('click', function() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            timeInput.value = `${hours}:${minutes}`;
+        });
+        inputGroup.appendChild(nowBtn);
+    }
+
+    // Ensure date is prefilled with today
+    if (dateInput && !dateInput.value) {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        dateInput.value = `${year}-${month}-${day}`;
+    }
 
     if (!schoolSelect || !personsSection) return;
 
     function updatePersons(schoolId) {
         if (!schoolId) {
-            // Hide persons section if no school selected
             personsSection.style.display = 'none';
             return;
         }
@@ -36,13 +67,11 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('{% url "contacts:school-persons" %}?school_id=' + schoolId)
             .then(response => response.json())
             .then(data => {
-                // Find or create the contacted_persons container
                 let personsContainer = personsSection.querySelector('#div_id_contacted_persons');
                 if (!personsContainer) {
                     personsContainer = document.createElement('div');
                     personsContainer.id = 'div_id_contacted_persons';
                     personsContainer.className = 'mb-3';
-                    // Insert after the label
                     const label = personsSection.querySelector('label.form-label');
                     if (label) {
                         label.after(personsContainer);
@@ -76,12 +105,10 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // Update when school selection changes
     schoolSelect.addEventListener('change', function() {
         updatePersons(this.value);
     });
 
-    // Initial load if school is already selected
     if (schoolSelect.value) {
         personsSection.style.display = 'block';
     } else {
