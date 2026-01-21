@@ -102,7 +102,7 @@
                     <thead class="table-light">
                         <tr>
                             <th>Navn</th>
-                            <th>Adresse</th>
+                            <th>Kommune</th>
                             <th>Kontaktperson</th>
                             <th>Ubrugte pladser</th>
                         </tr>
@@ -111,7 +111,7 @@
                         {% for school in recent_enrollments %}
                         <tr>
                             <td><a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a></td>
-                            <td>{{ school.adresse }}, {{ school.kommune }}</td>
+                            <td>{{ school.kommune }}</td>
                             <td>{% with contact=school.people.first %}{% if contact %}{{ contact.name }}{% if contact.email %} ({{ contact.email }}){% endif %}{% else %}-{% endif %}{% endwith %}</td>
                             <td>{{ school.remaining_seats }} <small class="text-muted">ud af {{ school.total_seats }}</small></td>
                         </tr>
@@ -135,7 +135,7 @@
                 {% for contact in recent_contacts %}
                 <li class="list-group-item">
                     <div class="d-flex justify-content-between">
-                        <a href="{% url 'schools:detail' contact.school.pk %}"><strong>{{ contact.school.name }}</strong></a>
+                        <a href="{% url 'schools:detail' contact.school.pk %}"><strong>{{ contact.school.name }} ({{ contact.school.kommune }})</strong></a>
                         <small class="text-muted">{{ contact.contacted_date|date:"d. M" }}</small>
                     </div>
                     <small class="text-muted">af {{ contact.created_by.get_full_name|default:contact.created_by.username|default:"Ukendt" }}</small>
@@ -154,7 +154,7 @@
                 {% for signup in recent_signups %}
                 <li class="list-group-item">
                     <div class="d-flex justify-content-between">
-                        <a href="{% url 'schools:detail' signup.school.pk %}"><strong>{{ signup.school.name }}</strong></a>
+                        <a href="{% url 'schools:detail' signup.school.pk %}"><strong>{{ signup.school.name }} ({{ signup.school.kommune }})</strong></a>
                         <small class="text-muted">{{ signup.created_at|date:"d. M" }}</small>
                     </div>
                     <small class="text-muted">{{ signup.course.title }}{% if signup.participant_title %} - {{ signup.participant_title }}{% endif %}</small>

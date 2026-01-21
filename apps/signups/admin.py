@@ -2,10 +2,44 @@ from django.contrib import admin
 from django.utils import timezone
 from django_summernote.admin import SummernoteModelAdmin
 
+from apps.core.decorators import can_manage_signups
+
 from .models import SchoolSignup, SignupFormField, SignupPage
 
 
-class SignupFormFieldInline(admin.TabularInline):
+class SignupAdminMixin:
+    """Mixin to allow Tilmeldingsadministrator group to manage signup models."""
+
+    def has_module_permission(self, request):
+        if can_manage_signups(request.user):
+            return True
+        return super().has_module_permission(request)
+
+    def has_view_permission(self, request, obj=None):
+        if can_manage_signups(request.user):
+            return True
+        return super().has_view_permission(request, obj)
+
+    def has_add_permission(self, request, obj=None):
+        if can_manage_signups(request.user):
+            return True
+        # Handle both ModelAdmin (no obj) and InlineModelAdmin (with obj) signatures
+        if obj is None:
+            return super().has_add_permission(request)
+        return super().has_add_permission(request, obj)
+
+    def has_change_permission(self, request, obj=None):
+        if can_manage_signups(request.user):
+            return True
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if can_manage_signups(request.user):
+            return True
+        return super().has_delete_permission(request, obj)
+
+
+class SignupFormFieldInline(SignupAdminMixin, admin.TabularInline):
     model = SignupFormField
     extra = 0
     fields = ["field_type", "label", "help_text", "is_required", "attachment", "order"]
@@ -13,7 +47,7 @@ class SignupFormFieldInline(admin.TabularInline):
 
 
 @admin.register(SignupPage)
-class SignupPageAdmin(SummernoteModelAdmin):
+class SignupPageAdmin(SignupAdminMixin, SummernoteModelAdmin):
     list_display = ["page_type", "title", "is_active", "updated_at"]
     list_filter = ["is_active", "page_type"]
     search_fields = ["title", "subtitle"]
@@ -33,7 +67,7 @@ class SignupPageAdmin(SummernoteModelAdmin):
 
 
 @admin.register(SignupFormField)
-class SignupFormFieldAdmin(admin.ModelAdmin):
+class SignupFormFieldAdmin(SignupAdminMixin, admin.ModelAdmin):
     list_display = ["label", "signup_page", "field_type", "is_required", "order"]
     list_filter = ["signup_page", "field_type", "is_required"]
     search_fields = ["label", "help_text"]

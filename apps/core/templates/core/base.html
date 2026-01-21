@@ -92,10 +92,18 @@
                             <i class="bi bi-telephone me-1"></i>Henvendelser
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'signup:course' %}" target="_blank">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
                             <i class="bi bi-box-arrow-up-right me-1"></i>Tilmelding
                         </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'signup:course' %}" target="_blank"><i class="bi bi-person-plus me-2"></i>Kursustilmelding</a></li>
+                            <li><a class="dropdown-item" href="{% url 'signup:school' %}" target="_blank"><i class="bi bi-building-add me-2"></i>Skoletilmelding</a></li>
+                            {% if can_manage_signups %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'admin:signups_signuppage_changelist' %}"><i class="bi bi-pencil-square me-2"></i>Rediger tilmeldingssider</a></li>
+                            {% endif %}
+                        </ul>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
@@ -107,10 +115,12 @@
                             <li><a class="dropdown-item" href="{% url 'audit:activity_list' %}"><i class="bi bi-clock-history me-2"></i>Aktivitet</a></li>
                             <li><a class="dropdown-item" href="{% url 'schools:missing-invoices' %}"><i class="bi bi-receipt me-2"></i>Manglende fakturaer</a></li>
                             <li><a class="dropdown-item" href="{% url 'schools:school-year-list' %}"><i class="bi bi-calendar-range me-2"></i>Skoleår</a></li>
-                            {% if user.is_superuser %}
+                            {% if can_manage_users %}
                             <li><a class="dropdown-item" href="{% url 'accounts:user-list' %}"><i class="bi bi-people me-2"></i>Brugere</a></li>
                             {% endif %}
+                            {% if user.is_superuser %}
                             <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-gear me-2"></i>Admin</a></li>
+                            {% endif %}
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="post" action="{% url 'logout' %}">

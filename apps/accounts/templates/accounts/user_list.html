@@ -53,11 +53,19 @@
                     </td>
                     <td>
                         {% if user_obj.is_superuser %}
-                        <span class="badge bg-danger">Superbruger</span>
-                        {% elif user_obj.is_staff %}
-                        <span class="badge bg-primary">Medarbejder</span>
+                        <span class="badge bg-danger">Fuld admin</span>
                         {% else %}
-                        <span class="badge bg-secondary">Bruger</span>
+                            {% with user_obj.groups.all as groups %}
+                                {% for group in groups %}
+                                    {% if group.name == 'Brugeradministrator' %}
+                                    <span class="badge bg-primary">Brugeradmin</span>
+                                    {% elif group.name == 'Tilmeldingsadministrator' %}
+                                    <span class="badge bg-info">Tilmeldingsadmin</span>
+                                    {% endif %}
+                                {% empty %}
+                                <span class="badge bg-secondary">Basis</span>
+                                {% endfor %}
+                            {% endwith %}
                         {% endif %}
                     </td>
                     <td class="table-actions">

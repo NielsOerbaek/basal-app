@@ -100,13 +100,14 @@ class CourseSignupForm(DynamicFieldsMixin, forms.Form):
 
         # Add dynamic fields to layout
         if hasattr(self, "dynamic_fields") and self.dynamic_fields:
-            layout_items.append(HTML("<hr><h5>Yderligere oplysninger</h5>"))
+            layout_items.append(HTML("<hr>"))
             layout_items.extend(self.get_dynamic_field_layout())
 
         layout_items.append(Submit("submit", submit_text, css_class="btn btn-primary btn-lg"))
 
         self.helper = FormHelper()
         self.helper.layout = Layout(*layout_items)
+
 
 class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
     """School signup form for joining the Basal project."""
@@ -181,7 +182,7 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
 
         # Add dynamic fields to layout
         if hasattr(self, "dynamic_fields") and self.dynamic_fields:
-            layout_items.append(HTML("<hr><h5>Yderligere oplysninger</h5>"))
+            layout_items.append(HTML("<hr>"))
             layout_items.extend(self.get_dynamic_field_layout())
 
         layout_items.append(Submit("submit", submit_text, css_class="btn btn-primary btn-lg"))
