@@ -41,7 +41,7 @@ packages = []
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.development"
 python_files = ["test_*.py", "*_test.py", "tests.py"]
-addopts = "-v --tb=short -n auto --reuse-db --cov=apps --cov-fail-under=80"
+addopts = "-v --tb=short -n 4 --cov=apps --cov-fail-under=80"
 
 [tool.coverage.run]
 source = ["apps"]
