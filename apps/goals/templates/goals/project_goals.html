@@ -1,0 +1,277 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Projektmål - Basal{% endblock %}
+
+{% block extra_css %}
+<style>
+    .goals-table th, .goals-table td {
+        text-align: center;
+        vertical-align: middle;
+    }
+    .goals-table th:first-child, .goals-table td:first-child {
+        text-align: left;
+    }
+    .section-header {
+        background-color: #f3e8f2;
+    }
+    .current-year {
+        background-color: #e8f4e8;
+    }
+    .future-year {
+        background-color: #f8f9fa;
+        color: #6c757d;
+    }
+    .target-label {
+        font-size: 0.75rem;
+        color: #6c757d;
+        display: block;
+    }
+    .actual-value {
+        font-weight: 600;
+    }
+    .actual-value.goal-met {
+        color: #198754;
+    }
+    .actual-value.goal-not-met {
+        color: #dc3545;
+    }
+    .metric-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+    .metric-link:hover {
+        background-color: rgba(155, 67, 147, 0.1);
+    }
+    .calculated-value {
+        font-style: italic;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-graph-up-arrow me-2"></i>Projektmål</h1>
+</div>
+
+<!-- Collapsible Settings Form -->
+<div class="card mb-4">
+    <div class="card-header">
+        <a class="text-decoration-none text-dark" data-bs-toggle="collapse" href="#settingsCollapse" role="button" aria-expanded="false" aria-controls="settingsCollapse">
+            <i class="bi bi-sliders me-2"></i>Beregningsgrundlag
+            <i class="bi bi-chevron-down float-end"></i>
+        </a>
+    </div>
+    <div class="collapse" id="settingsCollapse">
+        <div class="card-body">
+            <form method="post" action="{% url 'goals:settings-update' %}" class="row g-3 align-items-end">
+                {% csrf_token %}
+                <div class="col-auto">
+                    <label for="klasseforloeb" class="form-label">Klasseforløb pr. lærer pr. år</label>
+                    <input type="number" step="0.01" min="0" class="form-control" id="klasseforloeb"
+                           name="klasseforloeb_per_teacher_per_year"
+                           value="{{ settings.klasseforloeb_per_teacher_per_year }}">
+                </div>
+                <div class="col-auto">
+                    <label for="students" class="form-label">Elever pr. klasseforløb</label>
+                    <input type="number" step="0.1" min="0" class="form-control" id="students"
+                           name="students_per_klasseforloeb"
+                           value="{{ settings.students_per_klasseforloeb }}">
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i>Gem
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Project Goals Table -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-table me-2"></i>5-års projektmål (2024/25 - 2028/29)
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered goals-table">
+                <thead>
+                    <tr>
+                        <th>Aktivitet/skoleår</th>
+                        {% for year_data in years_data %}
+                        <th{% if year_data.is_current %} class="current-year"{% elif year_data.is_future %} class="future-year"{% endif %}>
+                            {{ year_data.year }}
+                            {% if year_data.is_current %}<br><small>(aktuelt)</small>{% endif %}
+                        </th>
+                        {% endfor %}
+                        <th>I alt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Nye skolepartnerskaber -->
+                    <tr class="section-header">
+                        <td colspan="{{ years_data|length|add:2 }}"><strong>Nye skolepartnerskaber</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Antal nye partnerskoler</td>
+                        {% for year_data in years_data %}
+                        <td{% if year_data.is_current %} class="current-year"{% elif year_data.is_future %} class="future-year"{% endif %}>
+                            {% if year_data.is_future %}
+                            <span class="target-label">Mål: {{ year_data.targets.new_schools }}</span>
+                            <span class="actual-value">-</span>
+                            {% else %}
+                            <a href="{% url 'schools:list' %}?status=new&school_year={{ year_data.url_year }}" class="metric-link">
+                                <span class="target-label">Mål: {{ year_data.targets.new_schools }}</span>
+                                <span class="actual-value {% if year_data.goal_met.new_schools %}goal-met{% else %}goal-not-met{% endif %}">{{ year_data.metrics.new_schools }}</span>
+                            </a>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td>
+                            <span class="target-label">Mål: {{ project_totals.new_schools }}</span>
+                            <span class="actual-value {% if totals_goal_met.new_schools %}goal-met{% else %}goal-not-met{% endif %}">{{ actual_totals.new_schools }}</span>
+                        </td>
+                    </tr>
+
+                    <!-- Forankring -->
+                    <tr class="section-header">
+                        <td colspan="{{ years_data|length|add:2 }}"><strong>Forankring blandt partnerskoler</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Antal partnerskoler i forankring</td>
+                        {% for year_data in years_data %}
+                        <td{% if year_data.is_current %} class="current-year"{% elif year_data.is_future %} class="future-year"{% endif %}>
+                            {% if year_data.is_future %}
+                            <span class="target-label">Mål: {{ year_data.targets.anchoring }}</span>
+                            <span class="actual-value">-</span>
+                            {% else %}
+                            <a href="{% url 'schools:list' %}?status=anchoring&school_year={{ year_data.url_year }}" class="metric-link">
+                                <span class="target-label">Mål: {{ year_data.targets.anchoring }}</span>
+                                <span class="actual-value {% if year_data.goal_met.anchoring %}goal-met{% else %}goal-not-met{% endif %}">{{ year_data.metrics.anchoring }}</span>
+                            </a>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td>
+                            <span class="target-label">Mål: {{ project_totals.anchoring }}</span>
+                            <span class="actual-value {% if totals_goal_met.anchoring %}goal-met{% else %}goal-not-met{% endif %}">{{ actual_totals.anchoring }}</span>
+                        </td>
+                    </tr>
+
+                    <!-- Uddannelse -->
+                    <tr class="section-header">
+                        <td colspan="{{ years_data|length|add:2 }}"><strong>Uddannelse af undervisere og andre medarbejdere</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Antal kurser</td>
+                        {% for year_data in years_data %}
+                        <td{% if year_data.is_current %} class="current-year"{% elif year_data.is_future %} class="future-year"{% endif %}>
+                            {% if year_data.is_future %}
+                            <span class="target-label">Mål: {{ year_data.targets.courses }}</span>
+                            <span class="actual-value">-</span>
+                            {% else %}
+                            <a href="{% url 'courses:list' %}?school_year={{ year_data.url_year }}" class="metric-link">
+                                <span class="target-label">Mål: {{ year_data.targets.courses }}</span>
+                                <span class="actual-value {% if year_data.goal_met.courses %}goal-met{% else %}goal-not-met{% endif %}">{{ year_data.metrics.courses }}</span>
+                            </a>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td>
+                            <span class="target-label">Mål: {{ project_totals.courses }}</span>
+                            <span class="actual-value {% if totals_goal_met.courses %}goal-met{% else %}goal-not-met{% endif %}">{{ actual_totals.courses }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Uddannede i alt</td>
+                        {% for year_data in years_data %}
+                        <td{% if year_data.is_current %} class="current-year"{% elif year_data.is_future %} class="future-year"{% endif %}>
+                            {% if year_data.is_future %}
+                            <span class="target-label">Mål: {{ year_data.targets.trained_total }}</span>
+                            <span class="actual-value">-</span>
+                            {% else %}
+                            <a href="{% url 'courses:signup-list' %}?school_year={{ year_data.url_year }}&attended=true" class="metric-link">
+                                <span class="target-label">Mål: {{ year_data.targets.trained_total }}</span>
+                                <span class="actual-value {% if year_data.goal_met.trained_total %}goal-met{% else %}goal-not-met{% endif %}">{{ year_data.metrics.trained_total }}</span>
+                            </a>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td>
+                            <span class="target-label">Mål: {{ project_totals.trained_total }}</span>
+                            <span class="actual-value {% if totals_goal_met.trained_total %}goal-met{% else %}goal-not-met{% endif %}">{{ actual_totals.trained_total }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>- heraf undervisere *</td>
+                        {% for year_data in years_data %}
+                        <td{% if year_data.is_current %} class="current-year"{% elif year_data.is_future %} class="future-year"{% endif %}>
+                            {% if year_data.is_future %}
+                            <span class="target-label">Mål: {{ year_data.targets.trained_teachers }}</span>
+                            <span class="actual-value">-</span>
+                            {% else %}
+                            <a href="{% url 'courses:signup-list' %}?school_year={{ year_data.url_year }}&attended=true&is_underviser=true" class="metric-link">
+                                <span class="target-label">Mål: {{ year_data.targets.trained_teachers }}</span>
+                                <span class="actual-value {% if year_data.goal_met.trained_teachers %}goal-met{% else %}goal-not-met{% endif %}">{{ year_data.metrics.trained_teachers }}</span>
+                            </a>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td>
+                            <span class="target-label">Mål: {{ project_totals.trained_teachers }}</span>
+                            <span class="actual-value {% if totals_goal_met.trained_teachers %}goal-met{% else %}goal-not-met{% endif %}">{{ actual_totals.trained_teachers }}</span>
+                        </td>
+                    </tr>
+
+                    <!-- Klasseforløb og elever -->
+                    <tr class="section-header">
+                        <td colspan="{{ years_data|length|add:2 }}"><strong>Klasseforløb og elever nået **</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Antal klasseforløb (min.)</td>
+                        {% for year_data in years_data %}
+                        <td{% if year_data.is_current %} class="current-year"{% elif year_data.is_future %} class="future-year"{% endif %}>
+                            <span class="target-label">Mål: {{ year_data.targets.klasseforloeb_min }}</span>
+                            {% if year_data.is_future %}
+                            <span class="actual-value">-</span>
+                            {% else %}
+                            <span class="actual-value calculated-value {% if year_data.goal_met.klasseforloeb %}goal-met{% else %}goal-not-met{% endif %}">{{ year_data.metrics.klasseforloeb|floatformat:0 }}</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td>
+                            <span class="target-label">Mål: {{ project_totals.klasseforloeb_min }}</span>
+                            <span class="actual-value calculated-value {% if totals_goal_met.klasseforloeb %}goal-met{% else %}goal-not-met{% endif %}">{{ actual_totals.klasseforloeb|floatformat:0 }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Antal elever nået (min.)</td>
+                        {% for year_data in years_data %}
+                        <td{% if year_data.is_current %} class="current-year"{% elif year_data.is_future %} class="future-year"{% endif %}>
+                            <span class="target-label">Mål: {{ year_data.targets.students_min }}</span>
+                            {% if year_data.is_future %}
+                            <span class="actual-value">-</span>
+                            {% else %}
+                            <span class="actual-value calculated-value {% if year_data.goal_met.students %}goal-met{% else %}goal-not-met{% endif %}">{{ year_data.metrics.students|floatformat:0 }}</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td>
+                            <span class="target-label">Mål: {{ project_totals.students_min }}</span>
+                            <span class="actual-value calculated-value {% if totals_goal_met.students %}goal-met{% else %}goal-not-met{% endif %}">{{ actual_totals.students|floatformat:0 }}</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-3">
+            <small class="text-muted">
+                * For at sikre et godt udgangspunkt for drift og forankring efter projektets afslutning, udbydes flere kursuspladser til skolerne i 2027/28 end i 2024/25.<br>
+                ** Hertil kommer de forløb, tidligere uddannede lærere afholder. Beregnet som: uddannede undervisere × {{ settings.klasseforloeb_per_teacher_per_year }} klasseforløb/år × {{ settings.students_per_klasseforloeb }} elever/forløb.
+            </small>
+        </div>
+    </div>
+</div>
+{% endblock %}

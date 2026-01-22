@@ -7,40 +7,63 @@
     <h1><i class="bi bi-speedometer2 me-2"></i>Oversigt</h1>
 </div>
 
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card card-stats">
-            <div class="card-body">
-                <h6 class="card-subtitle mb-2 text-muted">Tilmeldte skoler</h6>
-                <h2 class="card-title mb-0">{{ enrolled_schools }}</h2>
-            </div>
-        </div>
+<!-- Project Goals Summary -->
+{% if project_goals.targets %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-graph-up-arrow me-2"></i>Projektmål {{ project_goals.current_year }}</span>
+        <a href="{% url 'goals:project-goals' %}" class="btn btn-sm btn-outline-primary">Se alle <i class="bi bi-arrow-right ms-1"></i></a>
     </div>
-    <div class="col-md-3">
-        <div class="card card-stats">
-            <div class="card-body">
-                <h6 class="card-subtitle mb-2 text-muted">Afholdte kurser</h6>
-                <h2 class="card-title mb-0">{{ past_courses }}</h2>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 mb-3 mb-md-0">
+                <h6 class="text-muted mb-1">Nye skoler</h6>
+                <div class="d-flex align-items-center">
+                    <span class="h4 mb-0 me-2">{{ project_goals.metrics.new_schools }}</span>
+                    <small class="text-muted">/ {{ project_goals.targets.new_schools }}</small>
+                </div>
+                {% widthratio project_goals.metrics.new_schools project_goals.targets.new_schools 100 as pct %}
+                <div class="progress mt-1" style="height: 6px;">
+                    <div class="progress-bar" style="width: {{ pct }}%"></div>
+                </div>
             </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card card-stats">
-            <div class="card-body">
-                <h6 class="card-subtitle mb-2 text-muted">Uddannede i alt</h6>
-                <h2 class="card-title mb-0">{{ total_trained }}</h2>
+            <div class="col-md-3 mb-3 mb-md-0">
+                <h6 class="text-muted mb-1">Forankring</h6>
+                <div class="d-flex align-items-center">
+                    <span class="h4 mb-0 me-2">{{ project_goals.metrics.anchoring }}</span>
+                    <small class="text-muted">/ {{ project_goals.targets.anchoring }}</small>
+                </div>
+                {% widthratio project_goals.metrics.anchoring project_goals.targets.anchoring 100 as pct %}
+                <div class="progress mt-1" style="height: 6px;">
+                    <div class="progress-bar" style="width: {{ pct }}%"></div>
+                </div>
             </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card card-stats">
-            <div class="card-body">
-                <h6 class="card-subtitle mb-2 text-muted">Ubrugte pladser</h6>
-                <h2 class="card-title mb-0">{{ unused_seats }}</h2>
+            <div class="col-md-3 mb-3 mb-md-0">
+                <h6 class="text-muted mb-1">Kurser</h6>
+                <div class="d-flex align-items-center">
+                    <span class="h4 mb-0 me-2">{{ project_goals.metrics.courses }}</span>
+                    <small class="text-muted">/ {{ project_goals.targets.courses }}</small>
+                </div>
+                {% widthratio project_goals.metrics.courses project_goals.targets.courses 100 as pct %}
+                <div class="progress mt-1" style="height: 6px;">
+                    <div class="progress-bar" style="width: {{ pct }}%"></div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <h6 class="text-muted mb-1">Uddannede</h6>
+                <div class="d-flex align-items-center">
+                    <span class="h4 mb-0 me-2">{{ project_goals.metrics.trained_total }}</span>
+                    <small class="text-muted">/ {{ project_goals.targets.trained_total }}</small>
+                </div>
+                {% widthratio project_goals.metrics.trained_total project_goals.targets.trained_total 100 as pct %}
+                <div class="progress mt-1" style="height: 6px;">
+                    <div class="progress-bar" style="width: {{ pct }}%"></div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endif %}
 
 <div class="row">
     <div class="col-lg-8">

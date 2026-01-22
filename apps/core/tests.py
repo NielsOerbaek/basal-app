@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from decimal import Decimal
 
 import pytest
 from django.contrib.auth.models import User
@@ -8,6 +9,50 @@ from django.urls import reverse
 from apps.contacts.models import ContactTime
 from apps.courses.models import Course, CourseSignUp
 from apps.schools.models import Invoice, Person, School, SchoolComment, SchoolYear
+
+from .models import ProjectSettings
+
+
+class ProjectSettingsModelTest(TestCase):
+    """Tests for ProjectSettings singleton model."""
+
+    def test_project_settings_singleton(self):
+        """Only one ProjectSettings instance can exist."""
+        settings1 = ProjectSettings(
+            klasseforloeb_per_teacher_per_year=Decimal("1.5"),
+            students_per_klasseforloeb=Decimal("20.0"),
+        )
+        settings1.save()
+        settings2 = ProjectSettings(
+            klasseforloeb_per_teacher_per_year=Decimal("2.0"),
+            students_per_klasseforloeb=Decimal("25.0"),
+        )
+        settings2.save()
+        # Both should have pk=1, so settings2 overwrites settings1
+        self.assertEqual(ProjectSettings.objects.count(), 1)
+        self.assertEqual(settings1.pk, 1)
+        self.assertEqual(settings2.pk, 1)
+        # Verify the latest values are saved
+        refreshed = ProjectSettings.objects.get(pk=1)
+        self.assertEqual(refreshed.klasseforloeb_per_teacher_per_year, Decimal("2.0"))
+
+    def test_project_settings_get_creates_default(self):
+        """ProjectSettings.get() creates instance with defaults if not exists."""
+        self.assertEqual(ProjectSettings.objects.count(), 0)
+        settings = ProjectSettings.get()
+        self.assertEqual(ProjectSettings.objects.count(), 1)
+        self.assertEqual(settings.klasseforloeb_per_teacher_per_year, Decimal("1.0"))
+        self.assertEqual(settings.students_per_klasseforloeb, Decimal("24.0"))
+
+    def test_project_settings_get_returns_existing(self):
+        """ProjectSettings.get() returns existing instance."""
+        ProjectSettings.objects.create(
+            klasseforloeb_per_teacher_per_year=Decimal("1.5"),
+            students_per_klasseforloeb=Decimal("20.0"),
+        )
+        settings = ProjectSettings.get()
+        self.assertEqual(settings.klasseforloeb_per_teacher_per_year, Decimal("1.5"))
+        self.assertEqual(settings.students_per_klasseforloeb, Decimal("20.0"))
 
 
 class DashboardViewTest(TestCase):

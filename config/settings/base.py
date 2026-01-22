@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "apps.audit",
     "apps.emails",
     "apps.signups",
+    "apps.goals",
 ]
 
 MIDDLEWARE = [

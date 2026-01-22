@@ -93,16 +93,56 @@ class SchoolListView(SortableMixin, ListView):
             ).distinct()
 
         # Enrollment status filter
-        enrolled_filter = self.request.GET.get("enrolled")
-        if enrolled_filter == "yes":
+        status_filter = self.request.GET.get("status_filter")
+        if status_filter == "tilmeldt":
+            # All enrolled (both new and anchoring)
             queryset = queryset.filter(enrolled_at__isnull=False, opted_out_at__isnull=True)
-        elif enrolled_filter == "no":
-            queryset = queryset.filter(Q(enrolled_at__isnull=True) | Q(opted_out_at__isnull=False))
+        elif status_filter == "tilmeldt_ny":
+            # Enrolled less than 1 year ago
+            from django.utils import timezone
+
+            one_year_ago = date.today() - timezone.timedelta(days=365)
+            queryset = queryset.filter(
+                enrolled_at__isnull=False, enrolled_at__gt=one_year_ago, opted_out_at__isnull=True
+            )
+        elif status_filter == "tilmeldt_forankring":
+            # Enrolled more than 1 year ago
+            from django.utils import timezone
+
+            one_year_ago = date.today() - timezone.timedelta(days=365)
+            queryset = queryset.filter(
+                enrolled_at__isnull=False, enrolled_at__lte=one_year_ago, opted_out_at__isnull=True
+            )
+        elif status_filter == "ikke_tilmeldt":
+            # Never enrolled
+            queryset = queryset.filter(enrolled_at__isnull=True)
+        elif status_filter == "frameldt":
+            # Previously enrolled but opted out
+            queryset = queryset.filter(opted_out_at__isnull=False)
 
         # Kommune filter
         kommune_filter = self.request.GET.get("kommune")
         if kommune_filter:
             queryset = queryset.filter(kommune=kommune_filter)
+
+        # School year status filter (for project goals drill-down)
+        status_filter = self.request.GET.get("status")
+        school_year_filter = self.request.GET.get("school_year")
+        if status_filter and school_year_filter:
+            from apps.goals.calculations import get_school_year_dates
+
+            # Convert school_year from URL format (2024-25) to internal format (2024/25)
+            year_str = school_year_filter.replace("-", "/")
+            start_date, end_date = get_school_year_dates(year_str)
+
+            if status_filter == "new":
+                # New schools: enrolled in this school year
+                queryset = queryset.filter(enrolled_at__gte=start_date, enrolled_at__lte=end_date)
+            elif status_filter == "anchoring":
+                # Anchoring schools: enrolled before this year, still active
+                queryset = queryset.filter(enrolled_at__lt=start_date, enrolled_at__isnull=False).exclude(
+                    opted_out_at__lte=end_date
+                )
 
         # Unused seats filter
         unused_filter = self.request.GET.get("unused_seats")

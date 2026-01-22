@@ -23,10 +23,13 @@
                 <input type="text" name="search" value="{{ request.GET.search }}" class="form-control" placeholder="Søg skoler...">
             </div>
             <div class="col-md-2">
-                <select name="enrolled" class="form-select">
-                    <option value="">Alle (tilmeldt)</option>
-                    <option value="yes" {% if request.GET.enrolled == 'yes' %}selected{% endif %}>Tilmeldt Basal</option>
-                    <option value="no" {% if request.GET.enrolled == 'no' %}selected{% endif %}>Ikke tilmeldt</option>
+                <select name="status_filter" class="form-select">
+                    <option value="">Alle (status)</option>
+                    <option value="tilmeldt" {% if request.GET.status_filter == 'tilmeldt' %}selected{% endif %}>Alle tilmeldte</option>
+                    <option value="tilmeldt_ny" {% if request.GET.status_filter == 'tilmeldt_ny' %}selected{% endif %}>Tilmeldt (ny)</option>
+                    <option value="tilmeldt_forankring" {% if request.GET.status_filter == 'tilmeldt_forankring' %}selected{% endif %}>Tilmeldt (forankring)</option>
+                    <option value="ikke_tilmeldt" {% if request.GET.status_filter == 'ikke_tilmeldt' %}selected{% endif %}>Ikke tilmeldt</option>
+                    <option value="frameldt" {% if request.GET.status_filter == 'frameldt' %}selected{% endif %}>Frameldt</option>
                 </select>
             </div>
             <div class="col-md-2">
@@ -72,13 +75,9 @@
                     <td><a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a></td>
                     <td>{{ school.kommune }}</td>
                     <td>
-                        {% if school.opted_out_at %}
-                        <span class="badge bg-secondary">Frameldt</span>
-                        {% elif school.enrolled_at %}
-                        <span class="badge bg-success">Tilmeldt</span>
-                        {% else %}
-                        <span class="badge bg-warning text-dark">Ikke tilmeldt</span>
-                        {% endif %}
+                        {% with status=school.enrollment_status %}
+                        <span class="badge {{ status.2 }}">{{ status.1 }}</span>
+                        {% endwith %}
                     </td>
                     <td>
                         {% if school.last_contact_date %}

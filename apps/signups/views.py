@@ -87,6 +87,7 @@ class CourseSignupView(View):
                     participant_name=participant["name"],
                     participant_email=participant["email"],
                     participant_title=participant.get("title", ""),
+                    is_underviser=participant.get("is_underviser", True),
                 )
                 # Send confirmation email to each participant
                 send_signup_confirmation(signup)
@@ -104,6 +105,7 @@ class CourseSignupView(View):
             name_key = f"participant_name_{index}"
             email_key = f"participant_email_{index}"
             title_key = f"participant_title_{index}"
+            is_underviser_key = f"participant_is_underviser_{index}"
 
             if name_key not in post_data:
                 break
@@ -111,10 +113,19 @@ class CourseSignupView(View):
             name = post_data.get(name_key, "").strip()
             email = post_data.get(email_key, "").strip()
             title = post_data.get(title_key, "").strip()
+            # Checkbox: present in POST if checked, absent if not checked
+            is_underviser = is_underviser_key in post_data
 
             # Only add if at least name or email is provided
             if name or email:
-                participants.append({"name": name, "email": email, "title": title})
+                participants.append(
+                    {
+                        "name": name,
+                        "email": email,
+                        "title": title,
+                        "is_underviser": is_underviser,
+                    }
+                )
 
             index += 1
 
@@ -152,6 +163,39 @@ class CheckSchoolSeatsView(View):
             )
         except School.DoesNotExist:
             return JsonResponse({"error": "School not found"}, status=404)
+
+
+class CheckCourseSeatsView(View):
+    """AJAX endpoint to check available seats on a course."""
+
+    def get(self, request):
+        from apps.courses.models import Course
+
+        course_id = request.GET.get("course_id")
+        if not course_id:
+            return JsonResponse({"error": "Missing course_id"}, status=400)
+        try:
+            course = Course.objects.get(pk=course_id)
+            # Format date string
+            if course.start_date == course.end_date:
+                date_str = course.start_date.strftime("%-d. %b %Y")
+            else:
+                date_str = f"{course.start_date.strftime('%-d. %b')} - {course.end_date.strftime('%-d. %b %Y')}"
+
+            return JsonResponse(
+                {
+                    "capacity": course.capacity,
+                    "signup_count": course.signup_count,
+                    "available_seats": course.spots_remaining,
+                    "is_full": course.is_full,
+                    "title": course.title,
+                    "date": date_str,
+                    "location": course.location,
+                    "undervisere": course.undervisere or "",
+                }
+            )
+        except Course.DoesNotExist:
+            return JsonResponse({"error": "Course not found"}, status=404)
 
 
 class SchoolSignupView(View):

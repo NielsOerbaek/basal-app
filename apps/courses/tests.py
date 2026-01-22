@@ -222,6 +222,53 @@ class CourseMaterialsTest(TestCase):
         self.assertContains(response, 'enctype="multipart/form-data"')
 
 
+class CourseSignUpIsUnderTest(TestCase):
+    """Tests for CourseSignUp.is_underviser field."""
+
+    def setUp(self):
+        self.school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+        )
+        self.course = Course.objects.create(
+            title="Test Course",
+            start_date=date.today(),
+            end_date=date.today(),
+            location="Test Location",
+        )
+
+    def test_is_underviser_default_true(self):
+        """CourseSignUp.is_underviser defaults to True."""
+        signup = CourseSignUp.objects.create(
+            school=self.school,
+            course=self.course,
+            participant_name="Test Person",
+        )
+        self.assertTrue(signup.is_underviser)
+
+    def test_is_underviser_can_be_false(self):
+        """CourseSignUp.is_underviser can be set to False."""
+        signup = CourseSignUp.objects.create(
+            school=self.school,
+            course=self.course,
+            participant_name="Test Leader",
+            is_underviser=False,
+        )
+        self.assertFalse(signup.is_underviser)
+
+
+class CourseSignUpFormTest(TestCase):
+    """Tests for CourseSignUp form."""
+
+    def test_form_includes_is_underviser_field(self):
+        """CourseSignUp form includes is_underviser field."""
+        from apps.courses.forms import CourseSignUpForm
+
+        form = CourseSignUpForm()
+        self.assertIn("is_underviser", form.fields)
+
+
 class CourseFormDateTest(TestCase):
     """Tests for course form date field population."""
 

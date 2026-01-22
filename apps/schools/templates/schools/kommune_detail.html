@@ -20,7 +20,7 @@
             <thead class="table-light">
                 <tr>
                     <th>Skole</th>
-                    <th>Tilmeldt Basal</th>
+                    <th>Status</th>
                     <th>Kontaktperson</th>
                     <th>Kontaktinfo</th>
                 </tr>
@@ -32,11 +32,9 @@
                         <a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a>
                     </td>
                     <td>
-                        {% if school.enrolled_at %}
-                        <span class="badge bg-success">Ja</span>
-                        {% else %}
-                        <span class="badge bg-secondary">Nej</span>
-                        {% endif %}
+                        {% with status=school.enrollment_status %}
+                        <span class="badge {{ status.2 }}">{{ status.1 }}</span>
+                        {% endwith %}
                     </td>
                     <td>
                         {% with primary=school.people.all|first %}

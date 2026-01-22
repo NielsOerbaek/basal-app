@@ -8,218 +8,225 @@ from django.utils import timezone
 from apps.audit.models import ActivityLog
 from apps.contacts.models import ContactTime
 from apps.courses.models import AttendanceStatus, Course, CourseSignUp
-from apps.schools.models import School, SeatPurchase, Person, PersonRole, SchoolComment
+from apps.schools.models import Person, PersonRole, School, SchoolComment, SeatPurchase
 
 
 class Command(BaseCommand):
-    help = 'Opretter demo data til udvikling og test'
+    help = "Opretter demo data til udvikling og test"
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--clear',
-            action='store_true',
-            help='Slet eksisterende demo data før oprettelse',
+            "--clear",
+            action="store_true",
+            help="Slet eksisterende demo data før oprettelse",
         )
 
     def handle(self, *args, **options):
-        if options['clear']:
-            self.stdout.write('Sletter eksisterende data...')
-            # Use TRUNCATE CASCADE to handle foreign key constraints properly
-            from django.db import connection
-            with connection.cursor() as cursor:
-                cursor.execute("""
-                    TRUNCATE TABLE
-                        audit_activitylog,
-                        courses_coursesignup,
-                        contacts_contacttime,
-                        courses_course,
-                        schools_schoolcomment,
-                        schools_person,
-                        schools_seatpurchase,
-                        schools_invoice,
-                        schools_school
-                    RESTART IDENTITY CASCADE
-                """)
-            self.stdout.write(self.style.SUCCESS('Eksisterende data slettet'))
+        if options["clear"]:
+            self.stdout.write("Sletter eksisterende data...")
+            # Delete in correct order to handle foreign key constraints
+            ActivityLog.objects.all().delete()
+            CourseSignUp.objects.all().delete()
+            ContactTime.objects.all().delete()
+            Course.objects.all().delete()
+            SchoolComment.objects.all().delete()
+            Person.objects.all().delete()
+            SeatPurchase.objects.all().delete()
+            from apps.schools.models import Invoice
 
-        self.stdout.write('Opretter demo data...')
+            Invoice.objects.all().delete()
+            School.objects.all().delete()
+            self.stdout.write(self.style.SUCCESS("Eksisterende data slettet"))
+
+        self.stdout.write("Opretter demo data...")
 
         # Create admin user
         admin = self.create_admin_user()
         if admin:
-            self.stdout.write(self.style.SUCCESS('  Admin bruger oprettet (admin/admin)'))
+            self.stdout.write(self.style.SUCCESS("  Admin bruger oprettet (admin/admin)"))
 
         # Create schools
         schools = self.create_schools()
-        self.stdout.write(self.style.SUCCESS(f'  {len(schools)} skoler oprettet'))
+        self.stdout.write(self.style.SUCCESS(f"  {len(schools)} skoler oprettet"))
 
         # Create courses
         courses = self.create_courses()
-        self.stdout.write(self.style.SUCCESS(f'  {len(courses)} kurser oprettet'))
+        self.stdout.write(self.style.SUCCESS(f"  {len(courses)} kurser oprettet"))
 
         # Create signups (respecting seat limits)
         signups = self.create_signups(schools, courses)
-        self.stdout.write(self.style.SUCCESS(f'  {len(signups)} tilmeldinger oprettet'))
+        self.stdout.write(self.style.SUCCESS(f"  {len(signups)} tilmeldinger oprettet"))
 
         # Create contact history (henvendelser)
         contacts = self.create_contacts(schools)
-        self.stdout.write(self.style.SUCCESS(f'  {len(contacts)} henvendelser oprettet'))
+        self.stdout.write(self.style.SUCCESS(f"  {len(contacts)} henvendelser oprettet"))
 
-        self.stdout.write(self.style.SUCCESS('\nDemo data oprettet!'))
+        self.stdout.write(self.style.SUCCESS("\nDemo data oprettet!"))
 
     def create_admin_user(self):
         """Create admin superuser for development."""
         from django.contrib.auth.hashers import make_password
+
         admin, created = User.objects.get_or_create(
-            username='admin',
+            username="admin",
             defaults={
-                'email': 'admin@example.com',
-                'first_name': 'Admin',
-                'last_name': 'User',
-                'is_staff': True,
-                'is_superuser': True,
-                'is_active': True,
-                'password': make_password('admin'),
-            }
+                "email": "admin@example.com",
+                "first_name": "Admin",
+                "last_name": "User",
+                "is_staff": True,
+                "is_superuser": True,
+                "is_active": True,
+                "password": make_password("admin"),
+            },
         )
         return admin if created else None
 
     def create_schools(self):
         schools_data = [
             {
-                'name': 'Sønderbro Skole',
-                'adresse': 'Amagerbrogade 45, 2300 København S',
-                'kommune': 'København',
-                'contact_name': 'Lars Pedersen',
-                'contact_email': 'lp@sonderbro-skole.dk',
-                'contact_phone': '32 54 12 34',
-                'contact_role': PersonRole.KOORDINATOR,
+                "name": "Sønderbro Skole",
+                "adresse": "Amagerbrogade 45, 2300 København S",
+                "kommune": "Københavns Kommune",
+                "contact_name": "Lars Pedersen",
+                "contact_email": "lp@sonderbro-skole.dk",
+                "contact_phone": "32 54 12 34",
+                "contact_role": PersonRole.KOORDINATOR,
             },
             {
-                'name': 'Vesterbro Skole',
-                'adresse': 'Vestergade 12, 1456 København V',
-                'kommune': 'København',
-                'contact_name': 'Mette Hansen',
-                'contact_email': 'mh@vesterbro-skole.dk',
-                'contact_phone': '33 21 45 67',
-                'contact_role': PersonRole.SKOLELEDER,
+                "name": "Vesterbro Skole",
+                "adresse": "Vestergade 12, 1456 København V",
+                "kommune": "Københavns Kommune",
+                "contact_name": "Mette Hansen",
+                "contact_email": "mh@vesterbro-skole.dk",
+                "contact_phone": "33 21 45 67",
+                "contact_role": PersonRole.SKOLELEDER,
             },
             {
-                'name': 'Hasle Skole',
-                'adresse': 'Haslevej 100, 8210 Aarhus V',
-                'kommune': 'Aarhus',
-                'contact_name': 'Søren Nielsen',
-                'contact_email': 'sn@hasle-skole.dk',
-                'contact_phone': '86 15 23 45',
-                'contact_role': PersonRole.KOORDINATOR,
+                "name": "Hasle Skole",
+                "adresse": "Haslevej 100, 8210 Aarhus V",
+                "kommune": "Aarhus Kommune",
+                "contact_name": "Søren Nielsen",
+                "contact_email": "sn@hasle-skole.dk",
+                "contact_phone": "86 15 23 45",
+                "contact_role": PersonRole.KOORDINATOR,
             },
             {
-                'name': 'Munkebjerg Skole',
-                'adresse': 'Munkebjergvej 80, 5230 Odense M',
-                'kommune': 'Odense',
-                'contact_name': 'Anne Christensen',
-                'contact_email': 'ac@munkebjerg-skole.dk',
-                'contact_phone': '65 91 23 45',
-                'contact_role': PersonRole.UDSKOLINGSLEDER,
+                "name": "Munkebjerg Skole",
+                "adresse": "Munkebjergvej 80, 5230 Odense M",
+                "kommune": "Odense Kommune",
+                "contact_name": "Anne Christensen",
+                "contact_email": "ac@munkebjerg-skole.dk",
+                "contact_phone": "65 91 23 45",
+                "contact_role": PersonRole.UDSKOLINGSLEDER,
             },
             {
-                'name': 'Nørre Boulevard Skole',
-                'adresse': 'Nørre Boulevard 5, 9000 Aalborg',
-                'kommune': 'Aalborg',
-                'contact_name': 'Peter Mortensen',
-                'contact_email': 'pm@nb-skole.dk',
-                'contact_phone': '98 12 34 56',
-                'contact_role': PersonRole.KOORDINATOR,
+                "name": "Nørre Boulevard Skole",
+                "adresse": "Nørre Boulevard 5, 9000 Aalborg",
+                "kommune": "Aalborg Kommune",
+                "contact_name": "Peter Mortensen",
+                "contact_email": "pm@nb-skole.dk",
+                "contact_phone": "98 12 34 56",
+                "contact_role": PersonRole.KOORDINATOR,
             },
             {
-                'name': 'Bakkeskolen',
-                'adresse': 'Bakkedraget 22, 4000 Roskilde',
-                'kommune': 'Roskilde',
-                'contact_name': 'Kirsten Larsen',
-                'contact_email': 'kl@bakkeskolen.dk',
-                'contact_phone': '46 35 12 00',
-                'contact_role': PersonRole.KOORDINATOR,
+                "name": "Bakkeskolen",
+                "adresse": "Bakkedraget 22, 4000 Roskilde",
+                "kommune": "Roskilde Kommune",
+                "contact_name": "Kirsten Larsen",
+                "contact_email": "kl@bakkeskolen.dk",
+                "contact_phone": "46 35 12 00",
+                "contact_role": PersonRole.KOORDINATOR,
             },
             {
-                'name': 'Strandskolen',
-                'adresse': 'Strandvejen 150, 6700 Esbjerg',
-                'kommune': 'Esbjerg',
-                'contact_name': 'Michael Jensen',
-                'contact_email': 'mj@strandskolen.dk',
-                'contact_phone': '75 12 34 56',
-                'contact_role': PersonRole.SKOLELEDER,
+                "name": "Strandskolen",
+                "adresse": "Strandvejen 150, 6700 Esbjerg",
+                "kommune": "Esbjerg Kommune",
+                "contact_name": "Michael Jensen",
+                "contact_email": "mj@strandskolen.dk",
+                "contact_phone": "75 12 34 56",
+                "contact_role": PersonRole.SKOLELEDER,
             },
             {
-                'name': 'Engdalskolen',
-                'adresse': 'Engdalsvej 3, 8660 Skanderborg',
-                'kommune': 'Skanderborg',
-                'contact_name': 'Louise Andersen',
-                'contact_email': 'la@engdalskolen.dk',
-                'contact_phone': '86 52 12 34',
-                'contact_role': PersonRole.KOORDINATOR,
+                "name": "Engdalskolen",
+                "adresse": "Engdalsvej 3, 8660 Skanderborg",
+                "kommune": "Skanderborg Kommune",
+                "contact_name": "Louise Andersen",
+                "contact_email": "la@engdalskolen.dk",
+                "contact_phone": "86 52 12 34",
+                "contact_role": PersonRole.KOORDINATOR,
             },
             {
-                'name': 'Skovvangskolen',
-                'adresse': 'Skovvangen 10, 7400 Herning',
-                'kommune': 'Herning',
-                'contact_name': 'Thomas Rasmussen',
-                'contact_email': 'tr@skovvangskolen.dk',
-                'contact_phone': '97 12 34 56',
-                'contact_role': PersonRole.KOORDINATOR,
+                "name": "Skovvangskolen",
+                "adresse": "Skovvangen 10, 7400 Herning",
+                "kommune": "Herning Kommune",
+                "contact_name": "Thomas Rasmussen",
+                "contact_email": "tr@skovvangskolen.dk",
+                "contact_phone": "97 12 34 56",
+                "contact_role": PersonRole.KOORDINATOR,
             },
             {
-                'name': 'Østervangskolen',
-                'adresse': 'Østervang 25, 5700 Svendborg',
-                'kommune': 'Svendborg',
-                'contact_name': 'Camilla Olsen',
-                'contact_email': 'co@ostervangskolen.dk',
-                'contact_phone': '62 21 00 00',
-                'contact_role': PersonRole.UDSKOLINGSLEDER,
+                "name": "Østervangskolen",
+                "adresse": "Østervang 25, 5700 Svendborg",
+                "kommune": "Svendborg Kommune",
+                "contact_name": "Camilla Olsen",
+                "contact_email": "co@ostervangskolen.dk",
+                "contact_phone": "62 21 00 00",
+                "contact_role": PersonRole.UDSKOLINGSLEDER,
             },
             {
-                'name': 'Nordvestskolen',
-                'adresse': 'Nordvestgade 8, 8800 Viborg',
-                'kommune': 'Viborg',
-                'contact_name': 'Henrik Thomsen',
-                'contact_email': 'ht@nordvestskolen.dk',
-                'contact_phone': '86 62 45 00',
-                'contact_role': PersonRole.KOORDINATOR,
+                "name": "Nordvestskolen",
+                "adresse": "Nordvestgade 8, 8800 Viborg",
+                "kommune": "Viborg Kommune",
+                "contact_name": "Henrik Thomsen",
+                "contact_email": "ht@nordvestskolen.dk",
+                "contact_phone": "86 62 45 00",
+                "contact_role": PersonRole.KOORDINATOR,
             },
             {
-                'name': 'Kildeskovskolen',
-                'adresse': 'Kildeskovvej 15, 4700 Næstved',
-                'kommune': 'Næstved',
-                'contact_name': 'Marie Kjær',
-                'contact_email': 'mk@kildeskovskolen.dk',
-                'contact_phone': '55 77 15 00',
-                'contact_role': PersonRole.KOORDINATOR,
+                "name": "Kildeskovskolen",
+                "adresse": "Kildeskovvej 15, 4700 Næstved",
+                "kommune": "Næstved Kommune",
+                "contact_name": "Marie Kjær",
+                "contact_email": "mk@kildeskovskolen.dk",
+                "contact_phone": "55 77 15 00",
+                "contact_role": PersonRole.KOORDINATOR,
             },
         ]
 
         schools = []
-        today = date.today()
+
+        # Define school year boundaries for better test data
+        # Current year is 2025/26 (Aug 2025 - Jul 2026)
+        # Previous year is 2024/25 (Aug 2024 - Jul 2025)
+        year_2024_25_start = date(2024, 8, 1)
+        year_2025_26_start = date(2025, 8, 1)
+
         for i, data in enumerate(schools_data):
             # Extract contact info before creating school
-            contact_name = data.pop('contact_name')
-            contact_email = data.pop('contact_email')
-            contact_phone = data.pop('contact_phone')
-            contact_role = data.pop('contact_role')
+            contact_name = data.pop("contact_name")
+            contact_email = data.pop("contact_email")
+            contact_phone = data.pop("contact_phone")
+            contact_role = data.pop("contact_role")
 
-            # Most schools enrolled, some recently, some over a year ago
-            if i < 4:
-                # Enrolled over a year ago (has forankringsplads)
-                data['enrolled_at'] = today - timedelta(days=random.randint(400, 800))
-            elif i < 10:
-                # Enrolled within the last year
-                data['enrolled_at'] = today - timedelta(days=random.randint(30, 300))
-            else:
+            # Distribute schools across different enrollment periods for testing goals
+            if i < 2:
+                # Enrolled before 2024/25 (anchoring in both years)
+                data["enrolled_at"] = date(2023, 9, 15) + timedelta(days=random.randint(0, 60))
+            elif i < 5:
+                # Enrolled in 2024/25 (new last year, anchoring this year)
+                data["enrolled_at"] = year_2024_25_start + timedelta(days=random.randint(30, 300))
+            elif i < 9:
+                # Enrolled in 2025/26 (new this year)
+                data["enrolled_at"] = year_2025_26_start + timedelta(days=random.randint(30, 150))
+            elif i < 11:
                 # Not enrolled yet
-                data['enrolled_at'] = None
+                data["enrolled_at"] = None
+            else:
+                # Frameldt (enrolled then opted out)
+                data["enrolled_at"] = date(2024, 10, 1)
+                data["opted_out_at"] = date(2025, 6, 15)
 
-            school, created = School.objects.get_or_create(
-                name=data['name'],
-                defaults=data
-            )
+            school, created = School.objects.get_or_create(name=data["name"], defaults=data)
             if created:
                 schools.append(school)
                 # Create primary contact person
@@ -233,7 +240,7 @@ class Command(BaseCommand):
                 )
                 # Add a second person for some schools
                 if random.random() > 0.5:
-                    second_names = ['Jonas Mikkelsen', 'Lise Holm', 'Frederik Lund', 'Maria Krogh']
+                    second_names = ["Jonas Mikkelsen", "Lise Holm", "Frederik Lund", "Maria Krogh"]
                     Person.objects.create(
                         school=school,
                         name=random.choice(second_names),
@@ -249,7 +256,7 @@ class Command(BaseCommand):
                 school=school,
                 seats=random.choice([2, 3, 5]),
                 purchased_at=date.today() - timedelta(days=random.randint(10, 100)),
-                notes='Ekstra pladser købt'
+                notes="Ekstra pladser købt",
             )
 
         return schools
@@ -259,96 +266,129 @@ class Command(BaseCommand):
 
         # Generate month names for course titles
         months = [
-            'Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni',
-            'Juli', 'August', 'September', 'Oktober', 'November', 'December'
+            "Januar",
+            "Februar",
+            "Marts",
+            "April",
+            "Maj",
+            "Juni",
+            "Juli",
+            "August",
+            "September",
+            "Oktober",
+            "November",
+            "December",
         ]
 
         def get_month_name(d):
             return months[d.month - 1]
 
         courses_data = [
-            # Past courses
+            # === 2024/25 school year courses (Aug 2024 - Jul 2025) ===
             {
-                'title': f'Introduktion til Basal - {get_month_name(today - timedelta(days=60))}',
-                'start_date': today - timedelta(days=60),
-                'end_date': today - timedelta(days=60),
-                'location': 'København',
-                'capacity': 25,
-                'is_published': True,
-                'comment': 'Grundlæggende introduktion til Basal-metoden',
+                "title": "Introduktion til Basal - September 2024",
+                "start_date": date(2024, 9, 15),
+                "end_date": date(2024, 9, 15),
+                "location": "København",
+                "capacity": 25,
+                "is_published": True,
+                "comment": "Grundlæggende introduktion til Basal-metoden",
             },
             {
-                'title': f'Introduktion til Basal - {get_month_name(today - timedelta(days=30))}',
-                'start_date': today - timedelta(days=30),
-                'end_date': today - timedelta(days=30),
-                'location': 'Aarhus',
-                'capacity': 20,
-                'is_published': True,
-                'comment': 'Grundlæggende introduktion til Basal-metoden',
-            },
-            # Upcoming courses
-            {
-                'title': f'Introduktion til Basal - {get_month_name(today + timedelta(days=14))}',
-                'start_date': today + timedelta(days=14),
-                'end_date': today + timedelta(days=14),
-                'location': 'Odense',
-                'capacity': 30,
-                'is_published': True,
-                'comment': 'Grundlæggende introduktion til Basal-metoden',
+                "title": "Introduktion til Basal - November 2024",
+                "start_date": date(2024, 11, 10),
+                "end_date": date(2024, 11, 10),
+                "location": "Aarhus",
+                "capacity": 20,
+                "is_published": True,
+                "comment": "Grundlæggende introduktion til Basal-metoden",
             },
             {
-                'title': f'Basal for skoleledere - {get_month_name(today + timedelta(days=21))}',
-                'start_date': today + timedelta(days=21),
-                'end_date': today + timedelta(days=21),
-                'location': 'København',
-                'capacity': 20,
-                'is_published': True,
-                'comment': 'Kursus rettet mod skoleledere og mellemledere',
+                "title": "Basal for skoleledere - Januar 2025",
+                "start_date": date(2025, 1, 20),
+                "end_date": date(2025, 1, 20),
+                "location": "Odense",
+                "capacity": 15,
+                "is_published": True,
+                "comment": "Kursus rettet mod skoleledere og mellemledere",
             },
             {
-                'title': f'Basal opfølgning - {get_month_name(today + timedelta(days=35))}',
-                'start_date': today + timedelta(days=35),
-                'end_date': today + timedelta(days=35),
-                'location': 'Aalborg',
-                'capacity': 25,
-                'is_published': True,
-                'comment': 'Opfølgningskursus for deltagere der har taget introduktionen',
+                "title": "Introduktion til Basal - Marts 2025",
+                "start_date": date(2025, 3, 5),
+                "end_date": date(2025, 3, 5),
+                "location": "Aalborg",
+                "capacity": 25,
+                "is_published": True,
             },
             {
-                'title': f'Introduktion til Basal - {get_month_name(today + timedelta(days=45))}',
-                'start_date': today + timedelta(days=45),
-                'end_date': today + timedelta(days=45),
-                'location': 'Vejle',
-                'capacity': 25,
-                'is_published': True,
+                "title": "Basal Forankring - Maj 2025",
+                "start_date": date(2025, 5, 12),
+                "end_date": date(2025, 5, 13),
+                "location": "Roskilde",
+                "capacity": 20,
+                "is_published": True,
+                "comment": "To-dages forankringskursus",
+            },
+            # === 2025/26 school year courses (Aug 2025 - Jul 2026) ===
+            {
+                "title": "Introduktion til Basal - September 2025",
+                "start_date": date(2025, 9, 18),
+                "end_date": date(2025, 9, 18),
+                "location": "København",
+                "capacity": 30,
+                "is_published": True,
+                "comment": "Grundlæggende introduktion til Basal-metoden",
             },
             {
-                'title': f'Basal Forankring - {get_month_name(today + timedelta(days=60))}',
-                'start_date': today + timedelta(days=60),
-                'end_date': today + timedelta(days=61),
-                'location': 'Roskilde',
-                'capacity': 15,
-                'is_published': True,
-                'comment': 'To-dages forankringskursus for nye lærere',
+                "title": "Introduktion til Basal - November 2025",
+                "start_date": date(2025, 11, 6),
+                "end_date": date(2025, 11, 6),
+                "location": "Vejle",
+                "capacity": 25,
+                "is_published": True,
+            },
+            {
+                "title": f"Basal opfølgning - {get_month_name(today + timedelta(days=14))} 2026",
+                "start_date": today + timedelta(days=14),
+                "end_date": today + timedelta(days=14),
+                "location": "Aarhus",
+                "capacity": 25,
+                "is_published": True,
+                "comment": "Opfølgningskursus for deltagere der har taget introduktionen",
+            },
+            {
+                "title": f"Introduktion til Basal - {get_month_name(today + timedelta(days=30))} 2026",
+                "start_date": today + timedelta(days=30),
+                "end_date": today + timedelta(days=30),
+                "location": "Odense",
+                "capacity": 30,
+                "is_published": True,
+            },
+            {
+                "title": f"Basal Forankring - {get_month_name(today + timedelta(days=60))} 2026",
+                "start_date": today + timedelta(days=60),
+                "end_date": today + timedelta(days=61),
+                "location": "København",
+                "capacity": 15,
+                "is_published": True,
+                "comment": "To-dages forankringskursus",
             },
             # Unpublished course
             {
-                'title': f'Introduktion til Basal - {get_month_name(today + timedelta(days=90))}',
-                'start_date': today + timedelta(days=90),
-                'end_date': today + timedelta(days=90),
-                'location': 'København',
-                'capacity': 30,
-                'is_published': False,
-                'comment': 'Endnu ikke offentliggjort',
+                "title": "Introduktion til Basal - April 2026",
+                "start_date": date(2026, 4, 15),
+                "end_date": date(2026, 4, 15),
+                "location": "Herning",
+                "capacity": 30,
+                "is_published": False,
+                "comment": "Endnu ikke offentliggjort",
             },
         ]
 
         courses = []
         for data in courses_data:
             course, created = Course.objects.get_or_create(
-                title=data['title'],
-                start_date=data['start_date'],
-                defaults=data
+                title=data["title"], start_date=data["start_date"], defaults=data
             )
             if created:
                 courses.append(course)
@@ -363,26 +403,52 @@ class Command(BaseCommand):
             return []
 
         first_names = [
-            'Anders', 'Birgitte', 'Christian', 'Dorte', 'Erik',
-            'Fie', 'Gustav', 'Hanne', 'Ivan', 'Julie',
-            'Klaus', 'Lene', 'Martin', 'Nanna', 'Ole',
-            'Pia', 'Rasmus', 'Sara', 'Torben', 'Ulla',
+            "Anders",
+            "Birgitte",
+            "Christian",
+            "Dorte",
+            "Erik",
+            "Fie",
+            "Gustav",
+            "Hanne",
+            "Ivan",
+            "Julie",
+            "Klaus",
+            "Lene",
+            "Martin",
+            "Nanna",
+            "Ole",
+            "Pia",
+            "Rasmus",
+            "Sara",
+            "Torben",
+            "Ulla",
         ]
         last_names = [
-            'Jensen', 'Nielsen', 'Hansen', 'Pedersen', 'Andersen',
-            'Christensen', 'Larsen', 'Sørensen', 'Rasmussen', 'Thomsen',
+            "Jensen",
+            "Nielsen",
+            "Hansen",
+            "Pedersen",
+            "Andersen",
+            "Christensen",
+            "Larsen",
+            "Sørensen",
+            "Rasmussen",
+            "Thomsen",
         ]
-        titles = [
-            'Lærer',
-            'Lærer',
-            'Lærer',
-            'Lærer',
-            'Indskolingslærer',
-            'Mellemtrinslærer',
-            'Udskolingslærer',
-            'Skoleleder',
-            'Viceskoleleder',
-            'Afdelingsleder',
+        # Titles with is_underviser flag (True for teachers, False for leaders/others)
+        titles_with_role = [
+            ("Lærer", True),
+            ("Lærer", True),
+            ("Lærer", True),
+            ("Lærer", True),
+            ("Indskolingslærer", True),
+            ("Mellemtrinslærer", True),
+            ("Udskolingslærer", True),
+            ("Skoleleder", False),
+            ("Viceskoleleder", False),
+            ("Afdelingsleder", False),
+            ("Pædagog", False),
         ]
 
         signups = []
@@ -391,8 +457,14 @@ class Command(BaseCommand):
         school_remaining_seats = {s.pk: s.total_seats for s in enrolled_schools}
 
         for course in all_courses:
-            # Random number of signups per course
-            num_signups = random.randint(0, min(5, course.capacity))
+            # More signups for past courses, fewer for future courses
+            today = date.today()
+            if course.end_date < today:
+                # Past courses: 8-15 signups
+                num_signups = random.randint(8, min(15, course.capacity))
+            else:
+                # Future courses: 3-8 signups
+                num_signups = random.randint(3, min(8, course.capacity))
 
             # Shuffle schools for random selection
             shuffled_schools = enrolled_schools.copy()
@@ -409,16 +481,19 @@ class Command(BaseCommand):
 
                 first = random.choice(first_names)
                 last = random.choice(last_names)
-                name = f'{first} {last}'
+                name = f"{first} {last}"
                 # Generate email from name and school domain
-                email_name = f'{first.lower()}.{last.lower()}'
+                email_name = f"{first.lower()}.{last.lower()}"
                 # Get domain from primary person's email
                 primary_person = school.people.filter(is_primary=True).first()
-                if primary_person and primary_person.email and '@' in primary_person.email:
-                    school_domain = primary_person.email.split('@')[1]
+                if primary_person and primary_person.email and "@" in primary_person.email:
+                    school_domain = primary_person.email.split("@")[1]
                 else:
                     school_domain = f'{school.name.lower().replace(" ", "-")}.dk'
-                email = f'{email_name}@{school_domain}'
+                email = f"{email_name}@{school_domain}"
+
+                # Select a random title and corresponding is_underviser value
+                title, is_underviser = random.choice(titles_with_role)
 
                 try:
                     signup = CourseSignUp.objects.create(
@@ -426,7 +501,8 @@ class Command(BaseCommand):
                         course=course,
                         participant_name=name,
                         participant_email=email,
-                        participant_title=random.choice(titles),
+                        participant_title=title,
+                        is_underviser=is_underviser,
                         attendance=self.get_attendance_for_course(course),
                     )
                     signups.append(signup)
@@ -443,10 +519,7 @@ class Command(BaseCommand):
         today = date.today()
         if course.end_date < today:
             # Past course - assign random attendance
-            return random.choices(
-                [AttendanceStatus.PRESENT, AttendanceStatus.ABSENT],
-                weights=[0.85, 0.15]
-            )[0]
+            return random.choices([AttendanceStatus.PRESENT, AttendanceStatus.ABSENT], weights=[0.85, 0.15])[0]
         else:
             # Future course - unmarked
             return AttendanceStatus.UNMARKED
@@ -458,42 +531,42 @@ class Command(BaseCommand):
 
         # Create or get staff users for contacts
         esther, _ = User.objects.get_or_create(
-            username='esther',
+            username="esther",
             defaults={
-                'first_name': 'Esther',
-                'last_name': 'Chemnitz',
-                'email': 'esther@basal.dk',
-                'is_staff': True,
-            }
+                "first_name": "Esther",
+                "last_name": "Chemnitz",
+                "email": "esther@basal.dk",
+                "is_staff": True,
+            },
         )
-        esther.set_password('hejhejhej')
+        esther.set_password("hejhejhej")
         esther.save()
 
         caroline, _ = User.objects.get_or_create(
-            username='caroline',
+            username="caroline",
             defaults={
-                'first_name': 'Caroline',
-                'last_name': 'Buskov',
-                'email': 'caroline@basal.dk',
-                'is_staff': True,
-            }
+                "first_name": "Caroline",
+                "last_name": "Buskov",
+                "email": "caroline@basal.dk",
+                "is_staff": True,
+            },
         )
-        caroline.set_password('hejhejhej')
+        caroline.set_password("hejhejhej")
         caroline.save()
 
         staff_users = [esther, caroline]
 
         comments = [
-            'Talte med skoleleder om tilmelding til Basal. God interesse.',
-            'Sendt information om kommende kurser.',
-            'Opfølgning på tidligere kursusdeltagelse. Ønsker flere pladser.',
-            'Koordineret praktiske detaljer omkring kursusdeltagelse.',
-            'Diskuterede muligheder for forankringskursus.',
-            'Modtaget feedback fra tidligere kursus. Meget positive tilbagemeldinger.',
-            'Aftalt at sende opdateret kursusoversigt til lærerne.',
-            'Gennemgået tilmeldingsprocedure med ny kontaktperson.',
-            'Bekræftet deltagelse i kommende introduktionskursus.',
-            'Drøftet behov for ekstra pladser til næste skoleår.',
+            "Talte med skoleleder om tilmelding til Basal. God interesse.",
+            "Sendt information om kommende kurser.",
+            "Opfølgning på tidligere kursusdeltagelse. Ønsker flere pladser.",
+            "Koordineret praktiske detaljer omkring kursusdeltagelse.",
+            "Diskuterede muligheder for forankringskursus.",
+            "Modtaget feedback fra tidligere kursus. Meget positive tilbagemeldinger.",
+            "Aftalt at sende opdateret kursusoversigt til lærerne.",
+            "Gennemgået tilmeldingsprocedure med ny kontaktperson.",
+            "Bekræftet deltagelse i kommende introduktionskursus.",
+            "Drøftet behov for ekstra pladser til næste skoleår.",
         ]
 
         contacts = []
@@ -506,9 +579,8 @@ class Command(BaseCommand):
                 # Some contacts have time, some don't
                 contacted_time = None
                 if random.random() > 0.3:
-                    contacted_time = timezone.now().time().replace(
-                        hour=random.randint(8, 17),
-                        minute=random.choice([0, 15, 30, 45])
+                    contacted_time = (
+                        timezone.now().time().replace(hour=random.randint(8, 17), minute=random.choice([0, 15, 30, 45]))
                     )
 
                 contact = ContactTime.objects.create(

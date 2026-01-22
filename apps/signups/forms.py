@@ -59,6 +59,28 @@ class SchoolChoiceField(forms.ModelChoiceField):
         return f"{obj.name} ({obj.kommune})"
 
 
+class CourseChoiceField(forms.ModelChoiceField):
+    """Custom field to display course with available seats."""
+
+    def label_from_instance(self, obj):
+        # Format date
+        if obj.start_date == obj.end_date:
+            date_str = obj.start_date.strftime("%-d. %b %Y")
+        else:
+            date_str = f"{obj.start_date.strftime('%-d. %b')} - {obj.end_date.strftime('%-d. %b %Y')}"
+
+        # Format available seats
+        available = obj.spots_remaining
+        if available <= 0:
+            seats_text = "Fuldt"
+        elif available == 1:
+            seats_text = "1 ledig plads"
+        else:
+            seats_text = f"{available} ledige pladser"
+
+        return f"{obj.title} - {date_str} - {seats_text}"
+
+
 class CourseSignupForm(DynamicFieldsMixin, forms.Form):
     """Public course signup form with dynamic fields support.
 
@@ -66,9 +88,7 @@ class CourseSignupForm(DynamicFieldsMixin, forms.Form):
     adding multiple participants dynamically with JavaScript.
     """
 
-    course = forms.ModelChoiceField(
-        queryset=Course.objects.none(), label="Vælg et kursus", empty_label="Vælg et kursus..."
-    )
+    course = CourseChoiceField(queryset=Course.objects.none(), label="Vælg et kursus", empty_label="Vælg et kursus...")
     school = SchoolChoiceField(queryset=School.objects.none(), label="Vælg din skole", empty_label="Vælg en skole...")
 
     def __init__(self, *args, signup_page=None, **kwargs):
@@ -87,8 +107,38 @@ class CourseSignupForm(DynamicFieldsMixin, forms.Form):
             self.add_dynamic_fields(signup_page)
 
         # Build layout - participant fields are rendered manually in template
+        # Course details card is inserted after course dropdown (populated via JS)
+        course_details_html = """
+        <div id="course-details" class="card mb-3" style="display: none;">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="mb-0">
+                            <dt><i class="bi bi-calendar-event me-1"></i>Dato</dt>
+                            <dd id="course-date" class="mb-2">-</dd>
+                            <dt><i class="bi bi-geo-alt me-1"></i>Sted</dt>
+                            <dd id="course-location" class="mb-0">-</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="mb-0">
+                            <dt><i class="bi bi-person me-1"></i>Undervisere</dt>
+                            <dd id="course-undervisere" class="mb-2">-</dd>
+                            <dt><i class="bi bi-people me-1"></i>Ledige pladser</dt>
+                            <dd id="course-available-seats" class="mb-0">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="course-full-warning" class="alert alert-danger" style="display: none;">
+            <strong><i class="bi bi-x-circle me-2"></i>Kurset er fuldt</strong>
+            <span id="course-full-text"></span>
+        </div>
+        """
         layout_items = [
             "course",
+            HTML(course_details_html),
             "school",
         ]
 

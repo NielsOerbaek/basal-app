@@ -70,6 +70,11 @@
                         <input type="text" name="participant_title_0" class="form-control">
                     </div>
                 </div>
+                <div class="form-check">
+                    <input type="checkbox" name="participant_is_underviser_0" class="form-check-input" id="participant_is_underviser_0" checked>
+                    <label class="form-check-label" for="participant_is_underviser_0">Er underviser</label>
+                    <small class="form-text text-muted d-block">Afkryds hvis deltageren er underviser (ikke leder/andet)</small>
+                </div>
             </div>
         </div>
     </div>
@@ -89,15 +94,25 @@
 {% block signup_extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const courseSelect = document.getElementById('id_course');
     const schoolSelect = document.getElementById('id_school');
+    const courseDetails = document.getElementById('course-details');
+    const courseDate = document.getElementById('course-date');
+    const courseLocation = document.getElementById('course-location');
+    const courseUndervisere = document.getElementById('course-undervisere');
+    const courseAvailableSeats = document.getElementById('course-available-seats');
+    const courseFullWarning = document.getElementById('course-full-warning');
+    const courseFullText = document.getElementById('course-full-text');
     const seatsWarning = document.getElementById('seats-warning');
     const seatsWarningText = document.getElementById('seats-warning-text');
     const participantsContainer = document.getElementById('participants-container');
     const addParticipantBtn = document.getElementById('add-participant');
     const participantCountBadge = document.getElementById('participant-count');
+    const submitBtn = document.querySelector('button[type="submit"]');
 
     let participantIndex = 1;
-    let availableSeats = null;
+    let schoolAvailableSeats = null;
+    let courseAvailableSeatsCount = null;
 
     function getParticipantCount() {
         return participantsContainer.querySelectorAll('.participant-entry').length;
@@ -115,11 +130,97 @@ document.addEventListener('DOMContentLoaded', function() {
             removeBtn.style.display = entries.length > 1 ? 'block' : 'none';
         });
 
-        // Re-check seats when participant count changes
+        // Re-check all seats when participant count changes
         checkSchoolSeats();
+        updateCourseSeatsDisplay();
+    }
+
+    function formatSeatsText(available) {
+        if (available <= 0) {
+            return 'Ingen ledige pladser';
+        } else if (available === 1) {
+            return '1 ledig plads';
+        } else {
+            return available + ' ledige pladser';
+        }
+    }
+
+    function updateCourseSeatsDisplay() {
+        const participantCount = getParticipantCount();
+
+        if (courseAvailableSeatsCount === null) {
+            courseFullWarning.style.display = 'none';
+            addParticipantBtn.disabled = false;
+            submitBtn.disabled = false;
+            return;
+        }
+
+        // Update the available seats display
+        courseAvailableSeats.textContent = formatSeatsText(courseAvailableSeatsCount);
+
+        if (courseAvailableSeatsCount <= 0) {
+            // Course is completely full
+            courseFullWarning.style.display = 'block';
+            courseFullText.textContent = ' - Der er ikke flere ledige pladser på dette kursus.';
+            addParticipantBtn.disabled = true;
+            submitBtn.disabled = true;
+        } else if (participantCount > courseAvailableSeatsCount) {
+            // Trying to sign up more than available
+            courseFullWarning.style.display = 'block';
+            courseFullText.textContent = ' - Der er kun ' + courseAvailableSeatsCount + ' ledige plads' +
+                (courseAvailableSeatsCount === 1 ? '' : 'er') + ' på kurset, men du prøver at tilmelde ' + participantCount + ' personer.';
+            addParticipantBtn.disabled = true;
+            submitBtn.disabled = true;
+        } else if (participantCount === courseAvailableSeatsCount) {
+            // Exactly at capacity
+            courseFullWarning.style.display = 'none';
+            addParticipantBtn.disabled = true;  // Can't add more
+            submitBtn.disabled = false;
+        } else {
+            // Have room for more
+            courseFullWarning.style.display = 'none';
+            addParticipantBtn.disabled = false;
+            submitBtn.disabled = false;
+        }
+    }
+
+    function checkCourseSeats() {
+        if (!courseSelect || !courseSelect.value) {
+            courseDetails.style.display = 'none';
+            courseFullWarning.style.display = 'none';
+            courseAvailableSeatsCount = null;
+            addParticipantBtn.disabled = false;
+            submitBtn.disabled = false;
+            return;
+        }
+
+        fetch('{% url "signup:check-course-seats" %}?course_id=' + courseSelect.value)
+            .then(response => response.json())
+            .then(data => {
+                courseAvailableSeatsCount = data.available_seats;
+
+                // Update course details
+                courseDate.textContent = data.date;
+                courseLocation.textContent = data.location || '-';
+                courseUndervisere.textContent = data.undervisere || '-';
+                courseDetails.style.display = 'block';
+
+                updateCourseSeatsDisplay();
+            })
+            .catch(() => {
+                courseDetails.style.display = 'none';
+                courseFullWarning.style.display = 'none';
+                courseAvailableSeatsCount = null;
+            });
     }
 
     function addParticipant() {
+        // Check if we can add more participants
+        const participantCount = getParticipantCount();
+        if (courseAvailableSeatsCount !== null && participantCount >= courseAvailableSeatsCount) {
+            return;  // Can't add more
+        }
+
         const template = participantsContainer.querySelector('.participant-entry');
         const newEntry = template.cloneNode(true);
 
@@ -128,7 +229,15 @@ document.addEventListener('DOMContentLoaded', function() {
         newEntry.querySelectorAll('input').forEach(input => {
             const baseName = input.name.replace(/_\d+$/, '');
             input.name = baseName + '_' + participantIndex;
-            input.value = '';
+            if (input.type === 'checkbox') {
+                input.id = baseName + '_' + participantIndex;
+                input.checked = true;  // Default to checked for new participants
+                // Update the label's for attribute
+                const label = newEntry.querySelector('label[for^="' + baseName + '"]');
+                if (label) label.setAttribute('for', input.id);
+            } else {
+                input.value = '';
+            }
         });
 
         participantsContainer.appendChild(newEntry);
@@ -148,23 +257,22 @@ document.addEventListener('DOMContentLoaded', function() {
     function checkSchoolSeats() {
         if (!schoolSelect || !schoolSelect.value) {
             seatsWarning.style.display = 'none';
-            availableSeats = null;
+            schoolAvailableSeats = null;
             return;
         }
 
         fetch('{% url "signup:check-school-seats" %}?school_id=' + schoolSelect.value)
             .then(response => response.json())
             .then(data => {
-                availableSeats = data.remaining_seats;
+                schoolAvailableSeats = data.remaining_seats;
                 const participantCount = getParticipantCount();
 
-                if (availableSeats < participantCount) {
-                    const missing = participantCount - availableSeats;
-                    if (availableSeats <= 0) {
+                if (schoolAvailableSeats < participantCount) {
+                    if (schoolAvailableSeats <= 0) {
                         seatsWarningText.textContent = 'Din skole har ikke flere ledige pladser i jeres abonnement.';
                     } else {
-                        seatsWarningText.textContent = 'Din skole har kun ' + availableSeats + ' ledige plads' +
-                            (availableSeats === 1 ? '' : 'er') + ', men du tilmelder ' + participantCount + ' personer.';
+                        seatsWarningText.textContent = 'Din skole har kun ' + schoolAvailableSeats + ' ledige plads' +
+                            (schoolAvailableSeats === 1 ? '' : 'er') + ', men du tilmelder ' + participantCount + ' personer.';
                     }
                     seatsWarning.style.display = 'block';
                 } else {
@@ -173,13 +281,21 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(() => {
                 seatsWarning.style.display = 'none';
-                availableSeats = null;
+                schoolAvailableSeats = null;
             });
     }
 
     // Event listeners
     if (addParticipantBtn) {
         addParticipantBtn.addEventListener('click', addParticipant);
+    }
+
+    if (courseSelect) {
+        courseSelect.addEventListener('change', checkCourseSeats);
+        // Check seats on page load if course is already selected
+        if (courseSelect.value) {
+            checkCourseSeats();
+        }
     }
 
     if (schoolSelect) {
