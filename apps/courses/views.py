@@ -48,6 +48,17 @@ class CourseListView(SortableMixin, ListView):
 
         return queryset
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Build filter explanation for project goals drill-down
+        school_year = self.request.GET.get("school_year")
+        if school_year:
+            year_display = school_year.replace("-", "/")
+            context["filter_explanation"] = f"Viser kurser i skoleåret {year_display}"
+
+        return context
+
 
 @method_decorator(staff_required, name="dispatch")
 class CourseCreateView(CreateView):
@@ -171,6 +182,27 @@ class SignUpListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["courses"] = Course.objects.all()
+
+        # Build filter explanation for project goals drill-down
+        school_year = self.request.GET.get("school_year")
+        attended = self.request.GET.get("attended")
+        is_underviser = self.request.GET.get("is_underviser")
+
+        if school_year:
+            year_display = school_year.replace("-", "/")
+            parts = []
+
+            if attended == "true" and is_underviser == "true":
+                parts.append("undervisere der deltog i kurser")
+            elif attended == "true":
+                parts.append("deltagere der deltog i kurser")
+            elif is_underviser == "true":
+                parts.append("undervisere tilmeldt kurser")
+            else:
+                parts.append("tilmeldinger til kurser")
+
+            context["filter_explanation"] = f"Viser {parts[0]} i skoleåret {year_display}"
+
         return context
 
 
