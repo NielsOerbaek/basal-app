@@ -10,13 +10,13 @@ class AttendanceStatus(models.TextChoices):
 
 
 class Course(models.Model):
-    title = models.CharField(max_length=255)
-    start_date = models.DateField()
-    end_date = models.DateField()
-    location = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, verbose_name="Titel")
+    start_date = models.DateField(verbose_name="Startdato")
+    end_date = models.DateField(verbose_name="Slutdato")
+    location = models.CharField(max_length=255, verbose_name="Sted")
     undervisere = models.CharField(max_length=255, blank=True, verbose_name="Undervisere")
-    capacity = models.PositiveIntegerField(default=30)
-    comment = models.TextField(blank=True)
+    capacity = models.PositiveIntegerField(default=30, verbose_name="Kapacitet")
+    comment = models.TextField(blank=True, verbose_name="Kommentar")
     materials = models.FileField(
         upload_to="course_materials/",
         blank=True,
@@ -24,7 +24,9 @@ class Course(models.Model):
         help_text="PDF med kursusmateriale (sendes med påmindelses-e-mail)",
     )
     is_published = models.BooleanField(
-        default=False, help_text="Offentliggjorte kurser vises på offentlige tilmeldingsformularer"
+        default=False,
+        verbose_name="Offentliggjort",
+        help_text="Offentliggjorte kurser vises på offentlige tilmeldingsformularer",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
