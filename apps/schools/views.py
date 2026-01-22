@@ -129,20 +129,12 @@ class SchoolListView(SortableMixin, ListView):
         status_filter = self.request.GET.get("status")
         school_year_filter = self.request.GET.get("school_year")
         if status_filter and school_year_filter:
-            from apps.goals.calculations import get_school_year_dates
-
-            # Convert school_year from URL format (2024-25) to internal format (2024/25)
+            # Use the model's get_status_for_year for consistent filtering
             year_str = school_year_filter.replace("-", "/")
-            start_date, end_date = get_school_year_dates(year_str)
-
             if status_filter == "new":
-                # New schools: enrolled in this school year
-                queryset = queryset.filter(enrolled_at__gte=start_date, enrolled_at__lte=end_date)
+                queryset = [s for s in queryset if s.get_status_for_year(year_str)[0] == "tilmeldt_ny"]
             elif status_filter == "anchoring":
-                # Anchoring schools: enrolled before this year, still active
-                queryset = queryset.filter(enrolled_at__lt=start_date, enrolled_at__isnull=False).exclude(
-                    opted_out_at__lte=end_date
-                )
+                queryset = [s for s in queryset if s.get_status_for_year(year_str)[0] == "tilmeldt_forankring"]
 
         # Unused seats filter
         unused_filter = self.request.GET.get("unused_seats")
@@ -215,6 +207,17 @@ class SchoolListView(SortableMixin, ListView):
         context["kommuner"] = (
             School.objects.active().exclude(kommune="").values_list("kommune", flat=True).distinct().order_by("kommune")
         )
+
+        # Build filter explanation for project goals drill-down
+        status = self.request.GET.get("status")
+        school_year = self.request.GET.get("school_year")
+        if status and school_year:
+            year_display = school_year.replace("-", "/")
+            if status == "new":
+                context["filter_explanation"] = f"Viser skoler der blev tilmeldt i skoleåret {year_display}"
+            elif status == "anchoring":
+                context["filter_explanation"] = f"Viser skoler med forankringspladser i skoleåret {year_display}"
+
         return context
 
 

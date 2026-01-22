@@ -2,7 +2,6 @@ from datetime import date
 
 from django.contrib.auth.models import User
 from django.db import models
-from django.utils import timezone
 
 
 class PersonRole(models.TextChoices):
@@ -116,17 +115,12 @@ class School(models.Model):
     @property
     def enrollment_status(self):
         """
-        Returnerer skolens detaljerede tilmeldingsstatus.
+        Returnerer skolens detaljerede tilmeldingsstatus for det aktuelle skoleår.
         Returns tuple: (status_code, status_label, badge_class)
         """
-        if self.opted_out_at:
-            return ("frameldt", "Frameldt", "bg-secondary")
-        if not self.enrolled_at:
-            return ("ikke_tilmeldt", "Ikke tilmeldt", "bg-warning text-dark")
-        # Enrolled - check if new or anchoring
-        if self.has_forankringsplads:
-            return ("tilmeldt_forankring", "Tilmeldt (forankring)", "bg-primary")
-        return ("tilmeldt_ny", "Tilmeldt (ny)", "bg-success")
+        from apps.goals.calculations import get_current_school_year
+
+        return self.get_status_for_year(get_current_school_year())
 
     def was_enrolled_in_year(self, school_year):
         """Tjek om skolen var tilmeldt i et givent skoleår."""
@@ -232,13 +226,54 @@ class School(models.Model):
         """Base seats included with enrollment."""
         return self.BASE_SEATS if self.is_enrolled else 0
 
+    def _get_current_school_year_start(self):
+        """Get the start date of the current school year (Aug 1)."""
+        today = date.today()
+        if today.month < 8:
+            return date(today.year - 1, 8, 1)
+        return date(today.year, 8, 1)
+
     @property
     def has_forankringsplads(self):
-        """School gets forankringsplads after 1 year of enrollment."""
+        """School gets forankringsplads if enrolled before the current school year."""
         if not self.enrolled_at:
             return False
-        one_year_ago = date.today() - timezone.timedelta(days=365)
-        return self.enrolled_at <= one_year_ago
+        current_year_start = self._get_current_school_year_start()
+        return self.enrolled_at < current_year_start
+
+    def get_status_for_year(self, year_str: str) -> tuple[str, str, str]:
+        """
+        Get school status for a specific school year.
+
+        Args:
+            year_str: School year in format '2024/25' or '2024-25'
+
+        Returns:
+            Tuple of (status_code, status_label, badge_class)
+        """
+        from apps.goals.calculations import get_school_year_dates
+
+        year_str = year_str.replace("-", "/")
+        start_date, end_date = get_school_year_dates(year_str)
+
+        # Check if opted out before or during this year
+        if self.opted_out_at and self.opted_out_at <= end_date:
+            if self.opted_out_at <= start_date:
+                return ("frameldt", "Frameldt", "bg-secondary")
+            # Opted out during the year - still count as enrolled for that year
+            pass
+
+        # Not enrolled at all, or enrolled after this year
+        if not self.enrolled_at or self.enrolled_at > end_date:
+            return ("ikke_tilmeldt", "Ikke tilmeldt", "bg-warning text-dark")
+
+        # Enrolled - check if new or anchoring for this year
+        if self.enrolled_at >= start_date:
+            # Enrolled during this school year = new
+            return ("tilmeldt_ny", "Tilmeldt (ny)", "bg-success")
+        else:
+            # Enrolled before this school year = anchoring
+            return ("tilmeldt_forankring", "Tilmeldt (forankring)", "bg-primary")
 
     @property
     def forankring_seats(self):
