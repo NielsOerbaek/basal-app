@@ -4,26 +4,26 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from .models import School, Person, SchoolComment, PersonRole, SeatPurchase
+from .models import Person, PersonRole, School, SchoolComment, SeatPurchase
 
 
 class SchoolModelTest(TestCase):
     def test_create_school(self):
         """School model can be created and saved."""
         school = School.objects.create(
-            name='Test School',
-            adresse='Test Address',
-            kommune='Test Kommune',
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
         )
-        self.assertEqual(school.name, 'Test School')
+        self.assertEqual(school.name, "Test School")
         self.assertTrue(school.is_active)
 
     def test_soft_delete(self):
         """School soft delete sets is_active to False."""
         school = School.objects.create(
-            name='Test School',
-            adresse='Test Address',
-            kommune='Test Kommune',
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
         )
         school.delete()
         school.refresh_from_db()
@@ -32,41 +32,28 @@ class SchoolModelTest(TestCase):
     def test_active_manager(self):
         """School.objects.active() returns only active schools."""
         active = School.objects.create(
-            name='Active School',
-            adresse='Address',
-            kommune='Kommune',
+            name="Active School",
+            adresse="Address",
+            kommune="Kommune",
         )
-        inactive = School.objects.create(
-            name='Inactive School',
-            adresse='Address',
-            kommune='Kommune',
-            is_active=False
-        )
+        inactive = School.objects.create(name="Inactive School", adresse="Address", kommune="Kommune", is_active=False)
         self.assertIn(active, School.objects.active())
         self.assertNotIn(inactive, School.objects.active())
 
     def test_base_seats_without_enrollment(self):
         """School without enrolled_at has 0 base seats."""
-        school = School.objects.create(name='Test', adresse='Test', kommune='Test')
+        school = School.objects.create(name="Test", adresse="Test", kommune="Test")
         self.assertEqual(school.base_seats, 0)
 
     def test_base_seats_with_enrollment(self):
         """School with enrolled_at has BASE_SEATS."""
-        school = School.objects.create(
-            name='Test',
-            adresse='Test',
-            kommune='Test',
-            enrolled_at=date.today()
-        )
+        school = School.objects.create(name="Test", adresse="Test", kommune="Test", enrolled_at=date.today())
         self.assertEqual(school.base_seats, School.BASE_SEATS)
 
     def test_forankringsplads_before_one_year(self):
         """School enrolled less than 1 year ago has no forankringsplads."""
         school = School.objects.create(
-            name='Test',
-            adresse='Test',
-            kommune='Test',
-            enrolled_at=date.today() - timedelta(days=100)
+            name="Test", adresse="Test", kommune="Test", enrolled_at=date.today() - timedelta(days=100)
         )
         self.assertFalse(school.has_forankringsplads)
         self.assertEqual(school.forankring_seats, 0)
@@ -74,10 +61,7 @@ class SchoolModelTest(TestCase):
     def test_forankringsplads_after_one_year(self):
         """School enrolled more than 1 year ago has forankringsplads."""
         school = School.objects.create(
-            name='Test',
-            adresse='Test',
-            kommune='Test',
-            enrolled_at=date.today() - timedelta(days=400)
+            name="Test", adresse="Test", kommune="Test", enrolled_at=date.today() - timedelta(days=400)
         )
         self.assertTrue(school.has_forankringsplads)
         self.assertEqual(school.forankring_seats, School.FORANKRING_SEATS)
@@ -86,68 +70,43 @@ class SchoolModelTest(TestCase):
 class PersonModelTest(TestCase):
     def setUp(self):
         self.school = School.objects.create(
-            name='Test School',
-            adresse='Test Address',
-            kommune='Test Kommune',
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
         )
 
     def test_create_person(self):
         """Person model can be created and saved."""
         person = Person.objects.create(
             school=self.school,
-            name='Test Person',
+            name="Test Person",
             role=PersonRole.KOORDINATOR,
-            email='test@example.com',
-            phone='12345678'
+            email="test@example.com",
+            phone="12345678",
         )
-        self.assertEqual(person.name, 'Test Person')
+        self.assertEqual(person.name, "Test Person")
         self.assertEqual(person.school, self.school)
 
     def test_display_role_standard(self):
         """display_role returns label for standard roles."""
-        person = Person.objects.create(
-            school=self.school,
-            name='Test',
-            role=PersonRole.KOORDINATOR
-        )
-        self.assertEqual(person.display_role, 'Koordinator')
+        person = Person.objects.create(school=self.school, name="Test", role=PersonRole.KOORDINATOR)
+        self.assertEqual(person.display_role, "Koordinator")
 
     def test_display_role_other(self):
         """display_role returns role_other for OTHER role."""
-        person = Person.objects.create(
-            school=self.school,
-            name='Test',
-            role=PersonRole.OTHER,
-            role_other='Custom Role'
-        )
-        self.assertEqual(person.display_role, 'Custom Role')
+        person = Person.objects.create(school=self.school, name="Test", role=PersonRole.OTHER, role_other="Custom Role")
+        self.assertEqual(person.display_role, "Custom Role")
 
     def test_display_role_other_empty(self):
         """display_role returns 'Andet' when OTHER role has no role_other."""
-        person = Person.objects.create(
-            school=self.school,
-            name='Test',
-            role=PersonRole.OTHER
-        )
-        self.assertEqual(person.display_role, 'Andet')
+        person = Person.objects.create(school=self.school, name="Test", role=PersonRole.OTHER)
+        self.assertEqual(person.display_role, "Andet")
 
     def test_person_ordering(self):
         """Persons are ordered by is_primary (desc), then name."""
-        person1 = Person.objects.create(
-            school=self.school,
-            name='Zach',
-            is_primary=False
-        )
-        person2 = Person.objects.create(
-            school=self.school,
-            name='Alice',
-            is_primary=True
-        )
-        person3 = Person.objects.create(
-            school=self.school,
-            name='Bob',
-            is_primary=False
-        )
+        person1 = Person.objects.create(school=self.school, name="Zach", is_primary=False)
+        person2 = Person.objects.create(school=self.school, name="Alice", is_primary=True)
+        person3 = Person.objects.create(school=self.school, name="Bob", is_primary=False)
         people = list(self.school.people.all())
         self.assertEqual(people[0], person2)  # Alice (primary)
         self.assertEqual(people[1], person3)  # Bob
@@ -157,38 +116,23 @@ class PersonModelTest(TestCase):
 class SchoolCommentModelTest(TestCase):
     def setUp(self):
         self.school = School.objects.create(
-            name='Test School',
-            adresse='Test Address',
-            kommune='Test Kommune',
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
         )
-        self.user = User.objects.create_user(
-            username='testuser',
-            password='testpass123'
-        )
+        self.user = User.objects.create_user(username="testuser", password="testpass123")
 
     def test_create_comment(self):
         """SchoolComment model can be created and saved."""
-        comment = SchoolComment.objects.create(
-            school=self.school,
-            comment='Test comment',
-            created_by=self.user
-        )
-        self.assertEqual(comment.comment, 'Test comment')
+        comment = SchoolComment.objects.create(school=self.school, comment="Test comment", created_by=self.user)
+        self.assertEqual(comment.comment, "Test comment")
         self.assertEqual(comment.school, self.school)
         self.assertEqual(comment.created_by, self.user)
 
     def test_comment_ordering(self):
         """Comments are ordered by created_at descending."""
-        comment1 = SchoolComment.objects.create(
-            school=self.school,
-            comment='First',
-            created_by=self.user
-        )
-        comment2 = SchoolComment.objects.create(
-            school=self.school,
-            comment='Second',
-            created_by=self.user
-        )
+        comment1 = SchoolComment.objects.create(school=self.school, comment="First", created_by=self.user)
+        comment2 = SchoolComment.objects.create(school=self.school, comment="Second", created_by=self.user)
         comments = list(self.school.school_comments.all())
         self.assertEqual(comments[0], comment2)  # Most recent first
         self.assertEqual(comments[1], comment1)
@@ -197,131 +141,120 @@ class SchoolCommentModelTest(TestCase):
 class SchoolViewTest(TestCase):
     def setUp(self):
         self.client = Client()
-        self.user = User.objects.create_user(
-            username='testuser',
-            password='testpass123',
-            is_staff=True
-        )
+        self.user = User.objects.create_user(username="testuser", password="testpass123", is_staff=True)
         self.school = School.objects.create(
-            name='Test School',
-            adresse='Test Address',
-            kommune='Test Kommune',
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
         )
 
     def test_school_list_requires_login(self):
         """School list should redirect unauthenticated users."""
-        response = self.client.get(reverse('schools:list'))
+        response = self.client.get(reverse("schools:list"))
         self.assertEqual(response.status_code, 302)
 
     def test_school_list_loads(self):
         """School list should load for staff users."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:list'))
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:list"))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'schools/school_list.html')
+        self.assertTemplateUsed(response, "schools/school_list.html")
 
     def test_school_detail_loads(self):
         """School detail should load for staff users."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:detail', kwargs={'pk': self.school.pk}))
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:detail", kwargs={"pk": self.school.pk}))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'schools/school_detail.html')
+        self.assertTemplateUsed(response, "schools/school_detail.html")
 
     def test_school_create_loads(self):
         """School create form should load for staff users."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:create'))
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:create"))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'schools/school_form.html')
+        self.assertTemplateUsed(response, "schools/school_form.html")
 
     def test_school_update_loads(self):
         """School update form should load for staff users."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:update', kwargs={'pk': self.school.pk}))
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:update", kwargs={"pk": self.school.pk}))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'schools/school_form.html')
+        self.assertTemplateUsed(response, "schools/school_form.html")
 
 
 class PersonViewTest(TestCase):
     def setUp(self):
         self.client = Client()
-        self.user = User.objects.create_user(
-            username='testuser',
-            password='testpass123',
-            is_staff=True
-        )
+        self.user = User.objects.create_user(username="testuser", password="testpass123", is_staff=True)
         self.school = School.objects.create(
-            name='Test School',
-            adresse='Test Address',
-            kommune='Test Kommune',
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
         )
         self.person = Person.objects.create(
-            school=self.school,
-            name='Test Person',
-            role=PersonRole.KOORDINATOR,
-            email='test@example.com'
+            school=self.school, name="Test Person", role=PersonRole.KOORDINATOR, email="test@example.com"
         )
 
     def test_person_create_requires_login(self):
         """Person create should redirect unauthenticated users."""
-        response = self.client.get(reverse('schools:person-create', kwargs={'school_pk': self.school.pk}))
+        response = self.client.get(reverse("schools:person-create", kwargs={"school_pk": self.school.pk}))
         self.assertEqual(response.status_code, 302)
 
     def test_person_create_loads(self):
         """Person create form should load for staff users."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:person-create', kwargs={'school_pk': self.school.pk}))
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:person-create", kwargs={"school_pk": self.school.pk}))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'schools/person_form.html')
+        self.assertTemplateUsed(response, "schools/person_form.html")
 
     def test_person_create_post(self):
         """Person can be created via POST."""
-        self.client.login(username='testuser', password='testpass123')
+        self.client.login(username="testuser", password="testpass123")
         response = self.client.post(
-            reverse('schools:person-create', kwargs={'school_pk': self.school.pk}),
+            reverse("schools:person-create", kwargs={"school_pk": self.school.pk}),
             {
-                'name': 'New Person',
-                'role': PersonRole.SKOLELEDER,
-                'email': 'new@example.com',
-                'phone': '87654321',
-            }
+                "name": "New Person",
+                "role": PersonRole.SKOLELEDER,
+                "email": "new@example.com",
+                "phone": "87654321",
+            },
         )
         self.assertEqual(response.status_code, 302)  # Redirect on success
-        self.assertTrue(Person.objects.filter(name='New Person').exists())
+        self.assertTrue(Person.objects.filter(name="New Person").exists())
 
     def test_person_update_loads(self):
         """Person update form should load for staff users."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:person-update', kwargs={'pk': self.person.pk}))
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:person-update", kwargs={"pk": self.person.pk}))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'schools/person_form.html')
+        self.assertTemplateUsed(response, "schools/person_form.html")
 
     def test_person_update_post(self):
         """Person can be updated via POST."""
-        self.client.login(username='testuser', password='testpass123')
+        self.client.login(username="testuser", password="testpass123")
         response = self.client.post(
-            reverse('schools:person-update', kwargs={'pk': self.person.pk}),
+            reverse("schools:person-update", kwargs={"pk": self.person.pk}),
             {
-                'name': 'Updated Name',
-                'role': PersonRole.KOORDINATOR,
-                'email': 'updated@example.com',
-            }
+                "name": "Updated Name",
+                "role": PersonRole.KOORDINATOR,
+                "email": "updated@example.com",
+            },
         )
         self.assertEqual(response.status_code, 302)
         self.person.refresh_from_db()
-        self.assertEqual(self.person.name, 'Updated Name')
+        self.assertEqual(self.person.name, "Updated Name")
 
     def test_person_delete_modal_loads(self):
         """Person delete modal should load for staff users."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:person-delete', kwargs={'pk': self.person.pk}))
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:person-delete", kwargs={"pk": self.person.pk}))
         self.assertEqual(response.status_code, 200)
 
     def test_person_delete_post(self):
         """Person can be deleted via POST."""
-        self.client.login(username='testuser', password='testpass123')
+        self.client.login(username="testuser", password="testpass123")
         person_pk = self.person.pk
-        response = self.client.post(reverse('schools:person-delete', kwargs={'pk': person_pk}))
+        response = self.client.post(reverse("schools:person-delete", kwargs={"pk": person_pk}))
         self.assertEqual(response.status_code, 200)  # JSON response
         self.assertFalse(Person.objects.filter(pk=person_pk).exists())
 
@@ -329,57 +262,48 @@ class PersonViewTest(TestCase):
 class SchoolCommentViewTest(TestCase):
     def setUp(self):
         self.client = Client()
-        self.user = User.objects.create_user(
-            username='testuser',
-            password='testpass123',
-            is_staff=True
-        )
+        self.user = User.objects.create_user(username="testuser", password="testpass123", is_staff=True)
         self.school = School.objects.create(
-            name='Test School',
-            adresse='Test Address',
-            kommune='Test Kommune',
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
         )
-        self.comment = SchoolComment.objects.create(
-            school=self.school,
-            comment='Test comment',
-            created_by=self.user
-        )
+        self.comment = SchoolComment.objects.create(school=self.school, comment="Test comment", created_by=self.user)
 
     def test_comment_create_requires_login(self):
         """Comment create should redirect unauthenticated users."""
-        response = self.client.get(reverse('schools:comment-create', kwargs={'school_pk': self.school.pk}))
+        response = self.client.get(reverse("schools:comment-create", kwargs={"school_pk": self.school.pk}))
         self.assertEqual(response.status_code, 302)
 
     def test_comment_create_loads(self):
         """Comment create form should load for staff users."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:comment-create', kwargs={'school_pk': self.school.pk}))
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:comment-create", kwargs={"school_pk": self.school.pk}))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'schools/comment_form.html')
+        self.assertTemplateUsed(response, "schools/comment_form.html")
 
     def test_comment_create_post(self):
         """Comment can be created via POST."""
-        self.client.login(username='testuser', password='testpass123')
+        self.client.login(username="testuser", password="testpass123")
         response = self.client.post(
-            reverse('schools:comment-create', kwargs={'school_pk': self.school.pk}),
-            {'comment': 'New comment text'}
+            reverse("schools:comment-create", kwargs={"school_pk": self.school.pk}), {"comment": "New comment text"}
         )
         self.assertEqual(response.status_code, 302)  # Redirect on success
-        self.assertTrue(SchoolComment.objects.filter(comment='New comment text').exists())
-        new_comment = SchoolComment.objects.get(comment='New comment text')
+        self.assertTrue(SchoolComment.objects.filter(comment="New comment text").exists())
+        new_comment = SchoolComment.objects.get(comment="New comment text")
         self.assertEqual(new_comment.created_by, self.user)
 
     def test_comment_delete_modal_loads(self):
         """Comment delete modal should load for staff users."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:comment-delete', kwargs={'pk': self.comment.pk}))
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:comment-delete", kwargs={"pk": self.comment.pk}))
         self.assertEqual(response.status_code, 200)
 
     def test_comment_delete_post(self):
         """Comment can be deleted via POST."""
-        self.client.login(username='testuser', password='testpass123')
+        self.client.login(username="testuser", password="testpass123")
         comment_pk = self.comment.pk
-        response = self.client.post(reverse('schools:comment-delete', kwargs={'pk': comment_pk}))
+        response = self.client.post(reverse("schools:comment-delete", kwargs={"pk": comment_pk}))
         self.assertEqual(response.status_code, 200)  # JSON response
         self.assertFalse(SchoolComment.objects.filter(pk=comment_pk).exists())
 
@@ -387,19 +311,13 @@ class SchoolCommentViewTest(TestCase):
 class SeatPurchaseModelTest(TestCase):
     def setUp(self):
         self.school = School.objects.create(
-            name='Test School',
-            adresse='Test Address',
-            kommune='Test Kommune',
-            enrolled_at=date.today()
+            name="Test School", adresse="Test Address", kommune="Test Kommune", enrolled_at=date.today()
         )
 
     def test_create_seat_purchase(self):
         """SeatPurchase model can be created and saved."""
         purchase = SeatPurchase.objects.create(
-            school=self.school,
-            seats=5,
-            purchased_at=date.today(),
-            notes='Test purchase'
+            school=self.school, seats=5, purchased_at=date.today(), notes="Test purchase"
         )
         self.assertEqual(purchase.seats, 5)
         self.assertEqual(purchase.school, self.school)
@@ -429,15 +347,9 @@ class SeatPurchaseModelTest(TestCase):
     def test_seat_purchase_ordering(self):
         """SeatPurchases are ordered by purchased_at descending."""
         purchase1 = SeatPurchase.objects.create(
-            school=self.school,
-            seats=1,
-            purchased_at=date.today() - timedelta(days=10)
+            school=self.school, seats=1, purchased_at=date.today() - timedelta(days=10)
         )
-        purchase2 = SeatPurchase.objects.create(
-            school=self.school,
-            seats=2,
-            purchased_at=date.today()
-        )
+        purchase2 = SeatPurchase.objects.create(school=self.school, seats=2, purchased_at=date.today())
         purchases = list(self.school.seat_purchases.all())
         self.assertEqual(purchases[0], purchase2)  # Most recent first
         self.assertEqual(purchases[1], purchase1)
@@ -446,32 +358,28 @@ class SeatPurchaseModelTest(TestCase):
 class SchoolDeleteViewTest(TestCase):
     def setUp(self):
         self.client = Client()
-        self.user = User.objects.create_user(
-            username='testuser',
-            password='testpass123',
-            is_staff=True
-        )
+        self.user = User.objects.create_user(username="testuser", password="testpass123", is_staff=True)
         self.school = School.objects.create(
-            name='Test School',
-            adresse='Test Address',
-            kommune='Test Kommune',
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
         )
 
     def test_delete_requires_login(self):
         """School delete should redirect unauthenticated users."""
-        response = self.client.get(reverse('schools:delete', kwargs={'pk': self.school.pk}))
+        response = self.client.get(reverse("schools:delete", kwargs={"pk": self.school.pk}))
         self.assertEqual(response.status_code, 302)
 
     def test_delete_modal_loads(self):
         """School delete modal should load for staff users."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:delete', kwargs={'pk': self.school.pk}))
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:delete", kwargs={"pk": self.school.pk}))
         self.assertEqual(response.status_code, 200)
 
     def test_delete_post_soft_deletes(self):
         """School delete POST soft deletes the school."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.post(reverse('schools:delete', kwargs={'pk': self.school.pk}))
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.post(reverse("schools:delete", kwargs={"pk": self.school.pk}))
         self.assertEqual(response.status_code, 200)  # JSON response
         self.school.refresh_from_db()
         self.assertFalse(self.school.is_active)
@@ -480,116 +388,98 @@ class SchoolDeleteViewTest(TestCase):
 class SchoolSearchViewTest(TestCase):
     def setUp(self):
         self.client = Client()
-        self.user = User.objects.create_user(
-            username='testuser',
-            password='testpass123',
-            is_staff=True
-        )
+        self.user = User.objects.create_user(username="testuser", password="testpass123", is_staff=True)
         self.school1 = School.objects.create(
-            name='Alpha School',
-            adresse='Testvej 1',
-            kommune='København',
+            name="Alpha School",
+            adresse="Testvej 1",
+            kommune="København",
         )
         self.school2 = School.objects.create(
-            name='Beta School',
-            adresse='Testvej 2',
-            kommune='Aarhus',
+            name="Beta School",
+            adresse="Testvej 2",
+            kommune="Aarhus",
         )
         # Add person to school1
         Person.objects.create(
-            school=self.school1,
-            name='John Doe',
-            email='john@example.com',
-            role=PersonRole.KOORDINATOR
+            school=self.school1, name="John Doe", email="john@example.com", role=PersonRole.KOORDINATOR
         )
 
     def test_search_by_school_name(self):
         """Search finds schools by name."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:list'), {'search': 'Alpha'})
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:list"), {"search": "Alpha"})
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Alpha School')
-        self.assertNotContains(response, 'Beta School')
+        self.assertContains(response, "Alpha School")
+        self.assertNotContains(response, "Beta School")
 
     def test_search_by_kommune(self):
         """Search finds schools by kommune."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:list'), {'search': 'København'})
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:list"), {"search": "København"})
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Alpha School')
-        self.assertNotContains(response, 'Beta School')
+        self.assertContains(response, "Alpha School")
+        self.assertNotContains(response, "Beta School")
 
     def test_search_by_adresse(self):
         """Search finds schools by adresse."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:list'), {'search': 'Testvej 1'})
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:list"), {"search": "Testvej 1"})
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Alpha School')
-        self.assertNotContains(response, 'Beta School')
+        self.assertContains(response, "Alpha School")
+        self.assertNotContains(response, "Beta School")
 
     def test_search_by_person_name(self):
         """Search finds schools by person name."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:list'), {'search': 'John'})
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:list"), {"search": "John"})
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Alpha School')
-        self.assertNotContains(response, 'Beta School')
+        self.assertContains(response, "Alpha School")
+        self.assertNotContains(response, "Beta School")
 
     def test_search_by_person_email(self):
         """Search finds schools by person email."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:list'), {'search': 'john@example'})
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:list"), {"search": "john@example"})
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Alpha School')
-        self.assertNotContains(response, 'Beta School')
+        self.assertContains(response, "Alpha School")
+        self.assertNotContains(response, "Beta School")
 
     def test_search_no_results(self):
         """Search with no matches shows empty state."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:list'), {'search': 'Nonexistent'})
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:list"), {"search": "Nonexistent"})
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, 'Alpha School')
-        self.assertNotContains(response, 'Beta School')
+        self.assertNotContains(response, "Alpha School")
+        self.assertNotContains(response, "Beta School")
 
 
 class AddSeatsViewTest(TestCase):
     def setUp(self):
         self.client = Client()
-        self.user = User.objects.create_user(
-            username='testuser',
-            password='testpass123',
-            is_staff=True
-        )
+        self.user = User.objects.create_user(username="testuser", password="testpass123", is_staff=True)
         self.school = School.objects.create(
-            name='Test School',
-            adresse='Test Address',
-            kommune='Test Kommune',
-            enrolled_at=date.today()
+            name="Test School", adresse="Test Address", kommune="Test Kommune", enrolled_at=date.today()
         )
 
     def test_add_seats_requires_login(self):
         """Add seats should redirect unauthenticated users."""
-        response = self.client.get(reverse('schools:add-seats', kwargs={'pk': self.school.pk}))
+        response = self.client.get(reverse("schools:add-seats", kwargs={"pk": self.school.pk}))
         self.assertEqual(response.status_code, 302)
 
     def test_add_seats_loads(self):
         """Add seats form should load for staff users."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('schools:add-seats', kwargs={'pk': self.school.pk}))
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:add-seats", kwargs={"pk": self.school.pk}))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'schools/add_seats.html')
+        self.assertTemplateUsed(response, "schools/add_seats.html")
 
     def test_add_seats_post(self):
         """Seats can be added via POST."""
-        self.client.login(username='testuser', password='testpass123')
+        self.client.login(username="testuser", password="testpass123")
         initial_seats = self.school.purchased_seats
         response = self.client.post(
-            reverse('schools:add-seats', kwargs={'pk': self.school.pk}),
-            {
-                'seats': 5,
-                'purchased_at': date.today().isoformat(),
-                'notes': 'Test purchase'
-            }
+            reverse("schools:add-seats", kwargs={"pk": self.school.pk}),
+            {"seats": 5, "purchased_at": date.today().isoformat(), "notes": "Test purchase"},
         )
         self.assertEqual(response.status_code, 302)  # Redirect on success
         self.school.refresh_from_db()
@@ -599,129 +489,202 @@ class AddSeatsViewTest(TestCase):
 class FormValidationTest(TestCase):
     def setUp(self):
         self.school = School.objects.create(
-            name='Test School',
-            adresse='Test Address',
-            kommune='Test Kommune',
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
         )
 
     def test_school_form_valid(self):
         """SchoolForm accepts valid data."""
         from .forms import SchoolForm
-        form = SchoolForm(data={
-            'name': 'New School',
-            'adresse': 'New Address',
-            'kommune': 'New Kommune',
-        })
+
+        form = SchoolForm(
+            data={
+                "name": "New School",
+                "adresse": "New Address",
+                "kommune": "New Kommune",
+            }
+        )
         self.assertTrue(form.is_valid())
 
     def test_school_form_requires_name(self):
         """SchoolForm requires name field."""
         from .forms import SchoolForm
-        form = SchoolForm(data={
-            'adresse': 'Address',
-            'kommune': 'Kommune',
-        })
+
+        form = SchoolForm(
+            data={
+                "adresse": "Address",
+                "kommune": "Kommune",
+            }
+        )
         self.assertFalse(form.is_valid())
-        self.assertIn('name', form.errors)
+        self.assertIn("name", form.errors)
 
     def test_school_form_requires_adresse(self):
         """SchoolForm requires adresse field."""
         from .forms import SchoolForm
-        form = SchoolForm(data={
-            'name': 'School Name',
-            'kommune': 'Kommune',
-        })
+
+        form = SchoolForm(
+            data={
+                "name": "School Name",
+                "kommune": "Kommune",
+            }
+        )
         self.assertFalse(form.is_valid())
-        self.assertIn('adresse', form.errors)
+        self.assertIn("adresse", form.errors)
 
     def test_school_form_requires_kommune(self):
         """SchoolForm requires kommune field."""
         from .forms import SchoolForm
-        form = SchoolForm(data={
-            'name': 'School Name',
-            'adresse': 'Address',
-        })
+
+        form = SchoolForm(
+            data={
+                "name": "School Name",
+                "adresse": "Address",
+            }
+        )
         self.assertFalse(form.is_valid())
-        self.assertIn('kommune', form.errors)
+        self.assertIn("kommune", form.errors)
 
     def test_person_form_valid(self):
         """PersonForm accepts valid data."""
         from .forms import PersonForm
-        form = PersonForm(data={
-            'name': 'Test Person',
-            'role': PersonRole.KOORDINATOR,
-        })
+
+        form = PersonForm(
+            data={
+                "name": "Test Person",
+                "role": PersonRole.KOORDINATOR,
+            }
+        )
         self.assertTrue(form.is_valid())
 
     def test_person_form_requires_name(self):
         """PersonForm requires name field."""
         from .forms import PersonForm
-        form = PersonForm(data={
-            'role': PersonRole.KOORDINATOR,
-        })
+
+        form = PersonForm(
+            data={
+                "role": PersonRole.KOORDINATOR,
+            }
+        )
         self.assertFalse(form.is_valid())
-        self.assertIn('name', form.errors)
+        self.assertIn("name", form.errors)
 
     def test_person_form_with_other_role(self):
         """PersonForm accepts OTHER role with role_other."""
         from .forms import PersonForm
-        form = PersonForm(data={
-            'name': 'Test Person',
-            'role': PersonRole.OTHER,
-            'role_other': 'Custom Role',
-        })
+
+        form = PersonForm(
+            data={
+                "name": "Test Person",
+                "role": PersonRole.OTHER,
+                "role_other": "Custom Role",
+            }
+        )
         self.assertTrue(form.is_valid())
 
     def test_person_form_validates_email(self):
         """PersonForm validates email format."""
         from .forms import PersonForm
-        form = PersonForm(data={
-            'name': 'Test Person',
-            'role': PersonRole.KOORDINATOR,
-            'email': 'invalid-email',
-        })
+
+        form = PersonForm(
+            data={
+                "name": "Test Person",
+                "role": PersonRole.KOORDINATOR,
+                "email": "invalid-email",
+            }
+        )
         self.assertFalse(form.is_valid())
-        self.assertIn('email', form.errors)
+        self.assertIn("email", form.errors)
 
     def test_comment_form_valid(self):
         """SchoolCommentForm accepts valid data."""
         from .forms import SchoolCommentForm
-        form = SchoolCommentForm(data={
-            'comment': 'This is a test comment',
-        })
+
+        form = SchoolCommentForm(
+            data={
+                "comment": "This is a test comment",
+            }
+        )
         self.assertTrue(form.is_valid())
 
     def test_comment_form_requires_comment(self):
         """SchoolCommentForm requires comment field."""
         from .forms import SchoolCommentForm
+
         form = SchoolCommentForm(data={})
         self.assertFalse(form.is_valid())
-        self.assertIn('comment', form.errors)
+        self.assertIn("comment", form.errors)
 
     def test_seat_purchase_form_valid(self):
         """SeatPurchaseForm accepts valid data."""
         from .forms import SeatPurchaseForm
-        form = SeatPurchaseForm(data={
-            'seats': 5,
-            'purchased_at': date.today().isoformat(),
-        })
+
+        form = SeatPurchaseForm(
+            data={
+                "seats": 5,
+                "purchased_at": date.today().isoformat(),
+            }
+        )
         self.assertTrue(form.is_valid())
 
     def test_seat_purchase_form_requires_seats(self):
         """SeatPurchaseForm requires seats field."""
         from .forms import SeatPurchaseForm
-        form = SeatPurchaseForm(data={
-            'purchased_at': date.today().isoformat(),
-        })
+
+        form = SeatPurchaseForm(
+            data={
+                "purchased_at": date.today().isoformat(),
+            }
+        )
         self.assertFalse(form.is_valid())
-        self.assertIn('seats', form.errors)
+        self.assertIn("seats", form.errors)
 
     def test_seat_purchase_form_positive_seats(self):
         """SeatPurchaseForm requires positive seats value."""
         from .forms import SeatPurchaseForm
-        form = SeatPurchaseForm(data={
-            'seats': -1,
-            'purchased_at': date.today().isoformat(),
-        })
+
+        form = SeatPurchaseForm(
+            data={
+                "seats": -1,
+                "purchased_at": date.today().isoformat(),
+            }
+        )
         self.assertFalse(form.is_valid())
-        self.assertIn('seats', form.errors)
+        self.assertIn("seats", form.errors)
+
+
+class PasswordGenerationTest(TestCase):
+    def test_generate_pronounceable_password_length(self):
+        """Pronounceable password has correct length (2 chars per syllable)."""
+        from apps.schools.utils import generate_pronounceable_password
+
+        password = generate_pronounceable_password(syllables=4)
+        self.assertEqual(len(password), 8)
+
+    def test_generate_pronounceable_password_pattern(self):
+        """Pronounceable password alternates consonants and vowels."""
+        from apps.schools.utils import generate_pronounceable_password
+
+        password = generate_pronounceable_password(syllables=4)
+        consonants = "bdfgklmnprstvz"
+        vowels = "aeiou"
+        for i, char in enumerate(password):
+            if i % 2 == 0:
+                self.assertIn(char, consonants)
+            else:
+                self.assertIn(char, vowels)
+
+    def test_generate_token_length(self):
+        """Token has correct length."""
+        from apps.schools.utils import generate_signup_token
+
+        token = generate_signup_token()
+        self.assertEqual(len(token), 32)
+
+    def test_generate_token_alphanumeric(self):
+        """Token contains only alphanumeric characters."""
+        from apps.schools.utils import generate_signup_token
+
+        token = generate_signup_token()
+        self.assertTrue(token.isalnum())
