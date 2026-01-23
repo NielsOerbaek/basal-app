@@ -26,6 +26,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-basal}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-basal}
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY required}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+      SITE_URL: ${SITE_URL:-https://${DOMAIN:-localhost}}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
       CRON_SECRET: ${CRON_SECRET:-}
