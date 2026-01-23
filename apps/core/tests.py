@@ -220,7 +220,6 @@ class TestViewSmokeStaff:
             ("schools:detail", {"pk": school.pk}),
             ("schools:update", {"pk": school.pk}),
             ("schools:delete", {"pk": school.pk}),
-            ("schools:add-seats", {"pk": school.pk}),
             ("schools:person-create", {"school_pk": school.pk}),
             ("schools:comment-create", {"school_pk": school.pk}),
             ("schools:invoice-create", {"school_pk": school.pk}),

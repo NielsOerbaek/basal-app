@@ -15,7 +15,6 @@ urlpatterns = [
     path("<int:pk>/delete/", views.SchoolDeleteView.as_view(), name="delete"),
     path("<int:pk>/hard-delete/", views.SchoolHardDeleteView.as_view(), name="hard-delete"),
     path("<int:pk>/regenerate-credentials/", views.RegenerateCredentialsView.as_view(), name="regenerate-credentials"),
-    path("<int:pk>/add-seats/", views.AddSeatsView.as_view(), name="add-seats"),
     path("export/", views.SchoolExportView.as_view(), name="export"),
     path("autocomplete/", views.SchoolAutocompleteView.as_view(), name="autocomplete"),
     # Person URLs

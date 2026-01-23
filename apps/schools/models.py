@@ -313,6 +313,11 @@ class School(models.Model):
         """Check if school has available seats for signup."""
         return self.remaining_seats > 0
 
+    @property
+    def exceeds_seat_allocation(self):
+        """Check if school is using more seats than allocated (needs additional invoice)."""
+        return self.used_seats > self.total_seats
+
     def generate_credentials(self):
         """Generate signup password and token for this school."""
         from apps.schools.utils import generate_pronounceable_password, generate_signup_token

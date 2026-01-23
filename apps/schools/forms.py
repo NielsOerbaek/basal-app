@@ -1,160 +1,136 @@
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Row, Column, Submit, Field, HTML
+from crispy_forms.layout import Column, Layout, Row, Submit
 from django import forms
 
-from .models import School, SeatPurchase, Person, SchoolComment, PersonRole, Invoice, SchoolYear
+from .models import Invoice, Person, School, SchoolComment, SchoolYear
 
 
 class SchoolForm(forms.ModelForm):
     class Meta:
         model = School
-        fields = ['name', 'adresse', 'kommune', 'enrolled_at', 'opted_out_at']
+        fields = ["name", "adresse", "kommune", "enrolled_at", "opted_out_at"]
         widgets = {
-            'enrolled_at': forms.DateInput(attrs={'type': 'date'}),
-            'opted_out_at': forms.DateInput(attrs={'type': 'date'}),
+            "enrolled_at": forms.DateInput(attrs={"type": "date"}),
+            "opted_out_at": forms.DateInput(attrs={"type": "date"}),
         }
         labels = {
-            'enrolled_at': 'Tilmeldt siden',
-            'opted_out_at': 'Frameldt dato',
+            "enrolled_at": "Tilmeldt siden",
+            "opted_out_at": "Frameldt dato",
         }
         help_texts = {
-            'enrolled_at': 'Dato for tilmelding til Basal',
-            'opted_out_at': 'Udfyld kun hvis skolen har frameldt sig permanent',
+            "enrolled_at": "Dato for tilmelding til Basal",
+            "opted_out_at": "Udfyld kun hvis skolen har frameldt sig permanent",
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.layout = Layout(
-            'name',
+            "name",
             Row(
-                Column('adresse', css_class='col-md-8'),
-                Column('kommune', css_class='col-md-4'),
+                Column("adresse", css_class="col-md-8"),
+                Column("kommune", css_class="col-md-4"),
             ),
             Row(
-                Column('enrolled_at', css_class='col-md-6'),
-                Column('opted_out_at', css_class='col-md-6'),
+                Column("enrolled_at", css_class="col-md-6"),
+                Column("opted_out_at", css_class="col-md-6"),
             ),
-            Submit('submit', 'Gem skole', css_class='btn btn-primary'),
+            Submit("submit", "Gem skole", css_class="btn btn-primary"),
         )
 
 
 class PersonForm(forms.ModelForm):
     class Meta:
         model = Person
-        fields = ['name', 'role', 'role_other', 'phone', 'email', 'comment', 'is_primary']
+        fields = ["name", "role", "role_other", "phone", "email", "comment", "is_primary"]
         widgets = {
-            'comment': forms.Textarea(attrs={'rows': 2}),
+            "comment": forms.Textarea(attrs={"rows": 2}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.layout = Layout(
-            'name',
+            "name",
             Row(
-                Column('role', css_class='col-md-6'),
-                Column('role_other', css_class='col-md-6'),
+                Column("role", css_class="col-md-6"),
+                Column("role_other", css_class="col-md-6"),
             ),
             Row(
-                Column('phone', css_class='col-md-6'),
-                Column('email', css_class='col-md-6'),
+                Column("phone", css_class="col-md-6"),
+                Column("email", css_class="col-md-6"),
             ),
-            'comment',
-            'is_primary',
-            Submit('submit', 'Gem person', css_class='btn btn-primary'),
+            "comment",
+            "is_primary",
+            Submit("submit", "Gem person", css_class="btn btn-primary"),
         )
 
 
 class SchoolCommentForm(forms.ModelForm):
     class Meta:
         model = SchoolComment
-        fields = ['comment']
+        fields = ["comment"]
         widgets = {
-            'comment': forms.Textarea(attrs={'rows': 3}),
+            "comment": forms.Textarea(attrs={"rows": 3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.layout = Layout(
-            'comment',
-            Submit('submit', 'Gem kommentar', css_class='btn btn-primary'),
-        )
-
-
-class SeatPurchaseForm(forms.ModelForm):
-    class Meta:
-        model = SeatPurchase
-        fields = ['seats', 'purchased_at', 'notes']
-        widgets = {
-            'purchased_at': forms.DateInput(attrs={'type': 'date'}),
-            'notes': forms.Textarea(attrs={'rows': 2}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.layout = Layout(
-            Row(
-                Column('seats', css_class='col-md-4'),
-                Column('purchased_at', css_class='col-md-4'),
-            ),
-            'notes',
-            Submit('submit', 'Tilføj pladser', css_class='btn btn-primary'),
+            "comment",
+            Submit("submit", "Gem kommentar", css_class="btn btn-primary"),
         )
 
 
 class InvoiceForm(forms.ModelForm):
     class Meta:
         model = Invoice
-        fields = ['school_years', 'invoice_number', 'amount', 'date', 'status', 'comment']
+        fields = ["school_years", "invoice_number", "amount", "date", "status", "comment"]
         widgets = {
-            'date': forms.DateInput(attrs={'type': 'date'}),
-            'comment': forms.Textarea(attrs={'rows': 2}),
-            'school_years': forms.CheckboxSelectMultiple(),
+            "date": forms.DateInput(attrs={"type": "date"}),
+            "comment": forms.Textarea(attrs={"rows": 2}),
+            "school_years": forms.CheckboxSelectMultiple(),
         }
 
     def __init__(self, *args, school=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.layout = Layout(
-            'school_years',
+            "school_years",
             Row(
-                Column('invoice_number', css_class='col-md-6'),
-                Column('amount', css_class='col-md-6'),
+                Column("invoice_number", css_class="col-md-6"),
+                Column("amount", css_class="col-md-6"),
             ),
             Row(
-                Column('date', css_class='col-md-6'),
-                Column('status', css_class='col-md-6'),
+                Column("date", css_class="col-md-6"),
+                Column("status", css_class="col-md-6"),
             ),
-            'comment',
-            Submit('submit', 'Gem faktura', css_class='btn btn-primary'),
+            "comment",
+            Submit("submit", "Gem faktura", css_class="btn btn-primary"),
         )
         # Limit school_years choices to years the school is enrolled in
         if school:
-            self.fields['school_years'].queryset = school.get_enrolled_years().order_by('-start_date')
+            self.fields["school_years"].queryset = school.get_enrolled_years().order_by("-start_date")
 
 
 class SchoolYearForm(forms.ModelForm):
     class Meta:
         model = SchoolYear
-        fields = ['name', 'start_date', 'end_date']
+        fields = ["name", "start_date", "end_date"]
         widgets = {
-            'start_date': forms.DateInput(attrs={'type': 'date'}),
-            'end_date': forms.DateInput(attrs={'type': 'date'}),
+            "start_date": forms.DateInput(attrs={"type": "date"}),
+            "end_date": forms.DateInput(attrs={"type": "date"}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.layout = Layout(
-            'name',
+            "name",
             Row(
-                Column('start_date', css_class='col-md-6'),
-                Column('end_date', css_class='col-md-6'),
+                Column("start_date", css_class="col-md-6"),
+                Column("end_date", css_class="col-md-6"),
             ),
-            Submit('submit', 'Gem skoleår', css_class='btn btn-primary'),
+            Submit("submit", "Gem skoleår", css_class="btn btn-primary"),
         )
-
-

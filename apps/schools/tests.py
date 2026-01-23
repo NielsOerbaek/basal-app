@@ -66,6 +66,46 @@ class SchoolModelTest(TestCase):
         self.assertTrue(school.has_forankringsplads)
         self.assertEqual(school.forankring_seats, School.FORANKRING_SEATS)
 
+    def test_exceeds_seat_allocation_false_when_under(self):
+        """exceeds_seat_allocation is False when used_seats <= total_seats."""
+        from apps.courses.models import Course, CourseSignUp
+
+        school = School.objects.create(name="Test", adresse="Test", kommune="Test", enrolled_at=date.today())
+        # School has 3 base seats, create 2 signups
+        course = Course.objects.create(
+            title="Test Course",
+            start_date=date.today(),
+            end_date=date.today(),
+            location="Test",
+            capacity=10,
+        )
+        CourseSignUp.objects.create(course=course, school=school, participant_name="A", participant_email="a@test.com")
+        CourseSignUp.objects.create(course=course, school=school, participant_name="B", participant_email="b@test.com")
+        self.assertEqual(school.used_seats, 2)
+        self.assertEqual(school.total_seats, 3)
+        self.assertFalse(school.exceeds_seat_allocation)
+
+    def test_exceeds_seat_allocation_true_when_over(self):
+        """exceeds_seat_allocation is True when used_seats > total_seats."""
+        from apps.courses.models import Course, CourseSignUp
+
+        school = School.objects.create(name="Test", adresse="Test", kommune="Test", enrolled_at=date.today())
+        # School has 3 base seats, create 4 signups to exceed
+        course = Course.objects.create(
+            title="Test Course",
+            start_date=date.today(),
+            end_date=date.today(),
+            location="Test",
+            capacity=10,
+        )
+        for i in range(4):
+            CourseSignUp.objects.create(
+                course=course, school=school, participant_name=f"Person {i}", participant_email=f"p{i}@test.com"
+            )
+        self.assertEqual(school.used_seats, 4)
+        self.assertEqual(school.total_seats, 3)
+        self.assertTrue(school.exceeds_seat_allocation)
+
 
 class PersonModelTest(TestCase):
     def setUp(self):
@@ -518,39 +558,6 @@ class SchoolSearchViewTest(TestCase):
         self.assertNotContains(response, "Beta School")
 
 
-class AddSeatsViewTest(TestCase):
-    def setUp(self):
-        self.client = Client()
-        self.user = User.objects.create_user(username="testuser", password="testpass123", is_staff=True)
-        self.school = School.objects.create(
-            name="Test School", adresse="Test Address", kommune="Test Kommune", enrolled_at=date.today()
-        )
-
-    def test_add_seats_requires_login(self):
-        """Add seats should redirect unauthenticated users."""
-        response = self.client.get(reverse("schools:add-seats", kwargs={"pk": self.school.pk}))
-        self.assertEqual(response.status_code, 302)
-
-    def test_add_seats_loads(self):
-        """Add seats form should load for staff users."""
-        self.client.login(username="testuser", password="testpass123")
-        response = self.client.get(reverse("schools:add-seats", kwargs={"pk": self.school.pk}))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "schools/add_seats.html")
-
-    def test_add_seats_post(self):
-        """Seats can be added via POST."""
-        self.client.login(username="testuser", password="testpass123")
-        initial_seats = self.school.purchased_seats
-        response = self.client.post(
-            reverse("schools:add-seats", kwargs={"pk": self.school.pk}),
-            {"seats": 5, "purchased_at": date.today().isoformat(), "notes": "Test purchase"},
-        )
-        self.assertEqual(response.status_code, 302)  # Redirect on success
-        self.school.refresh_from_db()
-        self.assertEqual(self.school.purchased_seats, initial_seats + 5)
-
-
 class FormValidationTest(TestCase):
     def setUp(self):
         self.school = School.objects.create(
@@ -680,43 +687,6 @@ class FormValidationTest(TestCase):
         form = SchoolCommentForm(data={})
         self.assertFalse(form.is_valid())
         self.assertIn("comment", form.errors)
-
-    def test_seat_purchase_form_valid(self):
-        """SeatPurchaseForm accepts valid data."""
-        from .forms import SeatPurchaseForm
-
-        form = SeatPurchaseForm(
-            data={
-                "seats": 5,
-                "purchased_at": date.today().isoformat(),
-            }
-        )
-        self.assertTrue(form.is_valid())
-
-    def test_seat_purchase_form_requires_seats(self):
-        """SeatPurchaseForm requires seats field."""
-        from .forms import SeatPurchaseForm
-
-        form = SeatPurchaseForm(
-            data={
-                "purchased_at": date.today().isoformat(),
-            }
-        )
-        self.assertFalse(form.is_valid())
-        self.assertIn("seats", form.errors)
-
-    def test_seat_purchase_form_positive_seats(self):
-        """SeatPurchaseForm requires positive seats value."""
-        from .forms import SeatPurchaseForm
-
-        form = SeatPurchaseForm(
-            data={
-                "seats": -1,
-                "purchased_at": date.today().isoformat(),
-            }
-        )
-        self.assertFalse(form.is_valid())
-        self.assertIn("seats", form.errors)
 
 
 class PasswordGenerationTest(TestCase):

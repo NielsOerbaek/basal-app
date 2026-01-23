@@ -150,21 +150,26 @@
         </div>
 
         <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card-header">
                 <span><i class="bi bi-ticket-perforated me-2"></i>Pladser</span>
-                <a href="{% url 'schools:add-seats' school.pk %}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-plus-lg me-1"></i>Tilføj pladser
-                </a>
             </div>
             <div class="card-body">
                 {% if school.is_enrolled %}
+                {% if school.exceeds_seat_allocation %}
+                <div class="alert alert-warning mb-3">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Skolen har overskredet deres pladser.</strong>
+                    De bruger {{ school.used_seats }} pladser men har kun {{ school.total_seats }} tildelt.
+                    Der kan være behov for en ekstra faktura.
+                </div>
+                {% endif %}
                 <div class="row text-center mb-3">
                     <div class="col-4">
                         <div class="fs-3 fw-bold text-primary">{{ school.total_seats }}</div>
                         <small class="text-muted">I alt</small>
                     </div>
                     <div class="col-4">
-                        <div class="fs-3 fw-bold text-secondary">{{ school.used_seats }}</div>
+                        <div class="fs-3 fw-bold {% if school.exceeds_seat_allocation %}text-danger{% else %}text-secondary{% endif %}">{{ school.used_seats }}</div>
                         <small class="text-muted">Brugt</small>
                     </div>
                     <div class="col-4">
@@ -180,8 +185,10 @@
                     <dd class="col-4 text-end">{{ school.base_seats }}</dd>
                     <dt class="col-8">Forankringsplads</dt>
                     <dd class="col-4 text-end">{{ school.forankring_seats }}</dd>
+                    {% if school.purchased_seats > 0 %}
                     <dt class="col-8">Ekstra købte pladser</dt>
                     <dd class="col-4 text-end">{{ school.purchased_seats }}</dd>
+                    {% endif %}
                 </dl>
 
                 {% if seat_purchases %}

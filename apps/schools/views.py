@@ -14,7 +14,7 @@ from apps.core.decorators import staff_required
 from apps.core.export import export_queryset_to_excel
 from apps.core.mixins import SortableMixin
 
-from .forms import InvoiceForm, PersonForm, SchoolCommentForm, SchoolForm, SchoolYearForm, SeatPurchaseForm
+from .forms import InvoiceForm, PersonForm, SchoolCommentForm, SchoolForm, SchoolYearForm
 from .models import Invoice, Person, School, SchoolComment, SchoolYear
 
 
@@ -379,39 +379,6 @@ class SchoolAutocompleteView(View):
         schools = School.objects.active().filter(name__icontains=query)[:10]
         results = [{"id": s.pk, "name": s.name, "kommune": s.kommune} for s in schools]
         return JsonResponse({"results": results})
-
-
-@method_decorator(staff_required, name="dispatch")
-class AddSeatsView(View):
-    def get(self, request, pk):
-        school = get_object_or_404(School, pk=pk)
-        form = SeatPurchaseForm()
-        return render(
-            request,
-            "schools/add_seats.html",
-            {
-                "school": school,
-                "form": form,
-            },
-        )
-
-    def post(self, request, pk):
-        school = get_object_or_404(School, pk=pk)
-        form = SeatPurchaseForm(request.POST)
-        if form.is_valid():
-            purchase = form.save(commit=False)
-            purchase.school = school
-            purchase.save()
-            messages.success(request, f'{purchase.seats} pladser tilføjet til "{school.name}".')
-            return redirect("schools:detail", pk=school.pk)
-        return render(
-            request,
-            "schools/add_seats.html",
-            {
-                "school": school,
-                "form": form,
-            },
-        )
 
 
 @method_decorator(staff_required, name="dispatch")
