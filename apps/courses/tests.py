@@ -129,7 +129,12 @@ class CourseViewTest(TestCase):
         self.assertTemplateUsed(response, "signups/course_signup.html")
 
     def test_public_signup_submit(self):
-        """Public signup form submission should work."""
+        """Public signup form submission should work when authenticated via session."""
+        # Set up session authentication for course signup
+        session = self.client.session
+        session["course_signup_school_id"] = self.school.pk
+        session.save()
+
         response = self.client.post(
             reverse("signup:course"),
             {

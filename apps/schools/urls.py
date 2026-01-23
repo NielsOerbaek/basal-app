@@ -2,34 +2,36 @@ from django.urls import path
 
 from . import views
 
-app_name = 'schools'
+app_name = "schools"
 
 urlpatterns = [
-    path('', views.SchoolListView.as_view(), name='list'),
+    path("", views.SchoolListView.as_view(), name="list"),
     # Kommune URLs
-    path('kommuner/', views.KommuneListView.as_view(), name='kommune-list'),
-    path('kommuner/<str:kommune>/', views.KommuneDetailView.as_view(), name='kommune-detail'),
-    path('create/', views.SchoolCreateView.as_view(), name='create'),
-    path('<int:pk>/', views.SchoolDetailView.as_view(), name='detail'),
-    path('<int:pk>/edit/', views.SchoolUpdateView.as_view(), name='update'),
-    path('<int:pk>/delete/', views.SchoolDeleteView.as_view(), name='delete'),
-    path('<int:pk>/add-seats/', views.AddSeatsView.as_view(), name='add-seats'),
-    path('export/', views.SchoolExportView.as_view(), name='export'),
-    path('autocomplete/', views.SchoolAutocompleteView.as_view(), name='autocomplete'),
+    path("kommuner/", views.KommuneListView.as_view(), name="kommune-list"),
+    path("kommuner/<str:kommune>/", views.KommuneDetailView.as_view(), name="kommune-detail"),
+    path("create/", views.SchoolCreateView.as_view(), name="create"),
+    path("<int:pk>/", views.SchoolDetailView.as_view(), name="detail"),
+    path("<int:pk>/edit/", views.SchoolUpdateView.as_view(), name="update"),
+    path("<int:pk>/delete/", views.SchoolDeleteView.as_view(), name="delete"),
+    path("<int:pk>/hard-delete/", views.SchoolHardDeleteView.as_view(), name="hard-delete"),
+    path("<int:pk>/regenerate-credentials/", views.RegenerateCredentialsView.as_view(), name="regenerate-credentials"),
+    path("<int:pk>/add-seats/", views.AddSeatsView.as_view(), name="add-seats"),
+    path("export/", views.SchoolExportView.as_view(), name="export"),
+    path("autocomplete/", views.SchoolAutocompleteView.as_view(), name="autocomplete"),
     # Person URLs
-    path('<int:school_pk>/person/add/', views.PersonCreateView.as_view(), name='person-create'),
-    path('person/<int:pk>/edit/', views.PersonUpdateView.as_view(), name='person-update'),
-    path('person/<int:pk>/delete/', views.PersonDeleteView.as_view(), name='person-delete'),
+    path("<int:school_pk>/person/add/", views.PersonCreateView.as_view(), name="person-create"),
+    path("person/<int:pk>/edit/", views.PersonUpdateView.as_view(), name="person-update"),
+    path("person/<int:pk>/delete/", views.PersonDeleteView.as_view(), name="person-delete"),
     # Comment URLs
-    path('<int:school_pk>/comment/add/', views.SchoolCommentCreateView.as_view(), name='comment-create'),
-    path('comment/<int:pk>/delete/', views.SchoolCommentDeleteView.as_view(), name='comment-delete'),
+    path("<int:school_pk>/comment/add/", views.SchoolCommentCreateView.as_view(), name="comment-create"),
+    path("comment/<int:pk>/delete/", views.SchoolCommentDeleteView.as_view(), name="comment-delete"),
     # Invoice URLs
-    path('<int:school_pk>/invoice/add/', views.InvoiceCreateView.as_view(), name='invoice-create'),
-    path('invoice/<int:pk>/delete/', views.InvoiceDeleteView.as_view(), name='invoice-delete'),
-    path('fakturaer/manglende/', views.MissingInvoicesView.as_view(), name='missing-invoices'),
+    path("<int:school_pk>/invoice/add/", views.InvoiceCreateView.as_view(), name="invoice-create"),
+    path("invoice/<int:pk>/delete/", views.InvoiceDeleteView.as_view(), name="invoice-delete"),
+    path("fakturaer/manglende/", views.MissingInvoicesView.as_view(), name="missing-invoices"),
     # School Year URLs
-    path('skoleaar/', views.SchoolYearListView.as_view(), name='school-year-list'),
-    path('skoleaar/create/', views.SchoolYearCreateView.as_view(), name='school-year-create'),
-    path('skoleaar/<int:pk>/edit/', views.SchoolYearUpdateView.as_view(), name='school-year-update'),
-    path('skoleaar/<int:pk>/delete/', views.SchoolYearDeleteView.as_view(), name='school-year-delete'),
+    path("skoleaar/", views.SchoolYearListView.as_view(), name="school-year-list"),
+    path("skoleaar/create/", views.SchoolYearCreateView.as_view(), name="school-year-create"),
+    path("skoleaar/<int:pk>/edit/", views.SchoolYearUpdateView.as_view(), name="school-year-update"),
+    path("skoleaar/<int:pk>/delete/", views.SchoolYearDeleteView.as_view(), name="school-year-delete"),
 ]

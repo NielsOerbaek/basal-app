@@ -91,16 +91,25 @@ class CourseSignupForm(DynamicFieldsMixin, forms.Form):
     course = CourseChoiceField(queryset=Course.objects.none(), label="Vælg et kursus", empty_label="Vælg et kursus...")
     school = SchoolChoiceField(queryset=School.objects.none(), label="Vælg din skole", empty_label="Vælg en skole...")
 
-    def __init__(self, *args, signup_page=None, **kwargs):
+    def __init__(self, *args, signup_page=None, locked_school=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.locked_school = locked_school
 
         # Set querysets
         self.fields["course"].queryset = Course.objects.filter(
             is_published=True, start_date__gte=timezone.now().date()
         ).order_by("start_date")
-        self.fields["school"].queryset = (
-            School.objects.active().filter(enrolled_at__isnull=False, opted_out_at__isnull=True).order_by("name")
-        )
+
+        if locked_school:
+            # Lock to specific school
+            self.fields["school"].queryset = School.objects.filter(pk=locked_school.pk)
+            self.fields["school"].initial = locked_school
+            self.fields["school"].empty_label = None
+            self.fields["school"].widget.attrs["disabled"] = True
+        else:
+            self.fields["school"].queryset = (
+                School.objects.active().filter(enrolled_at__isnull=False, opted_out_at__isnull=True).order_by("name")
+            )
 
         # Add dynamic fields if signup_page is provided
         if signup_page:
@@ -151,6 +160,12 @@ class CourseSignupForm(DynamicFieldsMixin, forms.Form):
         self.helper.form_tag = False  # We'll handle form tag in template
         self.helper.layout = Layout(*layout_items)
 
+    def clean_school(self):
+        """Handle locked school - disabled fields don't submit values."""
+        if self.locked_school:
+            return self.locked_school
+        return self.cleaned_data.get("school")
+
 
 class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
     """School signup form for joining the Basal project."""
@@ -173,6 +188,11 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
         max_length=255,
         required=False,
         label="Skolens navn",
+    )
+    new_school_address = forms.CharField(
+        max_length=255,
+        required=False,
+        label="Skolens adresse",
     )
 
     contact_name = forms.CharField(max_length=255, label="Dit navn")
@@ -212,7 +232,7 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
             HTML("<h5>Skoleoplysninger</h5>"),
             "municipality",
             Div("school", "school_not_listed", css_id="school-selection"),
-            Div("new_school_name", css_id="new-school-fields", style="display: none;"),
+            Div("new_school_name", "new_school_address", css_id="new-school-fields", style="display: none;"),
             HTML("<hr><h5>Kontaktoplysninger</h5>"),
             "contact_name",
             Row(
@@ -238,10 +258,13 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
         school_not_listed = cleaned_data.get("school_not_listed")
         school = cleaned_data.get("school")
         new_school_name = cleaned_data.get("new_school_name")
+        new_school_address = cleaned_data.get("new_school_address")
 
         if school_not_listed:
             if not new_school_name:
                 raise ValidationError({"new_school_name": "Angiv venligst skolens navn."})
+            if not new_school_address:
+                raise ValidationError({"new_school_address": "Angiv venligst skolens adresse."})
         else:
             if not school:
                 raise ValidationError({"school": "Vælg venligst en skole eller marker at din skole ikke er på listen."})

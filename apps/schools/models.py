@@ -84,6 +84,12 @@ class School(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    signup_password = models.CharField(
+        max_length=20, blank=True, verbose_name="Tilmeldingskode", help_text="Kode til kursustilmelding"
+    )
+    signup_token = models.CharField(
+        max_length=32, blank=True, db_index=True, verbose_name="Tilmeldingstoken", help_text="Token til direkte link"
+    )
 
     objects = SchoolManager()
 
@@ -306,6 +312,14 @@ class School(models.Model):
     def has_available_seats(self):
         """Check if school has available seats for signup."""
         return self.remaining_seats > 0
+
+    def generate_credentials(self):
+        """Generate signup password and token for this school."""
+        from apps.schools.utils import generate_pronounceable_password, generate_signup_token
+
+        self.signup_password = generate_pronounceable_password()
+        self.signup_token = generate_signup_token()
+        self.save(update_fields=["signup_password", "signup_token"])
 
 
 class SeatPurchase(models.Model):

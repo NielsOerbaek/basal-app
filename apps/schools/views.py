@@ -297,6 +297,68 @@ class SchoolDeleteView(View):
 
 
 @method_decorator(staff_required, name="dispatch")
+class SchoolHardDeleteView(View):
+    """Permanently delete a school and all related data."""
+
+    def get(self, request, pk):
+        from apps.courses.models import CourseSignUp
+
+        school = School.objects.get(pk=pk)
+        signup_count = CourseSignUp.objects.filter(school=school).count()
+        person_count = school.people.count()
+        comment_count = school.school_comments.count()
+        contact_count = school.contact_history.count()
+        invoice_count = school.invoices.count()
+
+        warning_parts = []
+        if signup_count:
+            warning_parts.append(f"{signup_count} kursustilmelding{'er' if signup_count != 1 else ''}")
+        if person_count:
+            warning_parts.append(f"{person_count} person{'er' if person_count != 1 else ''}")
+        if comment_count:
+            warning_parts.append(f"{comment_count} kommentar{'er' if comment_count != 1 else ''}")
+        if contact_count:
+            warning_parts.append(f"{contact_count} henvendelse{'r' if contact_count != 1 else ''}")
+        if invoice_count:
+            warning_parts.append(f"{invoice_count} faktura{'er' if invoice_count != 1 else ''}")
+
+        if warning_parts:
+            warning = f"Dette vil permanent slette: {', '.join(warning_parts)}. Handlingen kan ikke fortrydes!"
+        else:
+            warning = "Handlingen kan ikke fortrydes!"
+
+        return render(
+            request,
+            "core/components/confirm_delete_modal.html",
+            {
+                "title": "Slet skole permanent",
+                "message": format_html(
+                    "Er du sikker på, at du vil <strong>permanent slette</strong> skolen <strong>{}</strong>?",
+                    school.name,
+                ),
+                "warning": warning,
+                "delete_url": reverse_lazy("schools:hard-delete", kwargs={"pk": pk}),
+                "button_text": "Slet permanent",
+            },
+        )
+
+    def post(self, request, pk):
+        from apps.courses.models import CourseSignUp
+
+        school = School.objects.get(pk=pk)
+        school_name = school.name
+
+        # Delete course signups first (they have PROTECT)
+        CourseSignUp.objects.filter(school=school).delete()
+
+        # Now hard delete the school (bypassing soft delete)
+        School.objects.filter(pk=pk).delete()
+
+        messages.success(request, f'Skolen "{school_name}" og al relateret data er blevet permanent slettet.')
+        return JsonResponse({"success": True, "redirect": str(reverse_lazy("schools:list"))})
+
+
+@method_decorator(staff_required, name="dispatch")
 class SchoolExportView(View):
     def get(self, request):
         queryset = School.objects.active()
@@ -648,3 +710,20 @@ class SchoolYearDeleteView(View):
         school_year.delete()
         messages.success(request, f'Skoleåret "{name}" er blevet slettet.')
         return JsonResponse({"success": True, "redirect": str(reverse_lazy("schools:school-year-list"))})
+
+
+@method_decorator(staff_required, name="dispatch")
+class RegenerateCredentialsView(View):
+    """Regenerate signup credentials for a school."""
+
+    def post(self, request, pk):
+        school = get_object_or_404(School, pk=pk)
+        school.generate_credentials()
+        messages.success(request, f'Nye tilmeldingsoplysninger genereret for "{school.name}".')
+        return JsonResponse(
+            {
+                "success": True,
+                "password": school.signup_password,
+                "token": school.signup_token,
+            }
+        )

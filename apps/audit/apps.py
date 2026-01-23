@@ -12,7 +12,7 @@ class AuditConfig(AppConfig):
         from apps.schools.models import School, SeatPurchase, Person, SchoolComment, Invoice, SchoolYear
         from apps.courses.models import Course, CourseSignUp, CourseMaterial
         from apps.contacts.models import ContactTime
-        from apps.signups.models import SignupPage, SignupFormField, SchoolSignup
+        from apps.signups.models import SignupPage, SignupFormField
 
         # School and related models
         register_for_audit(
@@ -89,10 +89,3 @@ class AuditConfig(AppConfig):
         register_for_audit(SignupPage, AuditCfg())
 
         register_for_audit(SignupFormField, AuditCfg())
-
-        register_for_audit(
-            SchoolSignup,
-            AuditCfg(
-                get_school=lambda instance: instance.school,
-            ),
-        )

@@ -13,6 +13,7 @@ urlpatterns = [
     path("course/success/", views.CourseSignupSuccessView.as_view(), name="course-success"),
     path("course/check-school-seats/", views.CheckSchoolSeatsView.as_view(), name="check-school-seats"),
     path("course/check-course-seats/", views.CheckCourseSeatsView.as_view(), name="check-course-seats"),
+    path("course/validate-password/", views.ValidateSchoolPasswordView.as_view(), name="validate-password"),
     # School signup
     path("school/", views.SchoolSignupView.as_view(), name="school"),
     path("school/success/", views.SchoolSignupSuccessView.as_view(), name="school-success"),

@@ -17,12 +17,54 @@
 </div>
 {% endif %}
 
+{% if auth_mode == 'staff' %}
+<div class="alert alert-secondary mb-4">
+    <i class="bi bi-person-badge me-2"></i>
+    Logget ind som <strong>{{ request.user.get_full_name|default:request.user.username }}</strong> ({{ request.user.email }})
+    <span class="text-muted ms-2">- Du kan tilmelde deltagere fra alle skoler</span>
+</div>
+{% endif %}
+
+{% if show_password_form %}
+<div id="password-section" class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Indtast skolekode</h5>
+        <p class="text-muted">Indtast koden fra jeres velkomstmail for at tilmelde deltagere.</p>
+
+        {% if auth_error %}
+        <div class="alert alert-danger">{{ auth_error }}</div>
+        {% endif %}
+
+        <div class="input-group mb-3">
+            <input type="text" id="school-password" class="form-control form-control-lg"
+                   placeholder="Indtast kode..." autocomplete="off">
+            <button type="button" id="validate-password-btn" class="btn btn-primary btn-lg">
+                <i class="bi bi-arrow-right"></i>
+            </button>
+        </div>
+        <div id="password-error" class="text-danger" style="display: none;"></div>
+        <div id="password-success" class="text-success" style="display: none;"></div>
+    </div>
+</div>
+{% endif %}
+
+{% if locked_school %}
+<div class="alert alert-info mb-4">
+    <i class="bi bi-building me-2"></i>
+    Du tilmelder deltagere fra <strong>{{ locked_school.name }}</strong>
+    {% if auth_mode != 'staff' %}
+    <a href="{% url 'signup:course' %}?clear=1" class="float-end">Skift skole</a>
+    {% endif %}
+</div>
+{% endif %}
+
 {% if form.errors or participant_error %}
 <div class="alert alert-danger">
     {% if participant_error %}{{ participant_error }}{% else %}Ret venligst fejlene nedenfor.{% endif %}
 </div>
 {% endif %}
 
+<div id="signup-form-container" {% if show_password_form %}style="display: none;"{% endif %}>
 <div id="seats-warning" class="alert alert-warning" style="display: none;">
     <strong><i class="bi bi-exclamation-triangle me-2"></i>Bemærk:</strong>
     <span id="seats-warning-text">
@@ -89,6 +131,7 @@
         </button>
     </div>
 </form>
+</div><!-- end signup-form-container -->
 {% endblock %}
 
 {% block signup_extra_js %}
@@ -312,6 +355,62 @@ document.addEventListener('DOMContentLoaded', function() {
         initialRemoveBtn.addEventListener('click', function() {
             this.closest('.participant-entry').remove();
             updateParticipantCount();
+        });
+    }
+
+    // Password validation
+    const passwordInput = document.getElementById('school-password');
+    const validateBtn = document.getElementById('validate-password-btn');
+    const passwordError = document.getElementById('password-error');
+    const passwordSuccess = document.getElementById('password-success');
+    const formContainer = document.getElementById('signup-form-container');
+
+    if (validateBtn) {
+        validateBtn.addEventListener('click', validatePassword);
+        passwordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                validatePassword();
+            }
+        });
+    }
+
+    function validatePassword() {
+        const password = passwordInput.value.trim();
+        if (!password) {
+            passwordError.textContent = 'Indtast venligst en kode';
+            passwordError.style.display = 'block';
+            return;
+        }
+
+        validateBtn.disabled = true;
+        passwordError.style.display = 'none';
+
+        fetch('{% url "signup:validate-password" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ password: password })
+        })
+        .then(response => response.json())
+        .then(data => {
+            validateBtn.disabled = false;
+            if (data.valid) {
+                passwordSuccess.textContent = 'Kode accepteret! Indlæser...';
+                passwordSuccess.style.display = 'block';
+                // Reload page to show form with locked school
+                window.location.reload();
+            } else {
+                passwordError.textContent = data.error || 'Ugyldig kode';
+                passwordError.style.display = 'block';
+            }
+        })
+        .catch(() => {
+            validateBtn.disabled = false;
+            passwordError.textContent = 'Der opstod en fejl. Prøv igen.';
+            passwordError.style.display = 'block';
         });
     }
 });

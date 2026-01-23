@@ -385,6 +385,71 @@ class SchoolDeleteViewTest(TestCase):
         self.assertFalse(self.school.is_active)
 
 
+class SchoolHardDeleteViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="harddeluser", password="testpass123", is_staff=True)
+        self.school = School.objects.create(
+            name="School To Delete",
+            adresse="Test Address",
+            kommune="Test Kommune",
+            enrolled_at=date.today(),
+        )
+
+    def test_hard_delete_modal_shows_counts(self):
+        """Hard delete modal shows related data counts."""
+        from apps.courses.models import Course, CourseSignUp
+
+        # Add some related data
+        Person.objects.create(school=self.school, name="Test Person", email="test@example.com")
+        course = Course.objects.create(
+            title="Test Course",
+            start_date=date.today(),
+            end_date=date.today(),
+            location="Test",
+            is_published=True,
+        )
+        CourseSignUp.objects.create(
+            course=course,
+            school=self.school,
+            participant_name="Test",
+            participant_email="test@example.com",
+        )
+
+        self.client.login(username="harddeluser", password="testpass123")
+        response = self.client.get(reverse("schools:hard-delete", kwargs={"pk": self.school.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "1 kursustilmelding")
+        self.assertContains(response, "1 person")
+
+    def test_hard_delete_removes_school_and_signups(self):
+        """Hard delete permanently removes school and course signups."""
+        from apps.courses.models import Course, CourseSignUp
+
+        course = Course.objects.create(
+            title="Test Course",
+            start_date=date.today(),
+            end_date=date.today(),
+            location="Test",
+            is_published=True,
+        )
+        CourseSignUp.objects.create(
+            course=course,
+            school=self.school,
+            participant_name="Test",
+            participant_email="test@example.com",
+        )
+
+        self.client.login(username="harddeluser", password="testpass123")
+        response = self.client.post(reverse("schools:hard-delete", kwargs={"pk": self.school.pk}))
+        self.assertEqual(response.status_code, 200)
+
+        # School should be completely gone
+        self.assertFalse(School.objects.filter(pk=self.school.pk).exists())
+        # Course signup should be gone too
+        self.assertEqual(CourseSignUp.objects.filter(school=self.school).count(), 0)
+
+
 class SchoolSearchViewTest(TestCase):
     def setUp(self):
         self.client = Client()
@@ -688,3 +753,90 @@ class PasswordGenerationTest(TestCase):
 
         token = generate_signup_token()
         self.assertTrue(token.isalnum())
+
+
+class SchoolCredentialsTest(TestCase):
+    def test_school_has_signup_password_field(self):
+        """School model has signup_password field."""
+        school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+        )
+        self.assertEqual(school.signup_password, "")
+
+    def test_school_has_signup_token_field(self):
+        """School model has signup_token field."""
+        school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+        )
+        self.assertEqual(school.signup_token, "")
+
+    def test_generate_credentials(self):
+        """School.generate_credentials() creates password and token."""
+        school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+        )
+        school.generate_credentials()
+        self.assertEqual(len(school.signup_password), 8)
+        self.assertEqual(len(school.signup_token), 32)
+
+    def test_generate_credentials_saves(self):
+        """School.generate_credentials() saves to database."""
+        school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+        )
+        school.generate_credentials()
+        school.refresh_from_db()
+        self.assertEqual(len(school.signup_password), 8)
+        self.assertEqual(len(school.signup_token), 32)
+
+
+class SchoolCredentialsViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="credsuser", password="testpass123", is_staff=True)
+        self.school = School.objects.create(
+            name="Credentials Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+            enrolled_at=date.today(),
+            signup_password="bafimoku",
+            signup_token="abc123token",
+        )
+
+    def test_detail_shows_credentials_for_enrolled(self):
+        """School detail shows credentials section for enrolled schools."""
+        self.client.login(username="credsuser", password="testpass123")
+        response = self.client.get(reverse("schools:detail", kwargs={"pk": self.school.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Kodeord og tilmeldingslink")
+        self.assertContains(response, "bafimoku")
+
+    def test_detail_hides_credentials_for_unenrolled(self):
+        """School detail hides credentials for unenrolled schools."""
+        self.school.enrolled_at = None
+        self.school.save()
+        self.client.login(username="credsuser", password="testpass123")
+        response = self.client.get(reverse("schools:detail", kwargs={"pk": self.school.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Kodeord og tilmeldingslink")
+
+    def test_regenerate_credentials(self):
+        """Regenerate credentials creates new password and token."""
+        self.client.login(username="credsuser", password="testpass123")
+        old_password = self.school.signup_password
+        old_token = self.school.signup_token
+
+        response = self.client.post(reverse("schools:regenerate-credentials", kwargs={"pk": self.school.pk}))
+        self.assertEqual(response.status_code, 200)
+
+        self.school.refresh_from_db()
+        self.assertNotEqual(self.school.signup_password, old_password)
+        self.assertNotEqual(self.school.signup_token, old_token)
