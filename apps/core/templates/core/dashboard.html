@@ -86,15 +86,16 @@
                         <tbody>
                             {% for course in upcoming_courses %}
                             <tr>
-                                <td><a href="{% url 'courses:detail' course.pk %}">{{ course.title }}</a></td>
                                 <td>
+                                    <a href="{% url 'courses:detail' course.pk %}">
                                     {% if course.start_date == course.end_date %}
                                     {{ course.start_date|date:"d. M Y" }}
                                     {% else %}
                                     {{ course.start_date|date:"d. M" }} - {{ course.end_date|date:"d. M Y" }}
                                     {% endif %}
+                                    </a>
                                 </td>
-                                <td>{{ course.location }}</td>
+                                <td>{% if course.location %}{{ course.location.name }}{% else %}-{% endif %}</td>
                                 <td>
                                     <div class="progress" style="width: 100px; height: 20px;">
                                         {% widthratio course.signup_count_value course.capacity 100 as fill_percent %}
@@ -180,7 +181,7 @@
                         <a href="{% url 'schools:detail' signup.school.pk %}"><strong>{{ signup.school.name }} ({{ signup.school.kommune }})</strong></a>
                         <small class="text-muted">{{ signup.created_at|date:"d. M" }}</small>
                     </div>
-                    <small class="text-muted">{{ signup.course.title }}{% if signup.participant_title %} - {{ signup.participant_title }}{% endif %}</small>
+                    <small class="text-muted">{{ signup.course.display_name }}{% if signup.participant_title %} - {{ signup.participant_title }}{% endif %}</small>
                 </li>
                 {% empty %}
                 <li class="list-group-item text-muted">Ingen seneste tilmeldinger.</li>

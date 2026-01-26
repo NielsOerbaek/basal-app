@@ -12,7 +12,7 @@ from apps.core.decorators import staff_required
 from apps.core.export import export_queryset_to_excel
 from apps.core.mixins import SortableMixin
 
-from .forms import CourseForm, CourseMaterialForm, PublicSignUpForm
+from .forms import CourseForm, CourseMaterialForm, CourseSignUpForm, PublicSignUpForm
 from .models import AttendanceStatus, Course, CourseMaterial, CourseSignUp
 
 
@@ -23,18 +23,17 @@ class CourseListView(SortableMixin, ListView):
     context_object_name = "courses"
     paginate_by = 25
     sortable_fields = {
-        "title": "title",
         "date": "start_date",
-        "location": "location",
+        "location": "location__name",
     }
     default_sort = "date"
     default_order = "desc"
 
     def get_base_queryset(self):
-        queryset = Course.objects.all()
+        queryset = Course.objects.select_related("location").prefetch_related("instructors")
         search = self.request.GET.get("search")
         if search:
-            queryset = queryset.filter(Q(title__icontains=search) | Q(location__icontains=search))
+            queryset = queryset.filter(Q(location__name__icontains=search))
 
         # School year filter (for project goals drill-down)
         school_year_filter = self.request.GET.get("school_year")
@@ -69,7 +68,7 @@ class CourseCreateView(CreateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(self.request, f'Kurset "{self.object.title}" blev oprettet.')
+        messages.success(self.request, f'Kurset "{self.object.display_name}" blev oprettet.')
         return response
 
 
@@ -98,7 +97,7 @@ class CourseUpdateView(UpdateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(self.request, f'Kurset "{self.object.title}" blev opdateret.')
+        messages.success(self.request, f'Kurset "{self.object.display_name}" blev opdateret.')
         return response
 
 
@@ -111,7 +110,7 @@ class CourseDeleteView(View):
             "core/components/confirm_delete_modal.html",
             {
                 "title": "Slet kursus",
-                "message": format_html("Er du sikker på, at du vil slette <strong>{}</strong>?", course.title),
+                "message": format_html("Er du sikker på, at du vil slette <strong>{}</strong>?", course.display_name),
                 "warning": "Dette vil også slette alle tilmeldinger til dette kursus. Denne handling kan ikke fortrydes.",
                 "delete_url": reverse_lazy("courses:delete", kwargs={"pk": pk}),
             },
@@ -119,18 +118,18 @@ class CourseDeleteView(View):
 
     def post(self, request, pk):
         course = get_object_or_404(Course, pk=pk)
-        course_title = course.title
+        course_name = course.display_name
         course.delete()
-        messages.success(request, f'Kurset "{course_title}" er blevet slettet.')
+        messages.success(request, f'Kurset "{course_name}" er blevet slettet.')
         return JsonResponse({"success": True, "redirect": str(reverse_lazy("courses:list"))})
 
 
 @method_decorator(staff_required, name="dispatch")
 class CourseExportView(View):
     def get(self, request):
-        queryset = Course.objects.all()
+        queryset = Course.objects.select_related("location").all()
         fields = [
-            ("title", "Titel"),
+            ("display_name", "Kursus"),
             ("start_date", "Startdato"),
             ("end_date", "Slutdato"),
             ("location", "Lokation"),
@@ -253,6 +252,26 @@ class MarkAttendanceView(View):
 
 
 @method_decorator(staff_required, name="dispatch")
+class SignUpUpdateView(UpdateView):
+    model = CourseSignUp
+    form_class = CourseSignUpForm
+    template_name = "courses/signup_form.html"
+
+    def get_success_url(self):
+        return reverse("courses:detail", kwargs={"pk": self.object.course.pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["course"] = self.object.course
+        return context
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f"Tilmeldingen for {self.object.participant_name} blev opdateret.")
+        return response
+
+
+@method_decorator(staff_required, name="dispatch")
 class SignUpDeleteView(View):
     def get(self, request, pk):
         signup = get_object_or_404(CourseSignUp, pk=pk)
@@ -291,6 +310,7 @@ class PublicSignUpView(View):
                 school=form.cleaned_data["school"],
                 participant_name=form.cleaned_data["participant_name"],
                 participant_email=form.cleaned_data["participant_email"],
+                participant_phone=form.cleaned_data.get("participant_phone", ""),
                 participant_title=form.cleaned_data.get("participant_title", ""),
                 is_underviser=form.cleaned_data.get("is_underviser", True),
             )
@@ -343,7 +363,7 @@ class BulkImportView(View):
         course = get_object_or_404(Course, pk=pk)
         raw_data = request.POST.get("data", "")
 
-        # Parse pasted data (tab-separated: name, school, email)
+        # Parse pasted data (tab-separated: first_name, last_name, school, email, phone, is_underviser)
         rows = []
         lines = raw_data.strip().split("\n")
 
@@ -353,19 +373,24 @@ class BulkImportView(View):
 
             # Split by tab (Excel default) or multiple spaces
             parts = line.split("\t")
-            if len(parts) < 2:
+            if len(parts) < 3:
                 parts = [p.strip() for p in line.split("  ") if p.strip()]
 
-            if len(parts) < 2:
+            if len(parts) < 3:
                 continue
 
-            # Skip header row
-            if i == 0 and parts[0].lower() in ["navn", "name", "deltager"]:
-                continue
+            first_name = parts[0].strip()
+            last_name = parts[1].strip() if len(parts) > 1 else ""
+            school_name = parts[2].strip() if len(parts) > 2 else ""
+            email = parts[3].strip() if len(parts) > 3 else ""
+            phone = parts[4].strip() if len(parts) > 4 else ""
+            is_underviser_str = parts[5].strip().lower() if len(parts) > 5 else ""
 
-            name = parts[0].strip()
-            school_name = parts[1].strip() if len(parts) > 1 else ""
-            email = parts[2].strip() if len(parts) > 2 else ""
+            # Parse is_underviser (default True)
+            is_underviser = is_underviser_str not in ["0", "false", "nej", "no", "n"]
+
+            # Combine first and last name
+            name = f"{first_name} {last_name}".strip()
 
             if not name or not school_name:
                 continue
@@ -379,13 +404,18 @@ class BulkImportView(View):
                     "name": name,
                     "school_name": school_name,
                     "email": email,
+                    "phone": phone,
+                    "is_underviser": is_underviser,
                     "matches": matches,
                     "exact_match": matches[0] if matches and matches[0].name.lower() == school_name.lower() else None,
                 }
             )
 
         if not rows:
-            messages.error(request, "Ingen gyldige rækker fundet. Forventet format: Navn, Skole, Email (tab-separeret)")
+            messages.error(
+                request,
+                "Ingen gyldige rækker fundet. Forventet format: Fornavn, Efternavn, Skole, Email, Telefon, Er underviser (tab-separeret)",
+            )
             return render(request, "courses/bulk_import_modal.html", {"course": course})
 
         # Get all schools for fallback dropdown
@@ -449,6 +479,8 @@ class BulkImportConfirmView(View):
             school_id = request.POST.get(f"school_{i}")
             name = request.POST.get(f"name_{i}")
             email = request.POST.get(f"email_{i}", "")
+            phone = request.POST.get(f"phone_{i}", "")
+            is_underviser = request.POST.get(f"is_underviser_{i}", "1") == "1"
 
             if not school_id or school_id == "skip":
                 skipped += 1
@@ -467,6 +499,8 @@ class BulkImportConfirmView(View):
                     school=school,
                     participant_name=name,
                     participant_email=email,
+                    participant_phone=phone,
+                    is_underviser=is_underviser,
                 )
                 created += 1
 

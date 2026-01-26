@@ -4,7 +4,7 @@ from decimal import Decimal
 from django.test import TestCase
 
 from apps.core.models import ProjectSettings
-from apps.courses.models import AttendanceStatus, Course, CourseSignUp
+from apps.courses.models import AttendanceStatus, Course, CourseSignUp, Location
 from apps.schools.models import School
 
 from .calculations import (
@@ -75,6 +75,8 @@ class MetricsCalculationTests(TestCase):
     def setUp(self):
         # Ensure ProjectSettings exists with defaults
         ProjectSettings.get()
+        # Create a shared test location
+        self.location = Location.objects.create(name="Test Location")
 
     def test_new_schools_count(self):
         """Counts schools enrolled in given year."""
@@ -117,15 +119,12 @@ class MetricsCalculationTests(TestCase):
     def test_courses_count(self):
         """Counts courses in given school year."""
         # Course in 2024/25
-        Course.objects.create(
-            title="Course 2024/25", start_date=date(2024, 10, 1), end_date=date(2024, 10, 1), location="Test Location"
-        )
+        Course.objects.create(start_date=date(2024, 10, 1), end_date=date(2024, 10, 1), location=self.location)
         # Course in different year
         Course.objects.create(
-            title="Course 2023/24",
             start_date=date(2024, 3, 1),  # March 2024 = 2023/24
             end_date=date(2024, 3, 1),
-            location="Test Location",
+            location=self.location,
         )
 
         metrics = get_metrics_for_year("2024/25")
@@ -134,9 +133,7 @@ class MetricsCalculationTests(TestCase):
     def test_trained_participants_counts_attended_only(self):
         """Only counts participants with attendance=PRESENT."""
         school = School.objects.create(name="Test School", adresse="Test Address", kommune="Test Kommune")
-        course = Course.objects.create(
-            title="Test Course", start_date=date(2024, 10, 1), end_date=date(2024, 10, 1), location="Test Location"
-        )
+        course = Course.objects.create(start_date=date(2024, 10, 1), end_date=date(2024, 10, 1), location=self.location)
         # Present participant
         CourseSignUp.objects.create(
             school=school, course=course, participant_name="Present Person", attendance=AttendanceStatus.PRESENT
@@ -156,9 +153,7 @@ class MetricsCalculationTests(TestCase):
     def test_trained_teachers_filters_by_is_underviser(self):
         """Only counts is_underviser=True participants."""
         school = School.objects.create(name="Test School", adresse="Test Address", kommune="Test Kommune")
-        course = Course.objects.create(
-            title="Test Course", start_date=date(2024, 10, 1), end_date=date(2024, 10, 1), location="Test Location"
-        )
+        course = Course.objects.create(start_date=date(2024, 10, 1), end_date=date(2024, 10, 1), location=self.location)
         # Teacher (is_underviser=True)
         CourseSignUp.objects.create(
             school=school,
@@ -187,9 +182,7 @@ class MetricsCalculationTests(TestCase):
         settings.save()
 
         school = School.objects.create(name="Test School", adresse="Test Address", kommune="Test Kommune")
-        course = Course.objects.create(
-            title="Test Course", start_date=date(2024, 10, 1), end_date=date(2024, 10, 1), location="Test Location"
-        )
+        course = Course.objects.create(start_date=date(2024, 10, 1), end_date=date(2024, 10, 1), location=self.location)
         CourseSignUp.objects.create(
             school=school,
             course=course,
@@ -216,9 +209,7 @@ class MetricsCalculationTests(TestCase):
         settings.save()
 
         school = School.objects.create(name="Test School", adresse="Test Address", kommune="Test Kommune")
-        course = Course.objects.create(
-            title="Test Course", start_date=date(2024, 10, 1), end_date=date(2024, 10, 1), location="Test Location"
-        )
+        course = Course.objects.create(start_date=date(2024, 10, 1), end_date=date(2024, 10, 1), location=self.location)
         CourseSignUp.objects.create(
             school=school,
             course=course,

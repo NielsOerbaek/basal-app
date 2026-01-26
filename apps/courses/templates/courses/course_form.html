@@ -32,3 +32,49 @@
 </div>
 {% endif %}
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle location "add new" toggle
+    const locationSelect = document.getElementById('id_location');
+    const newLocationFields = document.getElementById('new-location-fields');
+
+    if (locationSelect && newLocationFields) {
+        function toggleNewLocationFields() {
+            if (locationSelect.value === '__new__') {
+                newLocationFields.classList.remove('d-none');
+            } else {
+                newLocationFields.classList.add('d-none');
+            }
+        }
+
+        locationSelect.addEventListener('change', toggleNewLocationFields);
+        toggleNewLocationFields();  // Check initial state
+    }
+
+    // Handle instructor "add new" toggles
+    function setupInstructorToggle(num) {
+        const select = document.getElementById('id_instructor_' + num);
+        const container = document.getElementById('new-instructor-' + num + '-container');
+
+        if (select && container) {
+            function toggleNewField() {
+                if (select.value === '__new__') {
+                    container.classList.remove('d-none');
+                } else {
+                    container.classList.add('d-none');
+                }
+            }
+
+            select.addEventListener('change', toggleNewField);
+            toggleNewField();  // Check initial state
+        }
+    }
+
+    setupInstructorToggle(1);
+    setupInstructorToggle(2);
+    setupInstructorToggle(3);
+});
+</script>
+{% endblock %}

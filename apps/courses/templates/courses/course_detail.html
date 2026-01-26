@@ -1,10 +1,10 @@
 {% extends 'core/base.html' %}
 
-{% block title %}{{ course.title }} - Basal{% endblock %}
+{% block title %}{{ course.display_name }} - Basal{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="bi bi-calendar-event me-2"></i>{{ course.title }}</h1>
+    <h1><i class="bi bi-calendar-event me-2"></i>{{ course.display_name }}</h1>
     <div>
         <a href="{% url 'courses:rollcall' course.pk %}" class="btn btn-outline-success">
             <i class="bi bi-clipboard-check me-1"></i>Fremmøde
@@ -35,9 +35,9 @@
                         {% endif %}
                     </dd>
                     <dt class="col-sm-4">Sted</dt>
-                    <dd class="col-sm-8">{{ course.location }}</dd>
+                    <dd class="col-sm-8">{% if course.location %}{{ course.location.full_address }}{% else %}-{% endif %}</dd>
                     <dt class="col-sm-4">Undervisere</dt>
-                    <dd class="col-sm-8">{{ course.undervisere|default:"-" }}</dd>
+                    <dd class="col-sm-8">{% for instructor in course.instructors.all %}{{ instructor.name }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</dd>
                     <dt class="col-sm-4">Kapacitet</dt>
                     <dd class="col-sm-8">{{ course.capacity }}</dd>
                     <dt class="col-sm-4">Tilmeldinger</dt>
@@ -126,6 +126,7 @@
                         <tr>
                             <th>Navn</th>
                             <th>E-mail</th>
+                            <th>Telefon</th>
                             <th>Titel</th>
                             <th>Underviser</th>
                             <th>Skole</th>
@@ -144,6 +145,7 @@
                                 <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
+                            <td>{{ signup.participant_phone|default:"-" }}</td>
                             <td>{{ signup.participant_title|default:"-" }}</td>
                             <td>
                                 {% if signup.is_underviser %}
@@ -159,6 +161,9 @@
                                 </span>
                             </td>
                             <td class="text-end">
+                                <a href="{% url 'courses:signup-update' signup.pk %}" class="btn btn-sm btn-link text-primary p-0 me-2" title="Rediger tilmelding">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
                                 <button type="button" class="btn btn-sm btn-link text-danger p-0" title="Slet tilmelding"
                                         hx-get="{% url 'courses:signup-delete' signup.pk %}"
                                         hx-target="#modal-container">
@@ -168,7 +173,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-3">Ingen tilmeldinger endnu.</td>
+                            <td colspan="8" class="text-center text-muted py-3">Ingen tilmeldinger endnu.</td>
                         </tr>
                         {% endfor %}
                     </tbody>

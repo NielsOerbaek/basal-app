@@ -345,6 +345,23 @@
             </ul>
         </div>
 
+        <div class="card mb-4">
+            <div class="card-header">Tilmeldinger</div>
+            <ul class="list-group list-group-flush">
+                {% for signup in course_signups %}
+                <li class="list-group-item">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'courses:detail' signup.course.pk %}">{{ signup.course.display_name }}</a>
+                        <span class="badge bg-{% if signup.attendance == 'present' %}success{% elif signup.attendance == 'absent' %}danger{% else %}secondary{% endif %}">{{ signup.get_attendance_display }}</span>
+                    </div>
+                    <small class="text-muted">{{ signup.participant_name }} - {{ signup.course.start_date|date:"d. M Y" }}</small>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted">Ingen tilmeldinger.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-clock-history me-2"></i>Seneste aktivitet</span>

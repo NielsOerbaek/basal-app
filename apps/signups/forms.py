@@ -78,7 +78,7 @@ class CourseChoiceField(forms.ModelChoiceField):
         else:
             seats_text = f"{available} ledige pladser"
 
-        return f"{obj.title} - {date_str} - {seats_text}"
+        return f"{obj.display_name} - {date_str} - {seats_text}"
 
 
 class CourseSignupForm(DynamicFieldsMixin, forms.Form):

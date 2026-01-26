@@ -7,7 +7,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from apps.contacts.models import ContactTime
-from apps.courses.models import Course, CourseSignUp
+from apps.courses.models import Course, CourseSignUp, Location
 from apps.schools.models import Invoice, Person, School, SchoolComment, SchoolYear
 
 from .models import ProjectSettings
@@ -123,12 +123,12 @@ def smoke_test_data(db, staff_user):
         date=date.today(),
     )
 
-    # Create course
+    # Create location and course
+    location = Location.objects.create(name="Test Location")
     course = Course.objects.create(
-        title="Smoke Test Course",
         start_date=date.today() + timedelta(days=7),
         end_date=date.today() + timedelta(days=7),
-        location="Test Location",
+        location=location,
         capacity=30,
         is_published=True,
     )

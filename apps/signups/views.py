@@ -290,10 +290,10 @@ class CheckCourseSeatsView(View):
                     "signup_count": course.signup_count,
                     "available_seats": course.spots_remaining,
                     "is_full": course.is_full,
-                    "title": course.title,
+                    "title": course.display_name,
                     "date": date_str,
-                    "location": course.location,
-                    "undervisere": course.undervisere or "",
+                    "location": course.location.name if course.location else "",
+                    "undervisere": ", ".join(course.instructors.values_list("name", flat=True)),
                 }
             )
         except Course.DoesNotExist:

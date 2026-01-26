@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from apps.courses.models import Course, CourseSignUp
+from apps.courses.models import Course, CourseSignUp, Location
 from apps.schools.models import School
 
 from .models import (
@@ -52,11 +52,11 @@ class CourseSignupViewTest(TestCase):
             enrolled_at=date.today(),
             signup_password="testpass",
         )
+        self.location = Location.objects.create(name="Test Location")
         self.course = Course.objects.create(
-            title="Test Course",
             start_date=date.today() + timedelta(days=7),
             end_date=date.today() + timedelta(days=7),
-            location="Test Location",
+            location=self.location,
             is_published=True,
         )
         # Set up session authentication for course signup
@@ -145,11 +145,11 @@ class CourseSignupWithDynamicFieldsTest(TestCase):
             enrolled_at=date.today(),
             signup_password="testpass",
         )
+        self.location = Location.objects.create(name="Test Location")
         self.course = Course.objects.create(
-            title="Test Course",
             start_date=date.today() + timedelta(days=7),
             end_date=date.today() + timedelta(days=7),
-            location="Test Location",
+            location=self.location,
             is_published=True,
         )
         self.page = SignupPage.objects.get(page_type=SignupPageType.COURSE_SIGNUP)
@@ -415,11 +415,11 @@ class CourseSignupAuthTest(TestCase):
             signup_password="bafimoku",
             signup_token="abc123tokenxyz456",
         )
+        self.location = Location.objects.create(name="Test Location")
         self.course = Course.objects.create(
-            title="Test Course",
             start_date=date.today() + timedelta(days=7),
             end_date=date.today() + timedelta(days=7),
-            location="Test Location",
+            location=self.location,
             is_published=True,
         )
         self.staff_user = User.objects.create_user(username="authstaffuser", password="staffpass", is_staff=True)
