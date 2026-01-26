@@ -4,8 +4,8 @@ from django.db import models
 
 
 class AttendanceStatus(models.TextChoices):
-    UNMARKED = "unmarked", "Ikke registreret"
-    PRESENT = "present", "Til stede"
+    UNMARKED = "unmarked", "Tilmeldt"
+    PRESENT = "present", "Uddannet"
     ABSENT = "absent", "Fraværende"
 
 

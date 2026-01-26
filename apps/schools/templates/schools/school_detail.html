@@ -180,7 +180,9 @@
                 {% endfor %}
             </ul>
         </div>
+    </div>
 
+    <div class="col-lg-6">
         <div class="card mb-4">
             <div class="card-header">
                 <span><i class="bi bi-ticket-perforated me-2"></i>Pladser</span>
@@ -243,57 +245,6 @@
 
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-receipt me-2"></i>Fakturaer</span>
-                <a href="{% url 'schools:invoice-create' school.pk %}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-plus-lg me-1"></i>Tilføj faktura
-                </a>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Fakturanr.</th>
-                            <th>Skoleår</th>
-                            <th>Dato</th>
-                            <th>Beløb</th>
-                            <th>Status</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for invoice in invoices %}
-                        <tr>
-                            <td>{{ invoice.invoice_number }}</td>
-                            <td>{% for year in invoice.school_years.all %}{{ year.name }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</td>
-                            <td>{{ invoice.date|date:"d. M Y" }}</td>
-                            <td>{{ invoice.amount|floatformat:2 }} kr.</td>
-                            <td>
-                                <span class="badge bg-{% if invoice.status == 'paid' %}success{% elif invoice.status == 'sent' %}warning{% else %}secondary{% endif %}">
-                                    {{ invoice.get_status_display }}
-                                </span>
-                            </td>
-                            <td class="text-end">
-                                <button type="button" class="btn btn-sm btn-link text-danger p-0" title="Slet"
-                                        hx-get="{% url 'schools:invoice-delete' invoice.pk %}"
-                                        hx-target="#modal-container">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center text-muted py-3">Ingen fakturaer.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-6">
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-chat-text me-2"></i>Kommentarer</span>
                 <a href="{% url 'schools:comment-create' school.pk %}" class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-plus-lg me-1"></i>Tilføj kommentar
@@ -346,23 +297,6 @@
         </div>
 
         <div class="card mb-4">
-            <div class="card-header">Tilmeldinger</div>
-            <ul class="list-group list-group-flush">
-                {% for signup in course_signups %}
-                <li class="list-group-item">
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'courses:detail' signup.course.pk %}">{{ signup.course.display_name }}</a>
-                        <span class="badge bg-{% if signup.attendance == 'present' %}success{% elif signup.attendance == 'absent' %}danger{% else %}secondary{% endif %}">{{ signup.get_attendance_display }}</span>
-                    </div>
-                    <small class="text-muted">{{ signup.participant_name }} - {{ signup.course.start_date|date:"d. M Y" }}</small>
-                </li>
-                {% empty %}
-                <li class="list-group-item text-muted">Ingen tilmeldinger.</li>
-                {% endfor %}
-            </ul>
-        </div>
-
-        <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-clock-history me-2"></i>Seneste aktivitet</span>
                 <a href="{% url 'audit:school_activity' school.pk %}" class="btn btn-sm btn-outline-primary">
@@ -370,6 +304,55 @@
                 </a>
             </div>
             {% include "audit/includes/activity_table.html" with activities=recent_activities limit=5 %}
+        </div>
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-receipt me-2"></i>Fakturaer</span>
+                <a href="{% url 'schools:invoice-create' school.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-lg me-1"></i>Tilføj faktura
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fakturanr.</th>
+                            <th>Skoleår</th>
+                            <th>Dato</th>
+                            <th>Beløb</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in invoices %}
+                        <tr>
+                            <td>{{ invoice.invoice_number }}</td>
+                            <td>{% for year in invoice.school_years.all %}{{ year.name }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</td>
+                            <td>{{ invoice.date|date:"d. M Y" }}</td>
+                            <td>{{ invoice.amount|floatformat:2 }} kr.</td>
+                            <td>
+                                <span class="badge bg-{% if invoice.status == 'paid' %}success{% elif invoice.status == 'sent' %}warning{% else %}secondary{% endif %}">
+                                    {{ invoice.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-link text-danger p-0" title="Slet"
+                                        hx-get="{% url 'schools:invoice-delete' invoice.pk %}"
+                                        hx-target="#modal-container">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-3">Ingen fakturaer.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
