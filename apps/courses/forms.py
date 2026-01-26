@@ -8,21 +8,43 @@ from apps.schools.models import School
 from .models import Course, CourseMaterial, CourseSignUp, Instructor, Location
 
 
+class AddNewModelChoiceField(forms.ModelChoiceField):
+    """ModelChoiceField that accepts '__new__' as a special value for adding new items."""
+
+    def to_python(self, value):
+        if value == "__new__":
+            return value
+        return super().to_python(value)
+
+    def validate(self, value):
+        if value == "__new__":
+            return
+        return super().validate(value)
+
+
 class CourseForm(forms.ModelForm):
+    # Override location field to accept "__new__" value
+    location = AddNewModelChoiceField(
+        queryset=Location.objects.all().order_by("name"),
+        required=False,
+        label="Lokation",
+        empty_label="Vælg lokation...",
+    )
+
     # Instructor fields - three separate dropdowns with "add new" option
-    instructor_1 = forms.ModelChoiceField(
+    instructor_1 = AddNewModelChoiceField(
         queryset=Instructor.objects.all().order_by("name"),
         required=True,
         label="Underviser 1",
         empty_label="Vælg underviser...",
     )
-    instructor_2 = forms.ModelChoiceField(
+    instructor_2 = AddNewModelChoiceField(
         queryset=Instructor.objects.all().order_by("name"),
         required=False,
         label="Underviser 2",
         empty_label="Vælg underviser...",
     )
-    instructor_3 = forms.ModelChoiceField(
+    instructor_3 = AddNewModelChoiceField(
         queryset=Instructor.objects.all().order_by("name"),
         required=False,
         label="Underviser 3",
@@ -135,7 +157,9 @@ class CourseForm(forms.ModelForm):
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
                 existing = qs.first()
-                raise forms.ValidationError(f'Der findes allerede et kursus med disse datoer: "{existing.display_name}".')
+                raise forms.ValidationError(
+                    f'Der findes allerede et kursus med disse datoer: "{existing.display_name}".'
+                )
 
         # Handle "add new" location
         location = self.data.get("location")
