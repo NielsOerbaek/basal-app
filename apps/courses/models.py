@@ -65,6 +65,7 @@ class CourseSignUp(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="signups")
     participant_name = models.CharField(max_length=255)
     participant_email = models.EmailField(blank=True, help_text="E-mail til kontakt")
+    participant_phone = models.CharField(max_length=50, blank=True, verbose_name="Telefon")
     participant_title = models.CharField(max_length=255, blank=True, help_text="Jobtitel eller rolle")
     attendance = models.CharField(max_length=10, choices=AttendanceStatus.choices, default=AttendanceStatus.UNMARKED)
     is_underviser = models.BooleanField(

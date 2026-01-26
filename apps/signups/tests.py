@@ -231,7 +231,7 @@ class SchoolSignupViewTest(TestCase):
         self.assertRedirects(response, reverse("signup:school-success"))
         self.school.refresh_from_db()
         self.assertIsNotNone(self.school.enrolled_at)
-        self.assertEqual(len(self.school.signup_password), 8)
+        self.assertEqual(len(self.school.signup_password), 19)
         self.assertEqual(len(self.school.signup_token), 32)
 
     def test_school_signup_creates_new_school(self):
@@ -252,7 +252,7 @@ class SchoolSignupViewTest(TestCase):
         self.assertIsNotNone(new_school.enrolled_at)
         self.assertEqual(new_school.kommune, "Test Kommune")
         self.assertEqual(new_school.adresse, "New Address 123")
-        self.assertEqual(len(new_school.signup_password), 8)
+        self.assertEqual(len(new_school.signup_password), 19)
 
     def test_school_signup_success_loads(self):
         """School signup success page should load."""

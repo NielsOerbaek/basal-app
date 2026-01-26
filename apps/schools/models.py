@@ -85,7 +85,7 @@ class School(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     signup_password = models.CharField(
-        max_length=20, blank=True, verbose_name="Tilmeldingskode", help_text="Kode til kursustilmelding"
+        max_length=25, blank=True, verbose_name="Tilmeldingskode", help_text="Kode til kursustilmelding"
     )
     signup_token = models.CharField(
         max_length=32, blank=True, db_index=True, verbose_name="Tilmeldingstoken", help_text="Token til direkte link"

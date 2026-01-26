@@ -690,25 +690,34 @@ class FormValidationTest(TestCase):
 
 
 class PasswordGenerationTest(TestCase):
-    def test_generate_pronounceable_password_length(self):
-        """Pronounceable password has correct length (2 chars per syllable)."""
+    def test_generate_pronounceable_password_format(self):
+        """Pronounceable password has format like 'babe.dula.kibe.popy'."""
         from apps.schools.utils import generate_pronounceable_password
 
-        password = generate_pronounceable_password(syllables=4)
-        self.assertEqual(len(password), 8)
+        password = generate_pronounceable_password(segments=4)
+        # 4 segments of 4 chars + 3 dots = 19 chars
+        self.assertEqual(len(password), 19)
+        # Should have 3 dots
+        self.assertEqual(password.count("."), 3)
+        # Each segment should be 4 chars
+        segments = password.split(".")
+        self.assertEqual(len(segments), 4)
+        for segment in segments:
+            self.assertEqual(len(segment), 4)
 
     def test_generate_pronounceable_password_pattern(self):
-        """Pronounceable password alternates consonants and vowels."""
+        """Each segment alternates consonants and vowels."""
         from apps.schools.utils import generate_pronounceable_password
 
-        password = generate_pronounceable_password(syllables=4)
+        password = generate_pronounceable_password(segments=4)
         consonants = "bdfgklmnprstvz"
         vowels = "aeiou"
-        for i, char in enumerate(password):
-            if i % 2 == 0:
-                self.assertIn(char, consonants)
-            else:
-                self.assertIn(char, vowels)
+        for segment in password.split("."):
+            for i, char in enumerate(segment):
+                if i % 2 == 0:
+                    self.assertIn(char, consonants)
+                else:
+                    self.assertIn(char, vowels)
 
     def test_generate_token_length(self):
         """Token has correct length."""
@@ -752,7 +761,7 @@ class SchoolCredentialsTest(TestCase):
             kommune="Test Kommune",
         )
         school.generate_credentials()
-        self.assertEqual(len(school.signup_password), 8)
+        self.assertEqual(len(school.signup_password), 19)
         self.assertEqual(len(school.signup_token), 32)
 
     def test_generate_credentials_saves(self):
@@ -764,7 +773,7 @@ class SchoolCredentialsTest(TestCase):
         )
         school.generate_credentials()
         school.refresh_from_db()
-        self.assertEqual(len(school.signup_password), 8)
+        self.assertEqual(len(school.signup_password), 19)
         self.assertEqual(len(school.signup_token), 32)
 
 

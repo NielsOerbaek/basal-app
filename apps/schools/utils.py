@@ -5,20 +5,24 @@ CONSONANTS = "bdfgklmnprstvz"
 VOWELS = "aeiou"
 
 
-def generate_pronounceable_password(syllables=4):
-    """Generate a pronounceable password like 'bafimoku'.
+def generate_pronounceable_password(segments=4):
+    """Generate a pronounceable password like 'babe.dula.kibe.popy'.
 
     Args:
-        syllables: Number of consonant-vowel pairs (default 4 = 8 chars)
+        segments: Number of 4-char segments (default 4 = 19 chars with dots)
 
     Returns:
-        Lowercase pronounceable password
+        Lowercase pronounceable password with period delimiters
     """
-    password = ""
-    for _ in range(syllables):
-        password += secrets.choice(CONSONANTS)
-        password += secrets.choice(VOWELS)
-    return password
+    parts = []
+    for _ in range(segments):
+        # Each segment is 2 syllables (4 chars): e.g., "babe"
+        segment = ""
+        for _ in range(2):
+            segment += secrets.choice(CONSONANTS)
+            segment += secrets.choice(VOWELS)
+        parts.append(segment)
+    return ".".join(parts)
 
 
 def generate_signup_token(length=32):

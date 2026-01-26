@@ -230,6 +230,7 @@ class SchoolCreateView(CreateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
+        self.object.generate_credentials()
         messages.success(self.request, f'Skolen "{self.object.name}" blev oprettet.')
         return response
 

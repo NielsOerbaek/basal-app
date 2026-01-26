@@ -184,6 +184,7 @@ class CourseSignupView(View):
                     school=school,
                     participant_name=participant["name"],
                     participant_email=participant["email"],
+                    participant_phone=participant.get("phone", ""),
                     participant_title=participant.get("title", ""),
                     is_underviser=participant.get("is_underviser", True),
                 )
@@ -202,6 +203,7 @@ class CourseSignupView(View):
         while True:
             name_key = f"participant_name_{index}"
             email_key = f"participant_email_{index}"
+            phone_key = f"participant_phone_{index}"
             title_key = f"participant_title_{index}"
             is_underviser_key = f"participant_is_underviser_{index}"
 
@@ -210,6 +212,7 @@ class CourseSignupView(View):
 
             name = post_data.get(name_key, "").strip()
             email = post_data.get(email_key, "").strip()
+            phone = post_data.get(phone_key, "").strip()
             title = post_data.get(title_key, "").strip()
             # Checkbox: present in POST if checked, absent if not checked
             is_underviser = is_underviser_key in post_data
@@ -220,6 +223,7 @@ class CourseSignupView(View):
                     {
                         "name": name,
                         "email": email,
+                        "phone": phone,
                         "title": title,
                         "is_underviser": is_underviser,
                     }
