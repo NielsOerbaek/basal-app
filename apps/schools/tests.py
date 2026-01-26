@@ -810,3 +810,117 @@ class SchoolCredentialsViewTest(TestCase):
         self.school.refresh_from_db()
         self.assertNotEqual(self.school.signup_password, old_password)
         self.assertNotEqual(self.school.signup_token, old_token)
+
+
+class SchoolPublicViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+            enrolled_at=date.today() - timedelta(days=400),
+            signup_token="abc123def456ghi789",
+        )
+
+    def test_public_view_with_valid_token(self):
+        """Public view loads with valid token."""
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Test School")
+
+    def test_public_view_with_invalid_token(self):
+        """Public view returns 404 with invalid token."""
+        response = self.client.get("/school/invalidtoken123/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_public_view_shows_seat_info(self):
+        """Public view shows seat information."""
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertContains(response, "Pladser")
+
+    def test_public_view_shows_people(self):
+        """Public view shows people from school."""
+        Person.objects.create(
+            school=self.school,
+            name="John Doe",
+            role=PersonRole.KOORDINATOR,
+            email="john@test.com",
+        )
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertContains(response, "John Doe")
+
+    def test_public_view_shows_signups(self):
+        """Public view shows course signups."""
+        from apps.courses.models import Course, CourseSignUp
+
+        course = Course.objects.create(
+            title="Test Course",
+            start_date=date.today(),
+            end_date=date.today(),
+            location="Test",
+            capacity=10,
+        )
+        CourseSignUp.objects.create(
+            school=self.school,
+            course=course,
+            participant_name="Jane Smith",
+            participant_title="Laerer",
+        )
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertContains(response, "Jane Smith")
+
+    def test_public_view_no_edit_buttons(self):
+        """Public view does not show edit buttons."""
+        Person.objects.create(school=self.school, name="John", role=PersonRole.KOORDINATOR)
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertNotContains(response, "Rediger")
+        self.assertNotContains(response, "bi-pencil")
+
+
+class SchoolDetailMergedPeopleTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="staff", password="pass", is_staff=True)
+        self.client.login(username="staff", password="pass")
+        self.school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+            enrolled_at=date.today(),
+        )
+
+    def test_detail_shows_people_and_signups_together(self):
+        """School detail shows people and signups in same section."""
+        from apps.courses.models import Course, CourseSignUp
+
+        Person.objects.create(school=self.school, name="Contact Person", role=PersonRole.KOORDINATOR)
+        course = Course.objects.create(
+            title="Test Course", start_date=date.today(), end_date=date.today(), location="Test", capacity=10
+        )
+        CourseSignUp.objects.create(
+            school=self.school, course=course, participant_name="Signup Person", participant_title="Laerer"
+        )
+
+        response = self.client.get(reverse("schools:detail", args=[self.school.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Contact Person")
+        self.assertContains(response, "Signup Person")
+        # Verify both names appear on page
+        content = response.content.decode()
+        self.assertIn("Contact Person", content)
+        self.assertIn("Signup Person", content)
+
+    def test_signups_show_course_link(self):
+        """Signups show link to course."""
+        from apps.courses.models import Course, CourseSignUp
+
+        course = Course.objects.create(
+            title="Test Course", start_date=date.today(), end_date=date.today(), location="Test", capacity=10
+        )
+        CourseSignUp.objects.create(
+            school=self.school, course=course, participant_name="Signup Person", participant_title="Laerer"
+        )
+
+        response = self.client.get(reverse("schools:detail", args=[self.school.pk]))
+        self.assertContains(response, f'href="{reverse("courses:detail", args=[course.pk])}"')

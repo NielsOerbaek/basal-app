@@ -5,9 +5,12 @@ import string
 import resend
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.db.models import Q
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -15,7 +18,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from apps.core.decorators import user_admin_required
 
-from .forms import UserCreateForm, UserUpdateForm
+from .forms import ProfileForm, UserCreateForm, UserUpdateForm
 
 logger = logging.getLogger(__name__)
 
@@ -161,3 +164,46 @@ class UserResetPasswordView(View):
             )
 
         return redirect("accounts:user-detail", pk=pk)
+
+
+class AccountSettingsView(LoginRequiredMixin, View):
+    """View for users to edit their own profile and password."""
+
+    template_name = "accounts/settings.html"
+
+    def get(self, request):
+        profile_form = ProfileForm(instance=request.user)
+        password_form = PasswordChangeForm(request.user)
+        return render(
+            request,
+            self.template_name,
+            {"profile_form": profile_form, "password_form": password_form},
+        )
+
+    def post(self, request):
+        form_type = request.POST.get("form_type")
+
+        if form_type == "profile":
+            profile_form = ProfileForm(request.POST, instance=request.user)
+            password_form = PasswordChangeForm(request.user)
+            if profile_form.is_valid():
+                profile_form.save()
+                messages.success(request, "Profil opdateret.")
+                return redirect("accounts:settings")
+        elif form_type == "password":
+            profile_form = ProfileForm(instance=request.user)
+            password_form = PasswordChangeForm(request.user, request.POST)
+            if password_form.is_valid():
+                user = password_form.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, "Adgangskode ændret.")
+                return redirect("accounts:settings")
+        else:
+            profile_form = ProfileForm(instance=request.user)
+            password_form = PasswordChangeForm(request.user)
+
+        return render(
+            request,
+            self.template_name,
+            {"profile_form": profile_form, "password_form": password_form},
+        )

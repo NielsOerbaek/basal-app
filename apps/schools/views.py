@@ -694,3 +694,23 @@ class RegenerateCredentialsView(View):
                 "token": school.signup_token,
             }
         )
+
+
+class SchoolPublicView(DetailView):
+    """Public read-only view of school for token-based access."""
+
+    model = School
+    template_name = "schools/school_public.html"
+    context_object_name = "school"
+    slug_field = "signup_token"
+    slug_url_kwarg = "token"
+
+    def get_queryset(self):
+        return School.objects.filter(signup_token__isnull=False).exclude(signup_token="")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        school = self.object
+        context["people"] = school.people.all()
+        context["course_signups"] = school.course_signups.select_related("course").order_by("-course__start_date")
+        return context

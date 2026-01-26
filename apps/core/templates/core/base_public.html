@@ -16,35 +16,31 @@
             font-style: normal;
         }
         :root {
+            --bs-primary: #9b4393;
+            --bs-primary-rgb: 155, 67, 147;
             --basal-purple: #9b4393;
-            --basal-purple-dark: #88278f;
         }
         body {
             font-family: 'League Spartan', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             font-size: 1.1rem;
-            background: #f8f9fa;
-            min-height: 100vh;
             color: #3a3a39;
         }
-        .card { max-width: 500px; margin: 0 auto; }
-        .btn-primary {
-            background-color: var(--basal-purple);
-            border-color: var(--basal-purple);
-        }
-        .btn-primary:hover, .btn-primary:focus {
-            background-color: var(--basal-purple-dark);
-            border-color: var(--basal-purple-dark);
-        }
-        a { color: var(--basal-purple); }
-        a:hover { color: var(--basal-purple-dark); }
+        .bg-primary { background-color: var(--basal-purple) !important; }
+        .text-primary { color: var(--basal-purple) !important; }
+        .badge.bg-primary { background-color: var(--basal-purple) !important; }
     </style>
-    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <div class="container py-4">
+    <nav class="navbar navbar-dark bg-primary">
+        <div class="container">
+            <span class="navbar-brand"><i class="bi bi-mortarboard me-2"></i>Basal</span>
+        </div>
+    </nav>
+
+    <main class="py-4">
         {% block content %}{% endblock %}
-    </div>
+    </main>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    {% block extra_js %}{% endblock %}
 </body>
 </html>

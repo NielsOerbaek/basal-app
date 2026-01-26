@@ -127,3 +127,94 @@ class UserFormNotificationTest(TestCase):
         self.assertEqual(response.status_code, 302)
         self.target_user.refresh_from_db()
         self.assertTrue(self.target_user.profile.notify_on_school_signup)
+
+
+class AccountSettingsViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="testuser",
+            email="test@example.com",
+            password="oldpassword123",
+            first_name="Test",
+            last_name="User",
+        )
+        self.client.login(username="testuser", password="oldpassword123")
+        self.url = reverse("accounts:settings")
+
+    def test_settings_page_requires_login(self):
+        """Settings page redirects to login if not authenticated."""
+        self.client.logout()
+        response = self.client.get(self.url)
+        self.assertRedirects(response, f"/login/?next={self.url}")
+
+    def test_settings_page_loads(self):
+        """Settings page loads for authenticated user."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "testuser")
+
+    def test_update_profile(self):
+        """User can update their profile information."""
+        response = self.client.post(
+            self.url,
+            {
+                "form_type": "profile",
+                "username": "newusername",
+                "first_name": "New",
+                "last_name": "Name",
+                "email": "new@example.com",
+            },
+        )
+        self.assertRedirects(response, self.url)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, "newusername")
+        self.assertEqual(self.user.first_name, "New")
+        self.assertEqual(self.user.email, "new@example.com")
+
+    def test_change_password(self):
+        """User can change their password."""
+        response = self.client.post(
+            self.url,
+            {
+                "form_type": "password",
+                "old_password": "oldpassword123",
+                "new_password1": "newpassword456",
+                "new_password2": "newpassword456",
+            },
+        )
+        self.assertRedirects(response, self.url)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("newpassword456"))
+
+    def test_change_password_wrong_old_password(self):
+        """Password change fails with wrong old password."""
+        response = self.client.post(
+            self.url,
+            {
+                "form_type": "password",
+                "old_password": "wrongpassword",
+                "new_password1": "newpassword456",
+                "new_password2": "newpassword456",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("oldpassword123"))
+
+    def test_username_must_be_unique(self):
+        """Cannot change username to one that already exists."""
+        User.objects.create_user(username="existinguser", password="pass")
+        response = self.client.post(
+            self.url,
+            {
+                "form_type": "profile",
+                "username": "existinguser",
+                "first_name": "Test",
+                "last_name": "User",
+                "email": "test@example.com",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, "testuser")

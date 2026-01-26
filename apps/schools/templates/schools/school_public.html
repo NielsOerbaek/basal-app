@@ -1,0 +1,95 @@
+{% extends 'core/base_public.html' %}
+
+{% block title %}{{ school.name }} - Basal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4"><i class="bi bi-building me-2"></i>{{ school.name }}</h1>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">Skoleoplysninger</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Adresse</dt>
+                        <dd class="col-sm-8">{{ school.adresse }}</dd>
+                        <dt class="col-sm-4">Kommune</dt>
+                        <dd class="col-sm-8">{{ school.kommune }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header"><i class="bi bi-ticket-perforated me-2"></i>Pladser</div>
+                <div class="card-body">
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <div class="fs-3 fw-bold text-primary">{{ school.total_seats }}</div>
+                            <small class="text-muted">I alt</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="fs-3 fw-bold text-secondary">{{ school.used_seats }}</div>
+                            <small class="text-muted">Brugt</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="fs-3 fw-bold {% if school.remaining_seats > 0 %}text-success{% else %}text-danger{% endif %}">{{ school.remaining_seats }}</div>
+                            <small class="text-muted">Ledige</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <dl class="row mb-0 small">
+                        <dt class="col-8">Basispladser</dt>
+                        <dd class="col-4 text-end">{{ school.base_seats }}</dd>
+                        <dt class="col-8">Forankringsplads</dt>
+                        <dd class="col-4 text-end">{{ school.forankring_seats }}</dd>
+                        {% if school.purchased_seats > 0 %}
+                        <dt class="col-8">Ekstra købte pladser</dt>
+                        <dd class="col-4 text-end">{{ school.purchased_seats }}</dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header"><i class="bi bi-people me-2"></i>Personer</div>
+                <ul class="list-group list-group-flush">
+                    {% for person in people %}
+                    <li class="list-group-item">
+                        <div class="mb-1">
+                            <strong>{{ person.name }}</strong>
+                            <span class="text-muted">, {{ person.display_role|lower }}</span>
+                            {% if person.is_primary %}<span class="badge bg-primary ms-2">primær kontakt</span>{% endif %}
+                        </div>
+                        <div class="small text-muted">
+                            {% if person.email %}<i class="bi bi-envelope me-1"></i>{{ person.email }}{% endif %}
+                            {% if person.email and person.phone %}<span class="mx-2">|</span>{% endif %}
+                            {% if person.phone %}<i class="bi bi-telephone me-1"></i>{{ person.phone }}{% endif %}
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-muted">Ingen kontaktpersoner.</li>
+                    {% endfor %}
+
+                    {% for signup in course_signups %}
+                    <li class="list-group-item">
+                        <div class="mb-1">
+                            <strong>{{ signup.participant_name }}</strong>
+                            {% if signup.participant_title %}<span class="text-muted">, {{ signup.participant_title|lower }}</span>{% endif %}
+                        </div>
+                        <div class="small">
+                            {{ signup.course.title }}
+                            <span class="badge bg-{% if signup.attendance == 'present' %}success{% elif signup.attendance == 'absent' %}danger{% else %}secondary{% endif %} ms-1">
+                                {{ signup.get_attendance_display }}
+                            </span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
