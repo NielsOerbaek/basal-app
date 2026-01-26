@@ -9,6 +9,19 @@ class AttendanceStatus(models.TextChoices):
     ABSENT = "absent", "Fraværende"
 
 
+class Instructor(models.Model):
+    name = models.CharField(max_length=255, unique=True, verbose_name="Navn")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Underviser"
+        verbose_name_plural = "Undervisere"
+
+    def __str__(self):
+        return self.name
+
+
 class Course(models.Model):
     title = models.CharField(max_length=255, verbose_name="Titel")
     start_date = models.DateField(verbose_name="Startdato")

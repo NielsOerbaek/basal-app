@@ -296,3 +296,21 @@ class CourseFormDateTest(TestCase):
         # HTML5 date inputs require YYYY-MM-DD format
         self.assertContains(response, 'value="2025-06-15"')
         self.assertContains(response, 'value="2025-06-16"')
+
+
+class InstructorModelTest(TestCase):
+    def test_create_instructor(self):
+        """Instructor model can be created with a name."""
+        from apps.courses.models import Instructor
+
+        instructor = Instructor.objects.create(name="Anders Andersen")
+        self.assertEqual(instructor.name, "Anders Andersen")
+        self.assertEqual(str(instructor), "Anders Andersen")
+
+    def test_instructor_name_unique(self):
+        """Instructor names must be unique."""
+        from apps.courses.models import Instructor
+
+        Instructor.objects.create(name="Anders Andersen")
+        with self.assertRaises(IntegrityError):
+            Instructor.objects.create(name="Anders Andersen")
