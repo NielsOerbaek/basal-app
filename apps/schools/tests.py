@@ -873,13 +873,13 @@ class SchoolPublicViewTest(TestCase):
 
     def test_public_view_shows_signups(self):
         """Public view shows course signups."""
-        from apps.courses.models import Course, CourseSignUp
+        from apps.courses.models import Course, CourseSignUp, Location
 
+        location = Location.objects.create(name="Test Location")
         course = Course.objects.create(
-            title="Test Course",
             start_date=date.today(),
             end_date=date.today(),
-            location="Test",
+            location=location,
             capacity=10,
         )
         CourseSignUp.objects.create(
@@ -913,12 +913,11 @@ class SchoolDetailMergedPeopleTest(TestCase):
 
     def test_detail_shows_people_and_signups_together(self):
         """School detail shows people and signups in same section."""
-        from apps.courses.models import Course, CourseSignUp
+        from apps.courses.models import Course, CourseSignUp, Location
 
         Person.objects.create(school=self.school, name="Contact Person", role=PersonRole.KOORDINATOR)
-        course = Course.objects.create(
-            title="Test Course", start_date=date.today(), end_date=date.today(), location="Test", capacity=10
-        )
+        location = Location.objects.create(name="Test Location")
+        course = Course.objects.create(start_date=date.today(), end_date=date.today(), location=location, capacity=10)
         CourseSignUp.objects.create(
             school=self.school, course=course, participant_name="Signup Person", participant_title="Laerer"
         )
@@ -934,11 +933,10 @@ class SchoolDetailMergedPeopleTest(TestCase):
 
     def test_signups_show_course_link(self):
         """Signups show link to course."""
-        from apps.courses.models import Course, CourseSignUp
+        from apps.courses.models import Course, CourseSignUp, Location
 
-        course = Course.objects.create(
-            title="Test Course", start_date=date.today(), end_date=date.today(), location="Test", capacity=10
-        )
+        location = Location.objects.create(name="Test Location")
+        course = Course.objects.create(start_date=date.today(), end_date=date.today(), location=location, capacity=10)
         CourseSignUp.objects.create(
             school=self.school, course=course, participant_name="Signup Person", participant_title="Laerer"
         )

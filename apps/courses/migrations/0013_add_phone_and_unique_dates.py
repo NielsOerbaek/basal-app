@@ -24,8 +24,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name="course",
-            constraint=models.UniqueConstraint(
-                fields=("start_date", "end_date"), name="unique_course_dates"
-            ),
+            constraint=models.UniqueConstraint(fields=("start_date", "end_date"), name="unique_course_dates"),
         ),
     ]
