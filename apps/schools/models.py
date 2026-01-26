@@ -100,6 +100,9 @@ class School(models.Model):
             models.Index(fields=["kommune"]),
             models.Index(fields=["is_active", "kommune"]),
         ]
+        constraints = [
+            models.UniqueConstraint(fields=["name", "kommune"], name="unique_school_per_kommune"),
+        ]
 
     def __str__(self):
         return self.name

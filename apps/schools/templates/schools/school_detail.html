@@ -46,6 +46,17 @@
                         {% endif %}
                     </dd>
                 </dl>
+                <div class="mt-3">
+                    {% if school.is_enrolled %}
+                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#enrollmentModal">
+                        <i class="bi bi-x-circle me-1"></i>Frameld Basal
+                    </button>
+                    {% else %}
+                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#enrollmentModal">
+                        <i class="bi bi-check-circle me-1"></i>Tilmeld Basal
+                    </button>
+                    {% endif %}
+                </div>
                 {% if enrollment_history %}
                 <div class="mt-3">
                     <a class="text-decoration-none small" data-bs-toggle="collapse" href="#enrollmentHistory" role="button" aria-expanded="false" aria-controls="enrollmentHistory">
@@ -338,6 +349,47 @@
                 </a>
             </div>
             {% include "audit/includes/activity_table.html" with activities=recent_activities limit=5 %}
+        </div>
+    </div>
+</div>
+
+<!-- Enrollment Modal -->
+<div class="modal fade" id="enrollmentModal" tabindex="-1" aria-labelledby="enrollmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="enrollmentModalLabel">
+                    {% if school.is_enrolled %}Frameld Basal{% else %}Tilmeld Basal{% endif %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="enrollment-form" method="post" action="{% url 'schools:toggle-enrollment' school.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>
+                        {% if school.is_enrolled %}
+                        Du er ved at framelde <strong>{{ school.name }}</strong> fra Basal.
+                        {% else %}
+                        Du er ved at tilmelde <strong>{{ school.name }}</strong> til Basal.
+                        {% endif %}
+                    </p>
+                    <div class="mb-3">
+                        <label for="enrollment-date" class="form-label">
+                            {% if school.is_enrolled %}Frameldingsdato{% else %}Tilmeldingsdato{% endif %}
+                        </label>
+                        <input type="date" class="form-control" id="enrollment-date" name="date"
+                               value="{{ today|date:'Y-m-d' }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuller</button>
+                    {% if school.is_enrolled %}
+                    <button type="submit" class="btn btn-danger">Frameld</button>
+                    {% else %}
+                    <button type="submit" class="btn btn-success">Tilmeld</button>
+                    {% endif %}
+                </div>
+            </form>
         </div>
     </div>
 </div>

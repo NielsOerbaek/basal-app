@@ -2,10 +2,16 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Column, Layout, Row, Submit
 from django import forms
 
+from .constants import DANISH_KOMMUNER
 from .models import Invoice, Person, School, SchoolComment, SchoolYear
 
 
 class SchoolForm(forms.ModelForm):
+    kommune = forms.ChoiceField(
+        choices=[("", "---------")] + list(DANISH_KOMMUNER),
+        label="Kommune",
+    )
+
     class Meta:
         model = School
         fields = ["name", "adresse", "kommune", "enrolled_at", "opted_out_at"]
@@ -24,6 +30,7 @@ class SchoolForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["adresse"].required = False
         self.helper = FormHelper()
         self.helper.layout = Layout(
             "name",
@@ -37,6 +44,21 @@ class SchoolForm(forms.ModelForm):
             ),
             Submit("submit", "Gem skole", css_class="btn btn-primary"),
         )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        name = cleaned_data.get("name")
+        kommune = cleaned_data.get("kommune")
+
+        if name and kommune:
+            # Check for duplicate school (exclude current instance if editing)
+            qs = School.objects.filter(name=name, kommune=kommune)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError(f'Der findes allerede en skole med navnet "{name}" i {kommune}.')
+
+        return cleaned_data
 
 
 class PersonForm(forms.ModelForm):

@@ -574,7 +574,19 @@ class FormValidationTest(TestCase):
             data={
                 "name": "New School",
                 "adresse": "New Address",
-                "kommune": "New Kommune",
+                "kommune": "Københavns Kommune",
+            }
+        )
+        self.assertTrue(form.is_valid())
+
+    def test_school_form_valid_without_adresse(self):
+        """SchoolForm accepts data without address (optional field)."""
+        from .forms import SchoolForm
+
+        form = SchoolForm(
+            data={
+                "name": "New School",
+                "kommune": "Københavns Kommune",
             }
         )
         self.assertTrue(form.is_valid())
@@ -586,24 +598,11 @@ class FormValidationTest(TestCase):
         form = SchoolForm(
             data={
                 "adresse": "Address",
-                "kommune": "Kommune",
+                "kommune": "Københavns Kommune",
             }
         )
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-
-    def test_school_form_requires_adresse(self):
-        """SchoolForm requires adresse field."""
-        from .forms import SchoolForm
-
-        form = SchoolForm(
-            data={
-                "name": "School Name",
-                "kommune": "Kommune",
-            }
-        )
-        self.assertFalse(form.is_valid())
-        self.assertIn("adresse", form.errors)
 
     def test_school_form_requires_kommune(self):
         """SchoolForm requires kommune field."""
@@ -613,6 +612,19 @@ class FormValidationTest(TestCase):
             data={
                 "name": "School Name",
                 "adresse": "Address",
+            }
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("kommune", form.errors)
+
+    def test_school_form_rejects_invalid_kommune(self):
+        """SchoolForm rejects kommune values not in the dropdown."""
+        from .forms import SchoolForm
+
+        form = SchoolForm(
+            data={
+                "name": "New School",
+                "kommune": "Invalid Kommune",
             }
         )
         self.assertFalse(form.is_valid())

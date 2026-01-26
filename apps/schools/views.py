@@ -255,6 +255,7 @@ class SchoolDetailView(DetailView):
         context["person_form"] = PersonForm()
         context["comment_form"] = SchoolCommentForm()
         context["recent_activities"] = self.object.activity_logs.select_related("user", "content_type")[:5]
+        context["today"] = date.today()
         return context
 
 
@@ -271,6 +272,40 @@ class SchoolUpdateView(UpdateView):
         response = super().form_valid(form)
         messages.success(self.request, f'Skolen "{self.object.name}" blev opdateret.')
         return response
+
+
+@method_decorator(staff_required, name="dispatch")
+class ToggleEnrollmentView(View):
+    """Toggle school enrollment/unenrollment with a specific date."""
+
+    def post(self, request, pk):
+        from datetime import datetime
+
+        school = get_object_or_404(School, pk=pk)
+        date_str = request.POST.get("date")
+
+        try:
+            enrollment_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            messages.error(request, "Ugyldig dato.")
+            return redirect("schools:detail", pk=pk)
+
+        if school.is_enrolled:
+            # Unenroll
+            school.opted_out_at = enrollment_date
+            school.save(update_fields=["opted_out_at"])
+            messages.success(request, f'"{school.name}" er blevet frameldt Basal.')
+        else:
+            # Enroll
+            school.enrolled_at = enrollment_date
+            school.opted_out_at = None  # Clear any previous opt-out
+            school.save(update_fields=["enrolled_at", "opted_out_at"])
+            # Generate credentials if not already set
+            if not school.signup_password:
+                school.generate_credentials()
+            messages.success(request, f'"{school.name}" er blevet tilmeldt Basal.')
+
+        return redirect("schools:detail", pk=pk)
 
 
 @method_decorator(staff_required, name="dispatch")

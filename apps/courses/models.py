@@ -33,6 +33,9 @@ class Course(models.Model):
 
     class Meta:
         ordering = ["-start_date"]
+        constraints = [
+            models.UniqueConstraint(fields=["start_date", "end_date"], name="unique_course_dates"),
+        ]
 
     def __str__(self):
         if self.start_date == self.end_date:
