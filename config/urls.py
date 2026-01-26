@@ -4,6 +4,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
 from apps.core.views import CronBackupView, CronSendRemindersView
+from apps.schools.views import SchoolPublicView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -11,6 +12,8 @@ urlpatterns = [
     # Cron endpoints
     path("cron/send-reminders/", CronSendRemindersView.as_view(), name="cron-send-reminders"),
     path("cron/backup/", CronBackupView.as_view(), name="cron-backup"),
+    # Public school view (token-based access)
+    path("school/<str:token>/", SchoolPublicView.as_view(), name="school-public"),
     path("", include("apps.core.urls")),
     path("schools/", include("apps.schools.urls")),
     path("courses/", include("apps.courses.urls")),

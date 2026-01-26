@@ -155,7 +155,28 @@
                     </div>
                 </li>
                 {% empty %}
+                {% if not course_signups %}
                 <li class="list-group-item text-muted">Ingen personer tilføjet.</li>
+                {% endif %}
+                {% endfor %}
+
+                {% for signup in course_signups %}
+                <li class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="mb-1">
+                                <strong>{{ signup.participant_name }}</strong>
+                                {% if signup.participant_title %}<span class="text-muted">, {{ signup.participant_title|lower }}</span>{% endif %}
+                            </div>
+                            <div class="small">
+                                <a href="{% url 'courses:detail' signup.course.pk %}">{{ signup.course.title }}</a>
+                                <span class="badge bg-{% if signup.attendance == 'present' %}success{% elif signup.attendance == 'absent' %}danger{% else %}secondary{% endif %} ms-1">
+                                    {{ signup.get_attendance_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </li>
                 {% endfor %}
             </ul>
         </div>
@@ -320,23 +341,6 @@
                 </li>
                 {% empty %}
                 <li class="list-group-item text-muted">Ingen henvendelser.</li>
-                {% endfor %}
-            </ul>
-        </div>
-
-        <div class="card mb-4">
-            <div class="card-header">Tilmeldinger</div>
-            <ul class="list-group list-group-flush">
-                {% for signup in course_signups %}
-                <li class="list-group-item">
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'courses:detail' signup.course.pk %}">{{ signup.course.title }}</a>
-                        <span class="badge bg-{% if signup.attendance == 'present' %}success{% elif signup.attendance == 'absent' %}danger{% else %}secondary{% endif %}">{{ signup.get_attendance_display }}</span>
-                    </div>
-                    <small class="text-muted">{{ signup.participant_name }} - {{ signup.course.start_date|date:"d. M Y" }}</small>
-                </li>
-                {% empty %}
-                <li class="list-group-item text-muted">Ingen tilmeldinger.</li>
                 {% endfor %}
             </ul>
         </div>
