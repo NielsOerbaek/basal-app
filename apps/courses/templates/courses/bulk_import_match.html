@@ -1,12 +1,12 @@
 {% extends 'core/base.html' %}
 
-{% block title %}Bulk Import - {{ course.title }} - Basal{% endblock %}
+{% block title %}Bulk Import - {{ course.display_name }} - Basal{% endblock %}
 
 {% block content %}
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{% url 'courses:list' %}">Kurser</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'courses:detail' course.pk %}">{{ course.title }}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'courses:detail' course.pk %}">{{ course.display_name }}</a></li>
         <li class="breadcrumb-item active">Bulk Import</li>
     </ol>
 </nav>
@@ -42,6 +42,8 @@
                             <strong>{{ row.name }}</strong>
                             <input type="hidden" name="name_{{ row.index }}" value="{{ row.name }}">
                             <input type="hidden" name="email_{{ row.index }}" value="{{ row.email }}">
+                            <input type="hidden" name="phone_{{ row.index }}" value="{{ row.phone }}">
+                            <input type="hidden" name="is_underviser_{{ row.index }}" value="{% if row.is_underviser %}1{% else %}0{% endif %}">
                         </td>
                         <td>
                             <span class="text-muted">{{ row.school_name }}</span>

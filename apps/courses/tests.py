@@ -16,39 +16,36 @@ class CourseModelTest(TestCase):
     def test_create_course(self):
         """Course model can be created with start_date and end_date."""
         course = Course.objects.create(
-            title="Test Course",
             start_date=date.today(),
             end_date=date.today() + timedelta(days=1),
-            location="Test Location",
             capacity=30,
         )
-        self.assertEqual(course.title, "Test Course")
         self.assertEqual(course.start_date, date.today())
         self.assertEqual(course.end_date, date.today() + timedelta(days=1))
 
     def test_course_str_single_day(self):
-        """Course __str__ shows single date for same start/end."""
+        """Course __str__ shows single date for same start/end via display_name."""
         course = Course.objects.create(
-            title="Single Day Course",
             start_date=date(2025, 1, 15),
             end_date=date(2025, 1, 15),
-            location="Test Location",
         )
-        self.assertIn("2025-01-15", str(course))
-        self.assertNotIn("til", str(course))
+        self.assertIn("jan", str(course).lower())
+        self.assertNotIn(" - ", str(course))
 
     def test_course_str_multi_day(self):
         """Course __str__ shows date range for different start/end."""
         course = Course.objects.create(
-            title="Multi Day Course", start_date=date(2025, 1, 15), end_date=date(2025, 1, 17), location="Test Location"
+            start_date=date(2025, 1, 15),
+            end_date=date(2025, 1, 17),
         )
-        self.assertIn("til", str(course))
+        self.assertIn(" - ", str(course))
 
     def test_signup_count(self):
         """Course.signup_count returns correct count."""
         school = School.objects.create(name="Test School", adresse="Test Address", kommune="Test Kommune")
         course = Course.objects.create(
-            title="Test Course", start_date=date.today(), end_date=date.today(), location="Test Location"
+            start_date=date.today(),
+            end_date=date.today(),
         )
         self.assertEqual(course.signup_count, 0)
         CourseSignUp.objects.create(course=course, school=school, participant_name="Test Participant")
@@ -59,7 +56,8 @@ class CourseSignUpModelTest(TestCase):
     def setUp(self):
         self.school = School.objects.create(name="Test School", adresse="Test Address", kommune="Test Kommune")
         self.course = Course.objects.create(
-            title="Test Course", start_date=date.today(), end_date=date.today(), location="Test Location"
+            start_date=date.today(),
+            end_date=date.today(),
         )
 
     def test_create_signup(self):
@@ -87,10 +85,8 @@ class CourseViewTest(TestCase):
             enrolled_at=date.today(),  # School needs to be enrolled to have seats
         )
         self.course = Course.objects.create(
-            title="Test Course",
             start_date=date.today() + timedelta(days=7),
             end_date=date.today() + timedelta(days=7),
-            location="Test Location",
             is_published=True,
         )
 
@@ -157,10 +153,8 @@ class CourseMaterialsTest(TestCase):
         self.user = User.objects.create_user(username="testuser", password="testpass123", is_staff=True)
         self.client.login(username="testuser", password="testpass123")
         self.course = Course.objects.create(
-            title="Test Course",
             start_date=date.today() + timedelta(days=7),
             end_date=date.today() + timedelta(days=7),
-            location="Test Location",
             capacity=30,
         )
 
@@ -237,10 +231,8 @@ class CourseSignUpIsUnderTest(TestCase):
             kommune="Test Kommune",
         )
         self.course = Course.objects.create(
-            title="Test Course",
             start_date=date.today(),
             end_date=date.today(),
-            location="Test Location",
         )
 
     def test_is_underviser_default_true(self):
@@ -282,10 +274,8 @@ class CourseFormDateTest(TestCase):
         self.user = User.objects.create_user(username="testuser", password="testpass123", is_staff=True)
         self.client.login(username="testuser", password="testpass123")
         self.course = Course.objects.create(
-            title="Test Course",
             start_date=date(2025, 6, 15),
             end_date=date(2025, 6, 16),
-            location="Test Location",
             capacity=30,
         )
 
@@ -314,3 +304,40 @@ class InstructorModelTest(TestCase):
         Instructor.objects.create(name="Anders Andersen")
         with self.assertRaises(IntegrityError):
             Instructor.objects.create(name="Anders Andersen")
+
+
+class LocationModelTest(TestCase):
+    def test_create_location(self):
+        """Location model can be created with address details."""
+        from apps.courses.models import Location
+
+        location = Location.objects.create(
+            name="Basal Hovedkontor", street_address="Vesterbrogade 123", postal_code="1620", municipality="København V"
+        )
+        self.assertEqual(location.name, "Basal Hovedkontor")
+        self.assertEqual(str(location), "Basal Hovedkontor")
+
+    def test_location_full_address(self):
+        """Location.full_address returns formatted address."""
+        from apps.courses.models import Location
+
+        location = Location.objects.create(
+            name="Basal Hovedkontor", street_address="Vesterbrogade 123", postal_code="1620", municipality="København V"
+        )
+        self.assertEqual(location.full_address, "Basal Hovedkontor, Vesterbrogade 123, 1620 København V")
+
+    def test_location_full_address_minimal(self):
+        """Location.full_address works with only name."""
+        from apps.courses.models import Location
+
+        location = Location.objects.create(name="Online")
+        self.assertEqual(location.full_address, "Online")
+
+    def test_location_address_fields_optional(self):
+        """Location can be created with only name."""
+        from apps.courses.models import Location
+
+        location = Location.objects.create(name="Online")
+        self.assertEqual(location.street_address, "")
+        self.assertEqual(location.postal_code, "")
+        self.assertEqual(location.municipality, "")

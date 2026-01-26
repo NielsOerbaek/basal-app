@@ -68,15 +68,15 @@ class SchoolModelTest(TestCase):
 
     def test_exceeds_seat_allocation_false_when_under(self):
         """exceeds_seat_allocation is False when used_seats <= total_seats."""
-        from apps.courses.models import Course, CourseSignUp
+        from apps.courses.models import Course, CourseSignUp, Location
 
         school = School.objects.create(name="Test", adresse="Test", kommune="Test", enrolled_at=date.today())
+        location = Location.objects.create(name="Test Location")
         # School has 3 base seats, create 2 signups
         course = Course.objects.create(
-            title="Test Course",
             start_date=date.today(),
             end_date=date.today(),
-            location="Test",
+            location=location,
             capacity=10,
         )
         CourseSignUp.objects.create(course=course, school=school, participant_name="A", participant_email="a@test.com")
@@ -87,15 +87,15 @@ class SchoolModelTest(TestCase):
 
     def test_exceeds_seat_allocation_true_when_over(self):
         """exceeds_seat_allocation is True when used_seats > total_seats."""
-        from apps.courses.models import Course, CourseSignUp
+        from apps.courses.models import Course, CourseSignUp, Location
 
         school = School.objects.create(name="Test", adresse="Test", kommune="Test", enrolled_at=date.today())
+        location = Location.objects.create(name="Test Location")
         # School has 3 base seats, create 4 signups to exceed
         course = Course.objects.create(
-            title="Test Course",
             start_date=date.today(),
             end_date=date.today(),
-            location="Test",
+            location=location,
             capacity=10,
         )
         for i in range(4):
@@ -438,15 +438,15 @@ class SchoolHardDeleteViewTest(TestCase):
 
     def test_hard_delete_modal_shows_counts(self):
         """Hard delete modal shows related data counts."""
-        from apps.courses.models import Course, CourseSignUp
+        from apps.courses.models import Course, CourseSignUp, Location
 
         # Add some related data
         Person.objects.create(school=self.school, name="Test Person", email="test@example.com")
+        location = Location.objects.create(name="Test Location")
         course = Course.objects.create(
-            title="Test Course",
             start_date=date.today(),
             end_date=date.today(),
-            location="Test",
+            location=location,
             is_published=True,
         )
         CourseSignUp.objects.create(
@@ -464,13 +464,13 @@ class SchoolHardDeleteViewTest(TestCase):
 
     def test_hard_delete_removes_school_and_signups(self):
         """Hard delete permanently removes school and course signups."""
-        from apps.courses.models import Course, CourseSignUp
+        from apps.courses.models import Course, CourseSignUp, Location
 
+        location = Location.objects.create(name="Test Location")
         course = Course.objects.create(
-            title="Test Course",
             start_date=date.today(),
             end_date=date.today(),
-            location="Test",
+            location=location,
             is_published=True,
         )
         CourseSignUp.objects.create(

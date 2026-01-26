@@ -24,9 +24,9 @@ def get_signup_context(signup):
         "participant_email": signup.participant_email,
         "participant_title": signup.participant_title,
         "school_name": signup.school.name,
-        "course_title": signup.course.title,
+        "course_title": signup.course.display_name,
         "course_date": date_format(signup.course.start_date, "j. F Y"),
-        "course_location": signup.course.location,
+        "course_location": signup.course.location.full_address if signup.course.location else "",
     }
 
 
