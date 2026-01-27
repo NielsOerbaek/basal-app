@@ -105,14 +105,32 @@ class CourseUpdateView(UpdateView):
 class CourseDeleteView(View):
     def get(self, request, pk):
         course = get_object_or_404(Course, pk=pk)
+        signup_count = course.signups.count()
+        material_count = course.course_materials.count()
+
+        warning_parts = []
+        if signup_count:
+            warning_parts.append(f"{signup_count} tilmelding{'er' if signup_count != 1 else ''}")
+        if material_count:
+            warning_parts.append(f"{material_count} materiale{'r' if material_count != 1 else ''}")
+
+        if warning_parts:
+            warning = f"Dette vil permanent slette: {', '.join(warning_parts)}. Handlingen kan ikke fortrydes!"
+        else:
+            warning = "Handlingen kan ikke fortrydes!"
+
         return render(
             request,
             "core/components/confirm_delete_modal.html",
             {
-                "title": "Slet kursus",
-                "message": format_html("Er du sikker på, at du vil slette <strong>{}</strong>?", course.display_name),
-                "warning": "Dette vil også slette alle tilmeldinger til dette kursus. Denne handling kan ikke fortrydes.",
+                "title": "Slet kursus permanent",
+                "message": format_html(
+                    "Er du sikker på, at du vil <strong>permanent slette</strong> kurset <strong>{}</strong>?",
+                    course.display_name,
+                ),
+                "warning": warning,
                 "delete_url": reverse_lazy("courses:delete", kwargs={"pk": pk}),
+                "button_text": "Slet permanent",
             },
         )
 
@@ -120,7 +138,7 @@ class CourseDeleteView(View):
         course = get_object_or_404(Course, pk=pk)
         course_name = course.display_name
         course.delete()
-        messages.success(request, f'Kurset "{course_name}" er blevet slettet.')
+        messages.success(request, f'Kurset "{course_name}" er blevet permanent slettet.')
         return JsonResponse({"success": True, "redirect": str(reverse_lazy("courses:list"))})
 
 
