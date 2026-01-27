@@ -662,29 +662,44 @@ class MissingInvoicesView(ListView):
         relevant_years = self._get_relevant_years()
 
         # For hvert skoleår, find skoler der mangler faktura
+        # Schools can need TWO invoices: one for forankring and one for extra seats
         missing = []
         for school_year in relevant_years:
             enrolled_schools = school_year.get_enrolled_schools()
             for school in enrolled_schools:
-                # Tjek om skolen har en faktura for dette skoleår
-                has_invoice = school.invoices.filter(school_year=school_year).exists()
-                if has_invoice:
-                    continue
+                # Check existing invoices for this school year
+                invoices = school.invoices.filter(school_year=school_year)
 
-                # Determine if school needs invoice for this year
-                # Schools in "forankring" (enrolled before this year) always need invoice
+                # Determine if school needs forankring invoice
                 is_forankring = school.enrolled_at and school.enrolled_at < school_year.start_date
 
                 # Calculate extra seats beyond allocation
                 extra_seats = max(0, school.used_seats - school.total_seats)
 
-                # Only add to missing if school needs an invoice
-                if is_forankring or extra_seats > 0:
+                # Check if forankring invoice exists (look for invoice without "ekstra" in comment)
+                has_forankring_invoice = invoices.exclude(comment__icontains="ekstra").exists()
+
+                # Check if extra seats invoice exists (look for invoice with "ekstra" in comment)
+                has_extra_seats_invoice = invoices.filter(comment__icontains="ekstra").exists()
+
+                # Add missing forankring invoice
+                if is_forankring and not has_forankring_invoice:
                     missing.append(
                         {
                             "school": school,
                             "school_year": school_year,
-                            "is_forankring": is_forankring,
+                            "invoice_type": "forankring",
+                            "extra_seats": 0,
+                        }
+                    )
+
+                # Add missing extra seats invoice
+                if extra_seats > 0 and not has_extra_seats_invoice:
+                    missing.append(
+                        {
+                            "school": school,
+                            "school_year": school_year,
+                            "invoice_type": "extra_seats",
                             "extra_seats": extra_seats,
                         }
                     )

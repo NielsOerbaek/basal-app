@@ -36,12 +36,9 @@
                         </span>
                     </td>
                     <td>
-                        {% if item.is_forankring and item.extra_seats > 0 %}
+                        {% if item.invoice_type == "forankring" %}
                             <span class="badge bg-primary">Forankring</span>
-                            <span class="badge bg-warning text-dark">{{ item.extra_seats }} ekstra plads{% if item.extra_seats != 1 %}er{% endif %}</span>
-                        {% elif item.is_forankring %}
-                            <span class="badge bg-primary">Forankring</span>
-                        {% elif item.extra_seats > 0 %}
+                        {% elif item.invoice_type == "extra_seats" %}
                             <span class="badge bg-warning text-dark">{{ item.extra_seats }} ekstra plads{% if item.extra_seats != 1 %}er{% endif %}</span>
                         {% endif %}
                     </td>
