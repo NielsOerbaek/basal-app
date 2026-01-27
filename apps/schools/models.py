@@ -383,7 +383,14 @@ class SchoolComment(models.Model):
 
 class Invoice(models.Model):
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="invoices")
-    school_years = models.ManyToManyField(SchoolYear, related_name="invoices", verbose_name="Skoleår", blank=True)
+    school_year = models.ForeignKey(
+        SchoolYear,
+        on_delete=models.PROTECT,
+        related_name="invoices",
+        verbose_name="Skoleår",
+        null=True,
+        blank=True,
+    )
     invoice_number = models.CharField(max_length=50, verbose_name="Fakturanummer")
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Beløb")
     status = models.CharField(
@@ -397,6 +404,12 @@ class Invoice(models.Model):
         ordering = ["-date"]
         verbose_name = "Faktura"
         verbose_name_plural = "Fakturaer"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["invoice_number", "school_year"],
+                name="unique_invoice_per_school_year",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.invoice_number} - {self.school.name}"

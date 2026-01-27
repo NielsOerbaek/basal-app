@@ -3,7 +3,7 @@ from crispy_forms.layout import Column, Layout, Row, Submit
 from django import forms
 
 from .constants import DANISH_KOMMUNER
-from .models import Invoice, Person, School, SchoolComment, SchoolYear
+from .models import Invoice, Person, School, SchoolComment
 
 
 class SchoolForm(forms.ModelForm):
@@ -108,18 +108,19 @@ class SchoolCommentForm(forms.ModelForm):
 class InvoiceForm(forms.ModelForm):
     class Meta:
         model = Invoice
-        fields = ["school_years", "invoice_number", "amount", "date", "status", "comment"]
+        fields = ["school_year", "invoice_number", "amount", "date", "status", "comment"]
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}),
             "comment": forms.Textarea(attrs={"rows": 2}),
-            "school_years": forms.CheckboxSelectMultiple(),
+            "school_year": forms.Select(attrs={"class": "form-select"}),
         }
 
     def __init__(self, *args, school=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.school = school
         self.helper = FormHelper()
         self.helper.layout = Layout(
-            "school_years",
+            "school_year",
             Row(
                 Column("invoice_number", css_class="col-md-6"),
                 Column("amount", css_class="col-md-6"),
@@ -131,28 +132,23 @@ class InvoiceForm(forms.ModelForm):
             "comment",
             Submit("submit", "Gem faktura", css_class="btn btn-primary"),
         )
-        # Limit school_years choices to years the school is enrolled in
+        # Limit school_year choices to years the school is enrolled in
         if school:
-            self.fields["school_years"].queryset = school.get_enrolled_years().order_by("-start_date")
+            self.fields["school_year"].queryset = school.get_enrolled_years().order_by("-start_date")
 
+    def clean(self):
+        cleaned_data = super().clean()
+        invoice_number = cleaned_data.get("invoice_number")
+        school_year = cleaned_data.get("school_year")
 
-class SchoolYearForm(forms.ModelForm):
-    class Meta:
-        model = SchoolYear
-        fields = ["name", "start_date", "end_date"]
-        widgets = {
-            "start_date": forms.DateInput(attrs={"type": "date"}),
-            "end_date": forms.DateInput(attrs={"type": "date"}),
-        }
+        if invoice_number and school_year:
+            # Check for duplicate invoice_number + school_year (exclude current instance if editing)
+            qs = Invoice.objects.filter(invoice_number=invoice_number, school_year=school_year)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError(
+                    f'Der findes allerede en faktura med nummer "{invoice_number}" for skoleåret {school_year.name}.'
+                )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.layout = Layout(
-            "name",
-            Row(
-                Column("start_date", css_class="col-md-6"),
-                Column("end_date", css_class="col-md-6"),
-            ),
-            Submit("submit", "Gem skoleår", css_class="btn btn-primary"),
-        )
+        return cleaned_data

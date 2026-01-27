@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 from django.test import Client
 
 from apps.courses.models import Course
-from apps.schools.models import School, SchoolYear
+from apps.schools.models import School
 
 
 @pytest.fixture
@@ -50,23 +50,10 @@ def superuser_client(superuser):
 
 @pytest.fixture
 def school_year(db):
-    """Create a current school year."""
-    today = date.today()
-    # Create a school year that spans the current date
-    if today.month >= 8:
-        start = date(today.year, 8, 1)
-        end = date(today.year + 1, 7, 31)
-        name = f"{today.year}-{today.year + 1}"
-    else:
-        start = date(today.year - 1, 8, 1)
-        end = date(today.year, 7, 31)
-        name = f"{today.year - 1}-{today.year}"
+    """Get the current school year (populated by migration)."""
+    from apps.schools.school_years import get_current_school_year
 
-    school_year, _ = SchoolYear.objects.get_or_create(
-        name=name,
-        defaults={"start_date": start, "end_date": end},
-    )
-    return school_year
+    return get_current_school_year()
 
 
 @pytest.fixture

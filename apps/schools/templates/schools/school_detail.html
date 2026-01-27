@@ -220,7 +220,7 @@
                         {% for invoice in invoices %}
                         <tr>
                             <td>{{ invoice.invoice_number }}</td>
-                            <td>{% for year in invoice.school_years.all %}{{ year.name }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</td>
+                            <td>{{ invoice.school_year.name|default:"-" }}</td>
                             <td>{{ invoice.date|date:"d. M Y" }}</td>
                             <td>{{ invoice.amount|floatformat:2 }} kr.</td>
                             <td>

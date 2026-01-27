@@ -6,6 +6,15 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ## 27. januar 2026
 
+### Faktura-skoleår ændret til enkeltvalg
+Fakturaer har nu kun ét skoleår i stedet for flere. Dropdown-menuen til valg af skoleår er blevet mere kompakt og viser kun de skoleår skolen er tilmeldt i.
+
+### Unik fakturanummer per skoleår
+Systemet forhindrer nu at oprette to fakturaer med samme fakturanummer for samme skoleår. Ved forsøg på at oprette en dublet vises en tydelig fejlbesked.
+
+### Fjernet skoleårsredigering
+Menupunktet "Skoleår" er fjernet da skoleår nu oprettes automatisk og ikke behøver manuel redigering.
+
 ### Forbedret bulk import af kursustilmeldinger
 Bulk import er blevet forbedret med ny kolonnerækkefølge og bedre håndtering af data:
 

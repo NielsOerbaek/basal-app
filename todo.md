@@ -12,21 +12,8 @@
 
 - Fungerer emails som de skal? Kommer alle attachements med?
 
-- Fix signup password lock
-- They need their own page with information about how many seats they have and which signups they have.
-- Vi skal have telefonnummer på deltagere
-
-- "Kompetenceudviklingskursus" - dato. måned
-- Bulk import af kursusdeltagere
-  - Tlf nr. 
-  - Er underviser 
-- Op til tre undervisere.
-  - Vælg navn fra liste eller andre.
-- Man skal kunne rette i tilmeldinger.
-
-- Sæt nyt password
-- Stop opret af duplikerede skoler
-  - Adresse skal ikke være påkrævet.
+- Fungerer skoleår som de skal, og har vi overhovedet brug for skoleår?
+- Hurtig løsning lavet på nye filter
 
 - OBS skoler der tilmelder sig Basal efter sidste tilmeldingsfrist for skoleårets sidste kursus er ‘Ny skole’ i efterfølgende skoleår og bevarer sine 3 gratis kursuspladser. 
 
@@ -36,6 +23,7 @@
 - Det samme for undervisere. Skal det være staff-brugere?
 - Masseudsendelse af email til mange skoler (fx til alle ledere) + oprettelse af henvendelse
   - Hvad har de faktisk brug for?
+
 
 
 ### backup / export

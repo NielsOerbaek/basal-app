@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from apps.contacts.models import ContactTime
 from apps.courses.models import Course, CourseSignUp, Location
-from apps.schools.models import Invoice, Person, School, SchoolComment, SchoolYear
+from apps.schools.models import Invoice, Person, School, SchoolComment
 
 from .models import ProjectSettings
 
@@ -76,21 +76,10 @@ class DashboardViewTest(TestCase):
 @pytest.fixture
 def smoke_test_data(db, staff_user):
     """Create all necessary objects for smoke testing views."""
-    # Create school year (use get_or_create to avoid conflicts)
-    today = date.today()
-    if today.month >= 8:
-        start = date(today.year, 8, 1)
-        end = date(today.year + 1, 7, 31)
-        name = f"{today.year}-{today.year + 1}"
-    else:
-        start = date(today.year - 1, 8, 1)
-        end = date(today.year, 7, 31)
-        name = f"{today.year - 1}-{today.year}"
+    # Get current school year (migration should have populated it)
+    from apps.schools.school_years import get_current_school_year
 
-    school_year, _ = SchoolYear.objects.get_or_create(
-        name=name,
-        defaults={"start_date": start, "end_date": end},
-    )
+    school_year = get_current_school_year()
 
     # Create school
     school = School.objects.create(
@@ -179,8 +168,6 @@ class ViewSmokeTests:
         ("schools:kommune-list", {}),
         ("schools:export", {}),
         ("schools:autocomplete", {}),
-        ("schools:school-year-list", {}),
-        ("schools:school-year-create", {}),
         ("schools:missing-invoices", {}),
         ("courses:list", {}),
         ("courses:create", {}),
@@ -243,18 +230,6 @@ class TestViewSmokeStaff:
         urls = [
             ("schools:person-update", {"pk": person.pk}),
             ("schools:person-delete", {"pk": person.pk}),
-        ]
-        for url_name, kwargs in urls:
-            url = reverse(url_name, kwargs=kwargs)
-            response = staff_client.get(url)
-            assert response.status_code != 500, f"{url_name} returned 500"
-
-    def test_school_year_urls(self, staff_client, smoke_test_data):
-        """School year URLs should not return 500 errors."""
-        school_year = smoke_test_data["school_year"]
-        urls = [
-            ("schools:school-year-update", {"pk": school_year.pk}),
-            ("schools:school-year-delete", {"pk": school_year.pk}),
         ]
         for url_name, kwargs in urls:
             url = reverse(url_name, kwargs=kwargs)

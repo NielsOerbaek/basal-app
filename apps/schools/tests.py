@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from .models import Person, PersonRole, School, SchoolComment, SeatPurchase
+from .models import Invoice, Person, PersonRole, School, SchoolComment, SchoolYear, SeatPurchase
 
 
 class SchoolModelTest(TestCase):
@@ -943,3 +943,604 @@ class SchoolDetailMergedPeopleTest(TestCase):
 
         response = self.client.get(reverse("schools:detail", args=[self.school.pk]))
         self.assertContains(response, f'href="{reverse("courses:detail", args=[course.pk])}"')
+
+
+class InvoiceModelTest(TestCase):
+    """Tests for the Invoice model."""
+
+    def setUp(self):
+        self.school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="København",
+            enrolled_at=date(2024, 9, 1),
+        )
+        self.school_year, _ = SchoolYear.objects.get_or_create(
+            name="2024/25",
+            defaults={"start_date": date(2024, 8, 1), "end_date": date(2025, 7, 31)},
+        )
+
+    def test_create_invoice(self):
+        """Invoice can be created with required fields."""
+        from .models import Invoice
+
+        invoice = Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-001",
+            amount=10000.00,
+            date=date.today(),
+        )
+        self.assertEqual(invoice.invoice_number, "INV-001")
+        self.assertEqual(invoice.amount, 10000.00)
+        self.assertEqual(invoice.school, self.school)
+
+    def test_invoice_str(self):
+        """Invoice __str__ returns invoice number and school name."""
+        from .models import Invoice
+
+        invoice = Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-001",
+            amount=5000.00,
+        )
+        self.assertEqual(str(invoice), "INV-001 - Test School")
+
+    def test_invoice_default_status(self):
+        """Invoice defaults to 'planned' status."""
+        from .models import Invoice, InvoiceStatus
+
+        invoice = Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-001",
+            amount=5000.00,
+        )
+        self.assertEqual(invoice.status, InvoiceStatus.PLANNED)
+
+    def test_invoice_status_choices(self):
+        """Invoice can have different status values."""
+        from .models import Invoice, InvoiceStatus
+
+        invoice = Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-001",
+            amount=5000.00,
+        )
+        # Test each status
+        for status in [InvoiceStatus.PLANNED, InvoiceStatus.SENT, InvoiceStatus.PAID]:
+            invoice.status = status
+            invoice.save()
+            invoice.refresh_from_db()
+            self.assertEqual(invoice.status, status)
+
+    def test_invoice_school_year_fk(self):
+        """Invoice can be associated with a school year."""
+        from .models import Invoice
+
+        invoice = Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-001",
+            amount=10000.00,
+            school_year=self.school_year,
+        )
+
+        self.assertEqual(invoice.school_year, self.school_year)
+
+    def test_invoice_school_year_blank(self):
+        """Invoice can have no school year (blank=True)."""
+        from .models import Invoice
+
+        invoice = Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-001",
+            amount=5000.00,
+        )
+        self.assertIsNone(invoice.school_year)
+
+    def test_invoice_ordering(self):
+        """Invoices are ordered by date descending."""
+        from .models import Invoice
+
+        inv1 = Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-001",
+            amount=1000.00,
+            date=date(2024, 1, 1),
+        )
+        inv2 = Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-002",
+            amount=2000.00,
+            date=date(2024, 6, 1),
+        )
+        inv3 = Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-003",
+            amount=3000.00,
+            date=date(2024, 3, 1),
+        )
+
+        invoices = list(Invoice.objects.all())
+        # Most recent date first
+        self.assertEqual(invoices[0], inv2)  # June
+        self.assertEqual(invoices[1], inv3)  # March
+        self.assertEqual(invoices[2], inv1)  # January
+
+    def test_invoice_cascade_delete(self):
+        """Hard deleting school deletes its invoices."""
+        from .models import Invoice
+
+        invoice = Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-CASCADE-001",
+            amount=5000.00,
+        )
+        self.assertTrue(Invoice.objects.filter(pk=invoice.pk).exists())
+
+        # Hard delete bypasses soft delete by using queryset delete
+        School.objects.filter(pk=self.school.pk).delete()
+        self.assertFalse(Invoice.objects.filter(pk=invoice.pk).exists())
+
+    def test_invoice_related_name(self):
+        """School.invoices returns related invoices."""
+        from .models import Invoice
+
+        inv1 = Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-001",
+            amount=1000.00,
+        )
+        inv2 = Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-002",
+            amount=2000.00,
+        )
+
+        self.assertEqual(self.school.invoices.count(), 2)
+        self.assertIn(inv1, self.school.invoices.all())
+        self.assertIn(inv2, self.school.invoices.all())
+
+
+class InvoiceFormTest(TestCase):
+    """Tests for the InvoiceForm."""
+
+    def setUp(self):
+        self.school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="København",
+            enrolled_at=date(2024, 9, 1),
+        )
+        self.school_year, _ = SchoolYear.objects.get_or_create(
+            name="2024/25",
+            defaults={"start_date": date(2024, 8, 1), "end_date": date(2025, 7, 31)},
+        )
+
+    def test_form_valid(self):
+        """Form is valid with required fields."""
+        from .forms import InvoiceForm
+
+        form = InvoiceForm(
+            data={
+                "invoice_number": "INV-001",
+                "amount": "5000.00",
+                "date": date.today(),
+                "status": "planned",
+                "school_year": self.school_year.pk,
+            },
+            school=self.school,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_form_requires_invoice_number(self):
+        """Form requires invoice_number field."""
+        from .forms import InvoiceForm
+
+        form = InvoiceForm(
+            data={
+                "amount": "5000.00",
+                "date": date.today(),
+                "status": "planned",
+            },
+            school=self.school,
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("invoice_number", form.errors)
+
+    def test_form_requires_amount(self):
+        """Form requires amount field."""
+        from .forms import InvoiceForm
+
+        form = InvoiceForm(
+            data={
+                "invoice_number": "INV-001",
+                "date": date.today(),
+                "status": "planned",
+            },
+            school=self.school,
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("amount", form.errors)
+
+    def test_form_school_year_optional(self):
+        """Form is valid without school_year (blank=True on model)."""
+        from .forms import InvoiceForm
+
+        form = InvoiceForm(
+            data={
+                "invoice_number": "INV-001",
+                "amount": "5000.00",
+                "date": date.today(),
+                "status": "planned",
+            },
+            school=self.school,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_form_school_year_queryset_filtered(self):
+        """Form queryset is filtered to school's enrolled years."""
+        from .forms import InvoiceForm
+
+        # Create another school year that the school wasn't enrolled in
+        future_year, _ = SchoolYear.objects.get_or_create(
+            name="2030/31",
+            defaults={"start_date": date(2030, 8, 1), "end_date": date(2031, 7, 31)},
+        )
+
+        form = InvoiceForm(school=self.school)
+        queryset = form.fields["school_year"].queryset
+
+        # School enrolled in 2024-09-01, so 2024/25 should be included
+        self.assertIn(self.school_year, queryset)
+        # Future year should also be included (enrolled school covers all years from enrollment onwards)
+        self.assertIn(future_year, queryset)
+
+    def test_form_school_year_queryset_excludes_opted_out_years(self):
+        """Form queryset excludes years after school opted out."""
+        from .forms import InvoiceForm
+
+        # Opt out the school before the 2024/25 year starts
+        self.school.opted_out_at = date(2024, 7, 15)
+        self.school.save()
+
+        form = InvoiceForm(school=self.school)
+        queryset = form.fields["school_year"].queryset
+
+        # School opted out before 2024/25 started, so it shouldn't appear
+        self.assertNotIn(self.school_year, queryset)
+
+    def test_form_widget_is_select(self):
+        """Form uses Select widget for school_year."""
+        from django.forms import Select
+
+        from .forms import InvoiceForm
+
+        form = InvoiceForm(school=self.school)
+        self.assertIsInstance(form.fields["school_year"].widget, Select)
+
+    def test_form_duplicate_invoice_number_same_school_year_invalid(self):
+        """Form rejects duplicate invoice_number + school_year combination."""
+        from .forms import InvoiceForm
+
+        # Create an existing invoice
+        Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-001",
+            amount=5000,
+            school_year=self.school_year,
+        )
+
+        # Try to create another invoice with same number and school year
+        form = InvoiceForm(
+            data={
+                "invoice_number": "INV-001",
+                "amount": "3000.00",
+                "date": date.today(),
+                "status": "planned",
+                "school_year": self.school_year.pk,
+            },
+            school=self.school,
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("__all__", form.errors)
+        self.assertIn("INV-001", form.errors["__all__"][0])
+        self.assertIn("2024/25", form.errors["__all__"][0])
+
+    def test_form_duplicate_invoice_number_different_school_year_valid(self):
+        """Form allows same invoice_number if school_year is different."""
+        from .forms import InvoiceForm
+
+        # Create a second school year
+        other_year, _ = SchoolYear.objects.get_or_create(
+            name="2023/24",
+            defaults={"start_date": date(2023, 8, 1), "end_date": date(2024, 7, 31)},
+        )
+        # Adjust school enrollment to include the other year
+        self.school.enrolled_at = date(2023, 9, 1)
+        self.school.save()
+
+        # Create an existing invoice
+        Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-001",
+            amount=5000,
+            school_year=self.school_year,
+        )
+
+        # Create invoice with same number but different school year
+        form = InvoiceForm(
+            data={
+                "invoice_number": "INV-001",
+                "amount": "3000.00",
+                "date": date.today(),
+                "status": "planned",
+                "school_year": other_year.pk,
+            },
+            school=self.school,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_form_duplicate_invoice_number_no_school_year_valid(self):
+        """Form allows duplicate invoice_number if school_year is null."""
+        from .forms import InvoiceForm
+
+        # Create an existing invoice with school year
+        Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-001",
+            amount=5000,
+            school_year=self.school_year,
+        )
+
+        # Create invoice with same number but no school year
+        form = InvoiceForm(
+            data={
+                "invoice_number": "INV-001",
+                "amount": "3000.00",
+                "date": date.today(),
+                "status": "planned",
+            },
+            school=self.school,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+
+
+class InvoiceViewTest(TestCase):
+    """Tests for Invoice CRUD views."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="testuser", password="testpass", is_staff=True)
+        self.client = Client()
+        self.client.login(username="testuser", password="testpass")
+        self.school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="København",
+            enrolled_at=date(2024, 9, 1),
+        )
+        self.school_year, _ = SchoolYear.objects.get_or_create(
+            name="2024/25",
+            defaults={"start_date": date(2024, 8, 1), "end_date": date(2025, 7, 31)},
+        )
+
+    def test_invoice_create_requires_login(self):
+        """Invoice create view requires authentication."""
+        self.client.logout()
+        url = reverse("schools:invoice-create", args=[self.school.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("login", response.url)
+
+    def test_invoice_create_loads(self):
+        """Invoice create form loads successfully."""
+        url = reverse("schools:invoice-create", args=[self.school.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Tilføj faktura")
+        self.assertContains(response, self.school.name)
+
+    def test_invoice_create_post(self):
+        """Invoice can be created via POST."""
+        from .models import Invoice
+
+        url = reverse("schools:invoice-create", args=[self.school.pk])
+        response = self.client.post(
+            url,
+            {
+                "invoice_number": "INV-001",
+                "amount": "5000.00",
+                "date": date.today(),
+                "status": "planned",
+                "school_year": self.school_year.pk,
+            },
+        )
+        self.assertEqual(response.status_code, 302)  # Redirect on success
+
+        # Verify invoice was created
+        invoice = Invoice.objects.get(invoice_number="INV-001")
+        self.assertEqual(invoice.school, self.school)
+        self.assertEqual(invoice.amount, 5000.00)
+        self.assertEqual(invoice.school_year, self.school_year)
+
+    def test_invoice_create_invalid_post(self):
+        """Invoice create with invalid data shows form again."""
+        url = reverse("schools:invoice-create", args=[self.school.pk])
+        response = self.client.post(
+            url,
+            {
+                "invoice_number": "",  # Required field empty
+                "amount": "5000.00",
+                "date": date.today(),
+                "status": "planned",
+            },
+        )
+        self.assertEqual(response.status_code, 200)  # Form re-rendered
+        self.assertContains(response, "Tilføj faktura")
+
+    def test_invoice_delete_modal_loads(self):
+        """Invoice delete modal loads successfully."""
+        from .models import Invoice
+
+        invoice = Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-001",
+            amount=5000.00,
+        )
+        url = reverse("schools:invoice-delete", args=[invoice.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Slet")
+
+    def test_invoice_delete_post(self):
+        """Invoice can be deleted via POST."""
+        from .models import Invoice
+
+        invoice = Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-001",
+            amount=5000.00,
+        )
+        url = reverse("schools:invoice-delete", args=[invoice.pk])
+        response = self.client.post(url)
+
+        self.assertEqual(response.status_code, 200)  # Returns JSON
+        self.assertEqual(Invoice.objects.count(), 0)
+
+    def test_invoice_displayed_on_school_detail(self):
+        """Invoice is displayed on school detail page."""
+        from .models import Invoice
+
+        Invoice.objects.create(
+            school=self.school,
+            invoice_number="INV-001",
+            amount=5000.00,
+            school_year=self.school_year,
+        )
+
+        url = reverse("schools:detail", args=[self.school.pk])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "INV-001")
+        self.assertContains(response, "5000")
+
+
+class MissingInvoicesViewTest(TestCase):
+    """Tests for the MissingInvoicesView."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="testuser", password="testpass", is_staff=True)
+        self.client = Client()
+        self.client.login(username="testuser", password="testpass")
+
+        # Clear all school years to have a controlled test environment
+        SchoolYear.objects.all().delete()
+
+        self.school_year = SchoolYear.objects.create(
+            name="2024/25",
+            start_date=date(2024, 8, 1),
+            end_date=date(2025, 7, 31),
+        )
+
+    def test_missing_invoices_requires_login(self):
+        """Missing invoices view requires authentication."""
+        self.client.logout()
+        url = reverse("schools:missing-invoices")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("login", response.url)
+
+    def test_missing_invoices_loads(self):
+        """Missing invoices view loads successfully."""
+        url = reverse("schools:missing-invoices")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_missing_invoices_shows_school_without_invoice(self):
+        """Schools enrolled in a year without invoice appear in list."""
+        School.objects.create(
+            name="School Without Invoice",
+            adresse="Test Address",
+            kommune="København",
+            enrolled_at=date(2024, 9, 1),  # Enrolled during 2024/25
+        )
+
+        url = reverse("schools:missing-invoices")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "School Without Invoice")
+        self.assertContains(response, "2024/25")
+
+    def test_missing_invoices_excludes_school_with_invoice(self):
+        """Schools with invoice for a year don't appear in missing list."""
+        from .models import Invoice
+
+        school = School.objects.create(
+            name="School With Invoice",
+            adresse="Test Address",
+            kommune="København",
+            enrolled_at=date(2024, 9, 1),
+        )
+        Invoice.objects.create(
+            school=school,
+            invoice_number="INV-001",
+            amount=5000.00,
+            school_year=self.school_year,
+        )
+
+        url = reverse("schools:missing-invoices")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        # School should not appear since it has an invoice for 2024/25
+        self.assertNotContains(response, "School With Invoice")
+
+    def test_missing_invoices_excludes_schools_opted_out_before_year(self):
+        """Schools that opted out before a school year started don't appear for that year."""
+        # School enrolled in 2023 and opted out before 2024/25 school year started (Aug 1, 2024)
+        School.objects.create(
+            name="Opted Out Early School",
+            adresse="Test Address",
+            kommune="København",
+            enrolled_at=date(2023, 9, 1),
+            opted_out_at=date(2024, 6, 1),  # Opted out before 2024/25 started
+        )
+
+        url = reverse("schools:missing-invoices")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        # School should not appear for 2024/25 since it opted out before that year started
+        self.assertNotContains(response, "Opted Out Early School")
+
+    def test_missing_invoices_multiple_years(self):
+        """Missing invoices shows schools missing invoices across multiple years."""
+        from .models import Invoice
+
+        school_year_2, _ = SchoolYear.objects.get_or_create(
+            name="2025/26",
+            defaults={"start_date": date(2025, 8, 1), "end_date": date(2026, 7, 31)},
+        )
+
+        school = School.objects.create(
+            name="Multi Year School",
+            adresse="Test Address",
+            kommune="København",
+            enrolled_at=date(2024, 9, 1),
+        )
+        # Add invoice for 2024/25 only
+        Invoice.objects.create(
+            school=school,
+            invoice_number="INV-001",
+            amount=5000.00,
+            school_year=self.school_year,
+        )
+
+        url = reverse("schools:missing-invoices")
+        response = self.client.get(url)
+
+        # School should appear for 2025/26 (missing invoice) but not 2024/25
+        content = response.content.decode()
+        # Check that the school appears with the missing year
+        self.assertIn("Multi Year School", content)
+        self.assertIn("2025/26", content)

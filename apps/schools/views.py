@@ -14,7 +14,7 @@ from apps.core.decorators import staff_required
 from apps.core.export import export_queryset_to_excel
 from apps.core.mixins import SortableMixin
 
-from .forms import InvoiceForm, PersonForm, SchoolCommentForm, SchoolForm, SchoolYearForm
+from .forms import InvoiceForm, PersonForm, SchoolCommentForm, SchoolForm
 from .models import Invoice, Person, School, SchoolComment, SchoolYear
 
 
@@ -657,7 +657,7 @@ class MissingInvoicesView(ListView):
             enrolled_schools = school_year.get_enrolled_schools()
             for school in enrolled_schools:
                 # Tjek om skolen har en faktura for dette skoleår
-                has_invoice = school.invoices.filter(school_years=school_year).exists()
+                has_invoice = school.invoices.filter(school_year=school_year).exists()
                 if not has_invoice:
                     missing.append(
                         {
@@ -671,65 +671,6 @@ class MissingInvoicesView(ListView):
         context = super().get_context_data(**kwargs)
         context["school_years"] = SchoolYear.objects.all().order_by("-start_date")
         return context
-
-
-@method_decorator(staff_required, name="dispatch")
-class SchoolYearListView(ListView):
-    model = SchoolYear
-    template_name = "schools/school_year_list.html"
-    context_object_name = "school_years"
-
-
-@method_decorator(staff_required, name="dispatch")
-class SchoolYearCreateView(CreateView):
-    model = SchoolYear
-    form_class = SchoolYearForm
-    template_name = "schools/school_year_form.html"
-    success_url = reverse_lazy("schools:school-year-list")
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, f'Skoleåret "{self.object.name}" blev oprettet.')
-        return response
-
-
-@method_decorator(staff_required, name="dispatch")
-class SchoolYearUpdateView(UpdateView):
-    model = SchoolYear
-    form_class = SchoolYearForm
-    template_name = "schools/school_year_form.html"
-    success_url = reverse_lazy("schools:school-year-list")
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, f'Skoleåret "{self.object.name}" blev opdateret.')
-        return response
-
-
-@method_decorator(staff_required, name="dispatch")
-class SchoolYearDeleteView(View):
-    def get(self, request, pk):
-        school_year = get_object_or_404(SchoolYear, pk=pk)
-        return render(
-            request,
-            "core/components/confirm_delete_modal.html",
-            {
-                "title": "Slet skoleår",
-                "message": format_html(
-                    "Er du sikker på, at du vil slette skoleåret <strong>{}</strong>?", school_year.name
-                ),
-                "warning": "Alle tilmeldinger til dette skoleår vil også blive slettet.",
-                "delete_url": reverse_lazy("schools:school-year-delete", kwargs={"pk": pk}),
-                "button_text": "Slet",
-            },
-        )
-
-    def post(self, request, pk):
-        school_year = get_object_or_404(SchoolYear, pk=pk)
-        name = school_year.name
-        school_year.delete()
-        messages.success(request, f'Skoleåret "{name}" er blevet slettet.')
-        return JsonResponse({"success": True, "redirect": str(reverse_lazy("schools:school-year-list"))})
 
 
 @method_decorator(staff_required, name="dispatch")
