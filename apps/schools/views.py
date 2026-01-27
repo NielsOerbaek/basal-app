@@ -120,25 +120,17 @@ class SchoolListView(SortableMixin, ListView):
             # Previously enrolled but opted out
             queryset = queryset.filter(opted_out_at__isnull=False)
         elif status_filter == "har_tilmeldinger_ikke_basal":
-            # Schools with course signups in current school year but not enrolled in Basal
+            # Schools with course signups but not enrolled in Basal
             from apps.courses.models import CourseSignUp
-            from apps.goals.calculations import get_current_school_year, get_school_year_dates
 
-            current_year = get_current_school_year()
-            start_date, end_date = get_school_year_dates(current_year)
-
-            # Get school IDs that have signups for courses in the current school year
+            # Get school IDs that have any signups
             schools_with_signups = (
-                CourseSignUp.objects.filter(
-                    course__start_date__gte=start_date,
-                    course__start_date__lte=end_date,
-                    school__isnull=False,
-                )
+                CourseSignUp.objects.filter(school__isnull=False)
                 .values_list("school_id", flat=True)
                 .distinct()
             )
 
-            # Filter to schools not enrolled (never enrolled OR opted out)
+            # Filter to schools not currently enrolled (never enrolled OR opted out)
             queryset = queryset.filter(pk__in=schools_with_signups).filter(
                 Q(enrolled_at__isnull=True) | Q(opted_out_at__isnull=False)
             )
