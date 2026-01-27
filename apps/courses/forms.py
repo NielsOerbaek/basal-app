@@ -151,16 +151,6 @@ class CourseForm(forms.ModelForm):
             if end_date < start_date:
                 raise forms.ValidationError("Slutdato kan ikke være før startdato.")
 
-            # Check for duplicate course dates (exclude current instance if editing)
-            qs = Course.objects.filter(start_date=start_date, end_date=end_date)
-            if self.instance.pk:
-                qs = qs.exclude(pk=self.instance.pk)
-            if qs.exists():
-                existing = qs.first()
-                raise forms.ValidationError(
-                    f'Der findes allerede et kursus med disse datoer: "{existing.display_name}".'
-                )
-
         # Handle "add new" location
         location = self.data.get("location")
         if location == "__new__":
