@@ -712,6 +712,8 @@ class MissingInvoicesView(ListView):
                             }
                         )
 
+        # Sort alphabetically by school name, then by school year (descending)
+        missing.sort(key=lambda x: (x["school"].name, -x["school_year"].start_date.toordinal()))
         return missing
 
     def get_context_data(self, **kwargs):
