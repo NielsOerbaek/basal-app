@@ -25,7 +25,7 @@ class SchoolYearManager(models.Manager):
 
 
 class SchoolYear(models.Model):
-    name = models.CharField(max_length=20, unique=True, verbose_name="Skoleår", help_text='F.eks. "2024-2025"')
+    name = models.CharField(max_length=20, unique=True, verbose_name="Skoleår", help_text='F.eks. "2024/25"')
     start_date = models.DateField(verbose_name="Startdato", help_text="Typisk 1. august")
     end_date = models.DateField(verbose_name="Slutdato", help_text="Typisk 31. juli")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -127,9 +127,9 @@ class School(models.Model):
         Returnerer skolens detaljerede tilmeldingsstatus for det aktuelle skoleår.
         Returns tuple: (status_code, status_label, badge_class)
         """
-        from apps.goals.calculations import get_current_school_year
+        from apps.schools.school_years import get_current_school_year
 
-        return self.get_status_for_year(get_current_school_year())
+        return self.get_status_for_year(get_current_school_year().name)
 
     def was_enrolled_in_year(self, school_year):
         """Tjek om skolen var tilmeldt i et givent skoleår."""
@@ -235,20 +235,14 @@ class School(models.Model):
         """Base seats included with enrollment."""
         return self.BASE_SEATS if self.is_enrolled else 0
 
-    def _get_current_school_year_start(self):
-        """Get the start date of the current school year (Aug 1)."""
-        today = date.today()
-        if today.month < 8:
-            return date(today.year - 1, 8, 1)
-        return date(today.year, 8, 1)
-
     @property
     def has_forankringsplads(self):
         """School gets forankringsplads if enrolled before the current school year."""
         if not self.enrolled_at:
             return False
-        current_year_start = self._get_current_school_year_start()
-        return self.enrolled_at < current_year_start
+        from apps.schools.school_years import get_current_school_year
+
+        return self.enrolled_at < get_current_school_year().start_date
 
     def get_status_for_year(self, year_str: str) -> tuple[str, str, str]:
         """
@@ -260,9 +254,9 @@ class School(models.Model):
         Returns:
             Tuple of (status_code, status_label, badge_class)
         """
-        from apps.goals.calculations import get_school_year_dates
+        from apps.schools.school_years import get_school_year_dates, normalize_school_year
 
-        year_str = year_str.replace("-", "/")
+        year_str = normalize_school_year(year_str)
         start_date, end_date = get_school_year_dates(year_str)
 
         # Check if opted out before or during this year

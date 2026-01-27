@@ -1,7 +1,5 @@
 """
 Calculation functions for project goals metrics.
-
-School year runs from August 1 to July 31.
 """
 
 from datetime import date
@@ -9,30 +7,15 @@ from datetime import date
 from apps.core.models import ProjectSettings
 from apps.courses.models import AttendanceStatus, Course, CourseSignUp
 from apps.schools.models import School
-
-
-def get_school_year(d: date) -> str:
-    """
-    Returns school year as string, e.g., '2024/25'.
-
-    School year runs August 1 to July 31.
-    """
-    if d.month < 8:
-        return f"{d.year - 1}/{str(d.year)[2:]}"
-    return f"{d.year}/{str(d.year + 1)[2:]}"
-
-
-def get_school_year_dates(year_str: str) -> tuple[date, date]:
-    """
-    Returns (start_date, end_date) for a school year string like '2024/25'.
-    """
-    start_year = int(year_str[:4])
-    return (date(start_year, 8, 1), date(start_year + 1, 7, 31))
+from apps.schools.school_years import (
+    calculate_school_year_for_date,
+    get_school_year_dates,
+)
 
 
 def get_current_school_year() -> str:
-    """Returns the current school year."""
-    return get_school_year(date.today())
+    """Returns the current school year as a string (e.g., '2024/25')."""
+    return calculate_school_year_for_date(date.today())
 
 
 def get_metrics_for_year(year_str: str) -> dict:

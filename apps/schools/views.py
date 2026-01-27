@@ -98,20 +98,20 @@ class SchoolListView(SortableMixin, ListView):
             # All enrolled (both new and anchoring)
             queryset = queryset.filter(enrolled_at__isnull=False, opted_out_at__isnull=True)
         elif status_filter == "tilmeldt_ny":
-            # Enrolled less than 1 year ago
-            from django.utils import timezone
+            # Enrolled in the current school year (on or after Aug 1 of current school year)
+            from apps.schools.school_years import get_current_school_year
 
-            one_year_ago = date.today() - timezone.timedelta(days=365)
+            current_sy = get_current_school_year()
             queryset = queryset.filter(
-                enrolled_at__isnull=False, enrolled_at__gt=one_year_ago, opted_out_at__isnull=True
+                enrolled_at__isnull=False, enrolled_at__gte=current_sy.start_date, opted_out_at__isnull=True
             )
         elif status_filter == "tilmeldt_forankring":
-            # Enrolled more than 1 year ago
-            from django.utils import timezone
+            # Enrolled before the current school year (forankring = anchoring)
+            from apps.schools.school_years import get_current_school_year
 
-            one_year_ago = date.today() - timezone.timedelta(days=365)
+            current_sy = get_current_school_year()
             queryset = queryset.filter(
-                enrolled_at__isnull=False, enrolled_at__lte=one_year_ago, opted_out_at__isnull=True
+                enrolled_at__isnull=False, enrolled_at__lt=current_sy.start_date, opted_out_at__isnull=True
             )
         elif status_filter == "ikke_tilmeldt":
             # Never enrolled
@@ -125,9 +125,7 @@ class SchoolListView(SortableMixin, ListView):
 
             # Get school IDs that have any signups
             schools_with_signups = (
-                CourseSignUp.objects.filter(school__isnull=False)
-                .values_list("school_id", flat=True)
-                .distinct()
+                CourseSignUp.objects.filter(school__isnull=False).values_list("school_id", flat=True).distinct()
             )
 
             # Filter to schools not currently enrolled (never enrolled OR opted out)
@@ -145,7 +143,9 @@ class SchoolListView(SortableMixin, ListView):
         school_year_filter = self.request.GET.get("school_year")
         if status_filter and school_year_filter:
             # Use the model's get_status_for_year for consistent filtering
-            year_str = school_year_filter.replace("-", "/")
+            from apps.schools.school_years import normalize_school_year
+
+            year_str = normalize_school_year(school_year_filter)
             if status_filter == "new":
                 queryset = [s for s in queryset if s.get_status_for_year(year_str)[0] == "tilmeldt_ny"]
             elif status_filter == "anchoring":
@@ -227,7 +227,9 @@ class SchoolListView(SortableMixin, ListView):
         status = self.request.GET.get("status")
         school_year = self.request.GET.get("school_year")
         if status and school_year:
-            year_display = school_year.replace("-", "/")
+            from apps.schools.school_years import normalize_school_year
+
+            year_display = normalize_school_year(school_year)
             if status == "new":
                 context["filter_explanation"] = f"Viser skoler der blev tilmeldt i skoleåret {year_display}"
             elif status == "anchoring":

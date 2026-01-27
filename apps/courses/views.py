@@ -38,10 +38,9 @@ class CourseListView(SortableMixin, ListView):
         # School year filter (for project goals drill-down)
         school_year_filter = self.request.GET.get("school_year")
         if school_year_filter:
-            from apps.goals.calculations import get_school_year_dates
+            from apps.schools.school_years import get_school_year_dates, normalize_school_year
 
-            # Convert school_year from URL format (2024-25) to internal format (2024/25)
-            year_str = school_year_filter.replace("-", "/")
+            year_str = normalize_school_year(school_year_filter)
             start_date, end_date = get_school_year_dates(year_str)
             queryset = queryset.filter(start_date__gte=start_date, start_date__lte=end_date)
 
@@ -53,7 +52,9 @@ class CourseListView(SortableMixin, ListView):
         # Build filter explanation for project goals drill-down
         school_year = self.request.GET.get("school_year")
         if school_year:
-            year_display = school_year.replace("-", "/")
+            from apps.schools.school_years import normalize_school_year
+
+            year_display = normalize_school_year(school_year)
             context["filter_explanation"] = f"Viser kurser i skoleåret {year_display}"
 
         return context
@@ -177,10 +178,9 @@ class SignUpListView(ListView):
         # School year filter (for project goals drill-down)
         school_year_filter = self.request.GET.get("school_year")
         if school_year_filter:
-            from apps.goals.calculations import get_school_year_dates
+            from apps.schools.school_years import get_school_year_dates, normalize_school_year
 
-            # Convert school_year from URL format (2024-25) to internal format (2024/25)
-            year_str = school_year_filter.replace("-", "/")
+            year_str = normalize_school_year(school_year_filter)
             start_date, end_date = get_school_year_dates(year_str)
             queryset = queryset.filter(course__start_date__gte=start_date, course__start_date__lte=end_date)
 
@@ -206,7 +206,9 @@ class SignUpListView(ListView):
         is_underviser = self.request.GET.get("is_underviser")
 
         if school_year:
-            year_display = school_year.replace("-", "/")
+            from apps.schools.school_years import normalize_school_year
+
+            year_display = normalize_school_year(school_year)
             parts = []
 
             if attended == "true" and is_underviser == "true":
