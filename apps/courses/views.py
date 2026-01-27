@@ -684,3 +684,60 @@ class CourseMaterialDeleteView(View):
         material.delete()
         messages.success(request, "Kursusmateriale er blevet slettet.")
         return JsonResponse({"success": True, "redirect": reverse("courses:detail", kwargs={"pk": course_pk})})
+
+
+@method_decorator(staff_required, name="dispatch")
+class BulkMarkAttendanceView(View):
+    """Mark all signups for a course as present."""
+
+    def get(self, request, pk):
+        course = get_object_or_404(Course, pk=pk)
+        signup_count = course.signups.count()
+        return render(
+            request,
+            "core/components/confirm_delete_modal.html",
+            {
+                "title": "Markér alle som uddannet",
+                "message": format_html(
+                    "Er du sikker på, at du vil markere alle <strong>{}</strong> deltagere som uddannet?",
+                    signup_count,
+                ),
+                "delete_url": reverse("courses:bulk-mark-attendance", kwargs={"pk": pk}),
+                "button_text": "Markér alle",
+                "button_class": "success",
+            },
+        )
+
+    def post(self, request, pk):
+        course = get_object_or_404(Course, pk=pk)
+        updated = course.signups.update(attendance=AttendanceStatus.PRESENT)
+        messages.success(request, f"{updated} deltagere er markeret som uddannet.")
+        return JsonResponse({"success": True, "redirect": reverse("courses:detail", kwargs={"pk": pk})})
+
+
+@method_decorator(staff_required, name="dispatch")
+class BulkDeleteSignupsView(View):
+    """Delete all signups for a course."""
+
+    def get(self, request, pk):
+        course = get_object_or_404(Course, pk=pk)
+        signup_count = course.signups.count()
+        return render(
+            request,
+            "core/components/confirm_delete_modal.html",
+            {
+                "title": "Slet alle tilmeldinger",
+                "message": format_html(
+                    "Er du sikker på, at du vil slette alle <strong>{}</strong> tilmeldinger? Denne handling kan ikke fortrydes.",
+                    signup_count,
+                ),
+                "delete_url": reverse("courses:bulk-delete-signups", kwargs={"pk": pk}),
+                "button_text": "Slet alle",
+            },
+        )
+
+    def post(self, request, pk):
+        course = get_object_or_404(Course, pk=pk)
+        deleted, _ = course.signups.all().delete()
+        messages.success(request, f"{deleted} tilmeldinger er blevet slettet.")
+        return JsonResponse({"success": True, "redirect": reverse("courses:detail", kwargs={"pk": pk})})

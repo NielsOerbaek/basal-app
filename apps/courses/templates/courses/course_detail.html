@@ -114,6 +114,28 @@
                             hx-target="#modal-container">
                         <i class="bi bi-upload me-1"></i>Bulk Import
                     </button>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-pencil-square me-1"></i>Bulk Rediger
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <button type="button" class="dropdown-item"
+                                        hx-get="{% url 'courses:bulk-mark-attendance' course.pk %}"
+                                        hx-target="#modal-container">
+                                    <i class="bi bi-check-all me-2 text-success"></i>Markér alle som uddannet
+                                </button>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button type="button" class="dropdown-item text-danger"
+                                        hx-get="{% url 'courses:bulk-delete-signups' course.pk %}"
+                                        hx-target="#modal-container">
+                                    <i class="bi bi-trash me-2"></i>Slet alle tilmeldinger
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
                     <button type="button" class="btn btn-sm btn-outline-secondary" id="copy-emails-btn" title="Kopiér alle e-mails">
                         <i class="bi bi-clipboard me-1"></i>Kopiér e-mails
                     </button>
