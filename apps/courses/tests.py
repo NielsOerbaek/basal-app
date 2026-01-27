@@ -67,11 +67,12 @@ class CourseSignUpModelTest(TestCase):
         )
         self.assertEqual(signup.attendance, AttendanceStatus.UNMARKED)
 
-    def test_unique_constraint(self):
-        """Duplicate signups for same course/school/participant are prevented."""
-        CourseSignUp.objects.create(course=self.course, school=self.school, participant_name="Test Participant")
-        with self.assertRaises(IntegrityError):
-            CourseSignUp.objects.create(course=self.course, school=self.school, participant_name="Test Participant")
+    def test_create_signup_with_other_organization(self):
+        """CourseSignUp can be created with other_organization instead of school."""
+        signup = CourseSignUp.objects.create(
+            course=self.course, school=None, other_organization="Frederikshavn Kommune", participant_name="Test Person"
+        )
+        self.assertEqual(signup.organization_name, "Frederikshavn Kommune")
 
 
 class CourseViewTest(TestCase):

@@ -560,7 +560,9 @@ class BulkImportConfirmView(View):
                         continue
 
                     # Check if school already exists
-                    existing = School.objects.filter(name__iexact=new_school_name, kommune__iexact=new_school_kommune).first()
+                    existing = School.objects.filter(
+                        name__iexact=new_school_name, kommune__iexact=new_school_kommune
+                    ).first()
                     if existing:
                         school = existing
                     else:
@@ -607,7 +609,9 @@ class BulkImportConfirmView(View):
         if created:
             msg_parts.append(f'{created} tilmelding{"er" if created != 1 else ""} oprettet')
         if schools_created:
-            msg_parts.append(f'{schools_created} ny{"e" if schools_created != 1 else ""} skole{"r" if schools_created != 1 else ""} oprettet')
+            msg_parts.append(
+                f'{schools_created} ny{"e" if schools_created != 1 else ""} skole{"r" if schools_created != 1 else ""} oprettet'
+            )
         if skipped:
             msg_parts.append(f"{skipped} sprunget over")
         if errors:

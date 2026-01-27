@@ -28,9 +28,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="course",
             name="registration_deadline",
-            field=models.DateField(
-                blank=True, null=True, verbose_name="Tilmeldingsfrist"
-            ),
+            field=models.DateField(blank=True, null=True, verbose_name="Tilmeldingsfrist"),
         ),
         migrations.AlterField(
             model_name="coursesignup",
