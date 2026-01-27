@@ -4,8 +4,78 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
+def column_exists(cursor, table_name, column_name):
+    """Check if a column exists (works for both SQLite and PostgreSQL)."""
+    cursor.execute(
+        f"SELECT 1 FROM pragma_table_info('{table_name}') WHERE name = ?",
+        [column_name],
+    )
+    result = cursor.fetchone()
+    if result is not None:
+        return True
+    # Fallback for PostgreSQL
+    try:
+        cursor.execute(
+            """
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = %s AND column_name = %s
+            """,
+            [table_name, column_name],
+        )
+        return cursor.fetchone() is not None
+    except Exception:
+        return False
+
+
+def table_exists(cursor, table_name):
+    """Check if a table exists (works for both SQLite and PostgreSQL)."""
+    try:
+        cursor.execute(f"SELECT 1 FROM {table_name} LIMIT 1")
+        return True
+    except Exception:
+        return False
+
+
+def add_fk_column(apps, schema_editor):
+    """Add FK column if it doesn't exist."""
+    with schema_editor.connection.cursor() as cursor:
+        if column_exists(cursor, "schools_invoice", "school_year_id"):
+            return  # Column already exists
+
+        vendor = schema_editor.connection.vendor
+        if vendor == "postgresql":
+            cursor.execute(
+                """
+                ALTER TABLE schools_invoice
+                ADD COLUMN school_year_id INTEGER
+                REFERENCES schools_schoolyear(id) ON DELETE RESTRICT
+                """
+            )
+        else:
+            # SQLite
+            cursor.execute(
+                """
+                ALTER TABLE schools_invoice
+                ADD COLUMN school_year_id INTEGER
+                REFERENCES schools_schoolyear(id)
+                """
+            )
+
+
+def remove_fk_column(apps, schema_editor):
+    """Remove FK column."""
+    with schema_editor.connection.cursor() as cursor:
+        if not column_exists(cursor, "schools_invoice", "school_year_id"):
+            return
+        cursor.execute("ALTER TABLE schools_invoice DROP COLUMN school_year_id")
+
+
 def migrate_m2m_to_fk(apps, schema_editor):
     """Migrate school_years M2M to school_year FK, keeping the first year."""
+    with schema_editor.connection.cursor() as cursor:
+        if not table_exists(cursor, "schools_invoice_school_years"):
+            return  # M2M already removed, skip data migration
+
     Invoice = apps.get_model("schools", "Invoice")
     for invoice in Invoice.objects.all():
         # Get the first school year from the M2M relationship (ordered by start_date desc)
@@ -23,31 +93,53 @@ def reverse_fk_to_m2m(apps, schema_editor):
             invoice.school_years.add(invoice.school_year)
 
 
+def remove_m2m_table(apps, schema_editor):
+    """Remove M2M table if it exists."""
+    with schema_editor.connection.cursor() as cursor:
+        if not table_exists(cursor, "schools_invoice_school_years"):
+            return
+        cursor.execute("DROP TABLE schools_invoice_school_years")
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ("schools", "0018_populate_school_years"),
     ]
 
     operations = [
-        # First, add the new FK field
-        migrations.AddField(
-            model_name="invoice",
-            name="school_year",
-            field=models.ForeignKey(
-                blank=True,
-                null=True,
-                on_delete=django.db.models.deletion.PROTECT,
-                related_name="invoices_new",  # Temporary related_name to avoid conflict
-                to="schools.schoolyear",
-                verbose_name="Skoleår",
-            ),
+        # Add FK field - use SeparateDatabaseAndState for idempotent DB operation
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunPython(add_fk_column, remove_fk_column),
+            ],
+            state_operations=[
+                migrations.AddField(
+                    model_name="invoice",
+                    name="school_year",
+                    field=models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="invoices_new",
+                        to="schools.schoolyear",
+                        verbose_name="Skoleår",
+                    ),
+                ),
+            ],
         ),
-        # Migrate data from M2M to FK
+        # Migrate data from M2M to FK (handles partial migration state)
         migrations.RunPython(migrate_m2m_to_fk, reverse_fk_to_m2m),
-        # Remove the M2M field
-        migrations.RemoveField(
-            model_name="invoice",
-            name="school_years",
+        # Remove M2M - use SeparateDatabaseAndState for idempotent operation
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunPython(remove_m2m_table, migrations.RunPython.noop),
+            ],
+            state_operations=[
+                migrations.RemoveField(
+                    model_name="invoice",
+                    name="school_years",
+                ),
+            ],
         ),
         # Update FK field to use correct related_name
         migrations.AlterField(
