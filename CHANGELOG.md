@@ -15,6 +15,18 @@ Systemet forhindrer nu at oprette to fakturaer med samme fakturanummer for samme
 ### Fjernet skoleårsredigering
 Menupunktet "Skoleår" er fjernet da skoleår nu oprettes automatisk og ikke behøver manuel redigering.
 
+### Forbedret visning af manglende fakturaer
+Listen over manglende fakturaer er blevet forbedret:
+
+- **Kun relevante skoleår:** Viser kun indeværende og forrige skoleår
+- **Kun relevante skoler:** Viser kun skoler i forankring eller skoler der har brugt flere pladser end de har fået tildelt
+- **Fakturatype:** Viser tydeligt om der mangler en "Forankring"-faktura eller en faktura for ekstra pladser
+- **Separate fakturaer:** Skoler der både er i forankring og har brugt ekstra pladser vises med to separate linjer
+- **Alfabetisk sortering:** Listen er nu sorteret alfabetisk efter skolenavn
+
+### Rettet kolonner i dashboard
+Kolonnevisningen i "Kommende kurser" på dashboardet er rettet så kursus, dato, sted og tilmeldinger vises korrekt.
+
 ### Forbedret bulk import af kursustilmeldinger
 Bulk import er blevet forbedret med ny kolonnerækkefølge og bedre håndtering af data:
 
