@@ -749,4 +749,5 @@ class SchoolPublicView(DetailView):
         school = self.object
         context["people"] = school.people.all()
         context["course_signups"] = school.course_signups.select_related("course").order_by("-course__start_date")
+        context["enrollment_history"] = school.get_enrollment_history()
         return context
