@@ -40,6 +40,8 @@
                     <dd class="col-sm-8">{% for instructor in course.instructors.all %}{{ instructor.name }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</dd>
                     <dt class="col-sm-4">Kapacitet</dt>
                     <dd class="col-sm-8">{{ course.capacity }}</dd>
+                    <dt class="col-sm-4">Tilmeldingsfrist</dt>
+                    <dd class="col-sm-8">{{ course.registration_deadline|date:"d. M Y"|default:"-" }}</dd>
                     <dt class="col-sm-4">Tilmeldinger</dt>
                     <dd class="col-sm-8">{{ course.signup_count }} / {{ course.capacity }}</dd>
                     <dt class="col-sm-4">Fremmødte</dt>

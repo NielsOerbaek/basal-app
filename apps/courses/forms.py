@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Column, Div, Field, Layout, Row, Submit
 from django import forms
@@ -64,10 +66,11 @@ class CourseForm(forms.ModelForm):
 
     class Meta:
         model = Course
-        fields = ["start_date", "end_date", "location", "capacity", "is_published", "comment"]
+        fields = ["start_date", "end_date", "location", "capacity", "registration_deadline", "is_published", "comment"]
         widgets = {
             "start_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "end_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "registration_deadline": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
         }
 
     def __init__(self, *args, **kwargs):
@@ -138,6 +141,16 @@ class CourseForm(forms.ModelForm):
                 ),
             ),
             "capacity",
+            Field(
+                "registration_deadline",
+                wrapper_class="mt-3",
+            ),
+            HTML(
+                "<p class='text-muted small mt-1 mb-3'>"
+                "<i class='bi bi-info-circle me-1'></i>"
+                "Tilmeldingsfristen sættes automatisk til 5 uger før kursusstart hvis den ikke udfyldes."
+                "</p>"
+            ),
             "is_published",
             "comment",
         )
@@ -195,6 +208,10 @@ class CourseForm(forms.ModelForm):
 
     def save(self, commit=True):
         instance = super().save(commit=False)
+
+        # Set default registration_deadline if not provided (5 weeks before start_date)
+        if not instance.registration_deadline and instance.start_date:
+            instance.registration_deadline = instance.start_date - timedelta(weeks=5)
 
         if commit:
             instance.save()
@@ -268,7 +285,10 @@ class SchoolChoiceField(forms.ModelChoiceField):
 
 class PublicSignUpForm(forms.Form):
     course = forms.ModelChoiceField(
-        queryset=Course.objects.filter(is_published=True, start_date__gte=timezone.now().date()),
+        queryset=Course.objects.filter(
+            is_published=True,
+            registration_deadline__gte=timezone.now().date(),
+        ),
         label="Vælg et kursus",
         empty_label="Vælg et kursus...",
     )
