@@ -662,25 +662,22 @@ class MissingInvoicesView(ListView):
         relevant_years = self._get_relevant_years()
 
         # For hvert skoleår, find skoler der mangler faktura
-        # Schools can need TWO invoices: one for forankring and one for extra seats
+        # Forankring invoices are per school year
+        # Extra seats invoices are NOT per school year - only one needed ever
         missing = []
+        schools_with_extra_seats_shown = set()  # Track schools already shown for extra seats
+
         for school_year in relevant_years:
             enrolled_schools = school_year.get_enrolled_schools()
             for school in enrolled_schools:
                 # Check existing invoices for this school year
-                invoices = school.invoices.filter(school_year=school_year)
+                invoices_for_year = school.invoices.filter(school_year=school_year)
 
-                # Determine if school needs forankring invoice
+                # Determine if school needs forankring invoice (per school year)
                 is_forankring = school.enrolled_at and school.enrolled_at < school_year.start_date
 
-                # Calculate extra seats beyond allocation
-                extra_seats = max(0, school.used_seats - school.total_seats)
-
-                # Check if forankring invoice exists (look for invoice without "ekstra" in comment)
-                has_forankring_invoice = invoices.exclude(comment__icontains="ekstra").exists()
-
-                # Check if extra seats invoice exists (look for invoice with "ekstra" in comment)
-                has_extra_seats_invoice = invoices.filter(comment__icontains="ekstra").exists()
+                # Check if forankring invoice exists for this year
+                has_forankring_invoice = invoices_for_year.exclude(comment__icontains="ekstra").exists()
 
                 # Add missing forankring invoice
                 if is_forankring and not has_forankring_invoice:
@@ -693,16 +690,28 @@ class MissingInvoicesView(ListView):
                         }
                     )
 
-                # Add missing extra seats invoice
-                if extra_seats > 0 and not has_extra_seats_invoice:
-                    missing.append(
-                        {
-                            "school": school,
-                            "school_year": school_year,
-                            "invoice_type": "extra_seats",
-                            "extra_seats": extra_seats,
-                        }
-                    )
+        # Check for extra seats separately (not per school year)
+        # Only show once per school, for the current year
+        current_year = relevant_years.first() if relevant_years else None
+        if current_year:
+            for school in current_year.get_enrolled_schools():
+                extra_seats = max(0, school.used_seats - school.total_seats)
+                if extra_seats > 0:
+                    # Check if ANY extra seats invoice exists (across all years)
+                    has_extra_seats_invoice = school.invoices.filter(
+                        comment__icontains="ekstra"
+                    ).exists()
+
+                    if not has_extra_seats_invoice:
+                        missing.append(
+                            {
+                                "school": school,
+                                "school_year": current_year,
+                                "invoice_type": "extra_seats",
+                                "extra_seats": extra_seats,
+                            }
+                        )
+
         return missing
 
     def get_context_data(self, **kwargs):
