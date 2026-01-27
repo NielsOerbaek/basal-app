@@ -82,7 +82,6 @@ class Course(models.Model):
         null=True,
         blank=True,
         verbose_name="Tilmeldingsfrist",
-        help_text="Sidste dato for tilmelding. Som udgangspunkt 5 uger før kursusstart.",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
