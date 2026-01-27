@@ -180,6 +180,11 @@
                                 <strong>{{ signup.participant_name }}</strong>
                                 {% if signup.participant_title %}<span class="text-muted">, {{ signup.participant_title|lower }}</span>{% endif %}
                             </div>
+                            <div class="small text-muted">
+                                {% if signup.participant_email %}<i class="bi bi-envelope me-1"></i><a href="mailto:{{ signup.participant_email }}">{{ signup.participant_email }}</a>{% endif %}
+                                {% if signup.participant_email and signup.participant_phone %}<span class="mx-2">|</span>{% endif %}
+                                {% if signup.participant_phone %}<i class="bi bi-telephone me-1"></i>{{ signup.participant_phone }}{% endif %}
+                            </div>
                             <div class="small">
                                 <a href="{% url 'courses:detail' signup.course.pk %}">{{ signup.course.title }}</a>
                                 <span class="badge bg-{% if signup.attendance == 'present' %}success{% elif signup.attendance == 'absent' %}danger{% else %}secondary{% endif %} ms-1">
