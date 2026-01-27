@@ -126,7 +126,9 @@ class CourseSignupForm(DynamicFieldsMixin, forms.Form):
                             <dt><i class="bi bi-calendar-event me-1"></i>Dato</dt>
                             <dd id="course-date" class="mb-2">-</dd>
                             <dt><i class="bi bi-geo-alt me-1"></i>Sted</dt>
-                            <dd id="course-location" class="mb-0">-</dd>
+                            <dd id="course-location" class="mb-2">-</dd>
+                            <dt><i class="bi bi-clock me-1"></i>Tilmeldingsfrist</dt>
+                            <dd id="course-deadline" class="mb-0">-</dd>
                         </dl>
                     </div>
                     <div class="col-md-6">

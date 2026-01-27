@@ -126,7 +126,7 @@
     </div>
 
     <button type="button" class="btn btn-outline-primary mb-4" id="add-participant">
-        <i class="bi bi-plus-lg me-1"></i>Tilføj person
+        <i class="bi bi-plus-lg me-1"></i>Tilføj deltager
     </button>
 
     <div>
@@ -146,6 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const courseDetails = document.getElementById('course-details');
     const courseDate = document.getElementById('course-date');
     const courseLocation = document.getElementById('course-location');
+    const courseDeadline = document.getElementById('course-deadline');
     const courseUndervisere = document.getElementById('course-undervisere');
     const courseAvailableSeats = document.getElementById('course-available-seats');
     const courseFullWarning = document.getElementById('course-full-warning');
@@ -249,6 +250,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Update course details
                 courseDate.textContent = data.date;
                 courseLocation.textContent = data.location || '-';
+                courseDeadline.textContent = data.registration_deadline || '-';
                 courseUndervisere.textContent = data.undervisere || '-';
                 courseDetails.style.display = 'block';
 

@@ -284,6 +284,11 @@ class CheckCourseSeatsView(View):
             else:
                 date_str = f"{course.start_date.strftime('%-d. %b')} - {course.end_date.strftime('%-d. %b %Y')}"
 
+            # Format registration deadline
+            deadline_str = ""
+            if course.registration_deadline:
+                deadline_str = course.registration_deadline.strftime("%-d. %b %Y")
+
             return JsonResponse(
                 {
                     "capacity": course.capacity,
@@ -292,8 +297,9 @@ class CheckCourseSeatsView(View):
                     "is_full": course.is_full,
                     "title": course.display_name,
                     "date": date_str,
-                    "location": course.location.name if course.location else "",
+                    "location": course.location.full_address if course.location else "",
                     "undervisere": ", ".join(course.instructors.values_list("name", flat=True)),
+                    "registration_deadline": deadline_str,
                 }
             )
         except Course.DoesNotExist:

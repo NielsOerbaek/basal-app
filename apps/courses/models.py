@@ -115,14 +115,21 @@ class Course(models.Model):
 
     @property
     def display_name(self):
-        """Auto-generated course name with dates."""
+        """Auto-generated course name with dates and location."""
         if self.start_date == self.end_date:
             date_str = self.start_date.strftime("%-d. %b %Y").lower()
         else:
             start_str = self.start_date.strftime("%-d. %b").lower()
             end_str = self.end_date.strftime("%-d. %b %Y").lower()
             date_str = f"{start_str} - {end_str}"
-        return f"Kompetenceudviklingskursus, {date_str}"
+
+        name = f"Kompetenceudviklingskursus, {date_str}"
+
+        # Add location municipality/city
+        if self.location and self.location.municipality:
+            name = f"{name} - {self.location.municipality}"
+
+        return name
 
 
 class CourseSignUp(models.Model):

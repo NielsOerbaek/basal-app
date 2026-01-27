@@ -288,7 +288,9 @@ class PublicSignUpForm(forms.Form):
         queryset=Course.objects.filter(
             is_published=True,
             registration_deadline__gte=timezone.now().date(),
-        ),
+        )
+        .select_related("location")
+        .prefetch_related("instructors"),
         label="Vælg et kursus",
         empty_label="Vælg et kursus...",
     )
