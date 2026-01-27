@@ -650,26 +650,49 @@ class MissingInvoicesView(ListView):
     template_name = "schools/missing_invoices.html"
     context_object_name = "missing_invoices"
 
+    def _get_relevant_years(self):
+        """Get current and previous school years (max 2)."""
+        # Get the most recent school year that has started
+        from datetime import date
+
+        today = date.today()
+        return SchoolYear.objects.filter(start_date__lte=today).order_by("-start_date")[:2]
+
     def get_queryset(self):
-        # For hvert skoleår, find skoler der var tilmeldt men ikke har faktura
+        relevant_years = self._get_relevant_years()
+
+        # For hvert skoleår, find skoler der mangler faktura
         missing = []
-        for school_year in SchoolYear.objects.all().order_by("-start_date"):
+        for school_year in relevant_years:
             enrolled_schools = school_year.get_enrolled_schools()
             for school in enrolled_schools:
                 # Tjek om skolen har en faktura for dette skoleår
                 has_invoice = school.invoices.filter(school_year=school_year).exists()
-                if not has_invoice:
+                if has_invoice:
+                    continue
+
+                # Determine if school needs invoice for this year
+                # Schools in "forankring" (enrolled before this year) always need invoice
+                is_forankring = school.enrolled_at and school.enrolled_at < school_year.start_date
+
+                # Calculate extra seats beyond allocation
+                extra_seats = max(0, school.used_seats - school.total_seats)
+
+                # Only add to missing if school needs an invoice
+                if is_forankring or extra_seats > 0:
                     missing.append(
                         {
                             "school": school,
                             "school_year": school_year,
+                            "is_forankring": is_forankring,
+                            "extra_seats": extra_seats,
                         }
                     )
         return missing
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["school_years"] = SchoolYear.objects.all().order_by("-start_date")
+        context["school_years"] = self._get_relevant_years()
         return context
 
 

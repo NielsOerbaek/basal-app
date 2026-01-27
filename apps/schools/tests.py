@@ -1455,31 +1455,46 @@ class MissingInvoicesViewTest(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-    def test_missing_invoices_shows_school_without_invoice(self):
-        """Schools enrolled in a year without invoice appear in list."""
+    def test_missing_invoices_shows_forankring_school_without_invoice(self):
+        """Forankring schools (enrolled before year) without invoice appear in list."""
         School.objects.create(
-            name="School Without Invoice",
+            name="Forankring School",
             adresse="Test Address",
             kommune="København",
-            enrolled_at=date(2024, 9, 1),  # Enrolled during 2024/25
+            enrolled_at=date(2023, 9, 1),  # Enrolled before 2024/25 = forankring
         )
 
         url = reverse("schools:missing-invoices")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "School Without Invoice")
+        self.assertContains(response, "Forankring School")
         self.assertContains(response, "2024/25")
 
-    def test_missing_invoices_excludes_school_with_invoice(self):
-        """Schools with invoice for a year don't appear in missing list."""
-        from .models import Invoice
+    def test_missing_invoices_excludes_new_school_without_invoice(self):
+        """New schools (enrolled during year) without invoice don't appear (unless exceeding seats)."""
+        School.objects.create(
+            name="New School",
+            adresse="Test Address",
+            kommune="København",
+            enrolled_at=date(2024, 9, 1),  # Enrolled during 2024/25 = new
+        )
+
+        url = reverse("schools:missing-invoices")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        # New schools don't need invoice in first year
+        self.assertNotContains(response, "New School")
+
+    def test_missing_invoices_excludes_forankring_school_with_invoice(self):
+        """Forankring schools with invoice for a year don't appear in missing list."""
 
         school = School.objects.create(
             name="School With Invoice",
             adresse="Test Address",
             kommune="København",
-            enrolled_at=date(2024, 9, 1),
+            enrolled_at=date(2023, 9, 1),  # Forankring
         )
         Invoice.objects.create(
             school=school,

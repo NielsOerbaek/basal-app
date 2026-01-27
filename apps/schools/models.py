@@ -242,7 +242,11 @@ class School(models.Model):
             return False
         from apps.schools.school_years import get_current_school_year
 
-        return self.enrolled_at < get_current_school_year().start_date
+        try:
+            current_year = get_current_school_year()
+            return self.enrolled_at < current_year.start_date
+        except SchoolYear.DoesNotExist:
+            return False
 
     def get_status_for_year(self, year_str: str) -> tuple[str, str, str]:
         """

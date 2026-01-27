@@ -17,7 +17,7 @@
                     <th>Skole</th>
                     <th>Kommune</th>
                     <th>Skoleår</th>
-                    <th>Tilmeldingsdato</th>
+                    <th>Type</th>
                     <th></th>
                 </tr>
             </thead>
@@ -35,7 +35,16 @@
                             {{ item.school_year.name }}
                         </span>
                     </td>
-                    <td>{{ item.school.enrolled_at|date:"d. M Y" }}</td>
+                    <td>
+                        {% if item.is_forankring and item.extra_seats > 0 %}
+                            <span class="badge bg-primary">Forankring</span>
+                            <span class="badge bg-warning text-dark">{{ item.extra_seats }} ekstra plads{% if item.extra_seats != 1 %}er{% endif %}</span>
+                        {% elif item.is_forankring %}
+                            <span class="badge bg-primary">Forankring</span>
+                        {% elif item.extra_seats > 0 %}
+                            <span class="badge bg-warning text-dark">{{ item.extra_seats }} ekstra plads{% if item.extra_seats != 1 %}er{% endif %}</span>
+                        {% endif %}
+                    </td>
                     <td class="text-end">
                         <a href="{% url 'schools:invoice-create' item.school.pk %}" class="btn btn-sm btn-primary">
                             <i class="bi bi-plus-lg me-1"></i>Opret faktura
