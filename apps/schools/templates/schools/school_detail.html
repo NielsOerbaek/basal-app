@@ -100,7 +100,19 @@
                                 </div>
                             </div>
                             <div class="mb-2">
-                                <label class="form-label small fw-bold mb-1">Direkte link</label>
+                                <label class="form-label small fw-bold mb-1">Skolens side</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="text" class="form-control form-control-sm" id="school-public-link"
+                                           value="{{ request.scheme }}://{{ request.get_host }}/school/{{ school.signup_token }}/"
+                                           readonly style="font-size: 0.75rem;">
+                                    <button class="btn btn-outline-secondary btn-sm" type="button"
+                                            onclick="copyToClipboard('school-public-link')" title="Kopiér">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold mb-1">Tilmeldingslink</label>
                                 <div class="input-group input-group-sm">
                                     <input type="text" class="form-control form-control-sm" id="signup-link"
                                            value="{{ request.scheme }}://{{ request.get_host }}/signup/course/?token={{ school.signup_token }}"
