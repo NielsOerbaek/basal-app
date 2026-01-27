@@ -1,6 +1,6 @@
-# Ændringer siden 16. januar 2026
+# Ændringer
 
-Oversigt over nye funktioner og ændringer i Basal-systemet.
+Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 2026
 
 ---
 
@@ -8,6 +8,19 @@ Oversigt over nye funktioner og ændringer i Basal-systemet.
 
 ### Tilmeldingsfrist på kurser
 Kurser har nu en tilmeldingsfrist som automatisk sættes til 5 uger før kursusstart. Efter fristen vises kurset ikke længere på den offentlige tilmeldingsside. Fristen kan tilpasses manuelt for hvert kursus.
+
+### Forbedret kursusvisning på tilmeldingssiden
+Når man vælger et kursus på tilmeldingssiden, vises nu et detaljekort med:
+- Dato
+- Sted (fuld adresse)
+- Tilmeldingsfrist
+- Undervisere
+- Ledige pladser
+
+Kursustitlen i dropdown viser nu også lokationens by/kommune, f.eks. "Kompetenceudviklingskursus, 15. mar 2026 - København".
+
+### Flere kurser på samme dato
+Det er nu muligt at oprette flere kurser med samme start- og slutdato. Begrænsningen er fjernet da det kan være relevant at afholde flere kurser samme dag forskellige steder.
 
 ### Om-side med ændringslog
 Der er tilføjet en "Om Basal"-side på `/om/` som viser systemets ændringslog. Siden er tilgængelig fra brugermenuen og giver overblik over nye funktioner og ændringer.
