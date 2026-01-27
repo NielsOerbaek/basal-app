@@ -186,7 +186,7 @@
                                 {% if signup.participant_phone %}<i class="bi bi-telephone me-1"></i>{{ signup.participant_phone }}{% endif %}
                             </div>
                             <div class="small">
-                                <a href="{% url 'courses:detail' signup.course.pk %}">{{ signup.course.title }}</a>
+                                <a href="{% url 'courses:detail' signup.course.pk %}">{{ signup.course.display_name }}</a>
                                 <span class="badge bg-{% if signup.attendance == 'present' %}success{% elif signup.attendance == 'absent' %}danger{% else %}secondary{% endif %} ms-1">
                                     {{ signup.get_attendance_display }}
                                 </span>

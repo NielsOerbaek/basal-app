@@ -381,7 +381,7 @@ class BulkImportView(View):
         course = get_object_or_404(Course, pk=pk)
         raw_data = request.POST.get("data", "")
 
-        # Parse pasted data (tab-separated: first_name, last_name, school, email, phone, is_underviser)
+        # Parse pasted data (tab-separated: first_name, last_name, phone, email, school, is_underviser)
         rows = []
         lines = raw_data.strip().split("\n")
 
@@ -399,9 +399,9 @@ class BulkImportView(View):
 
             first_name = parts[0].strip()
             last_name = parts[1].strip() if len(parts) > 1 else ""
-            school_name = parts[2].strip() if len(parts) > 2 else ""
+            phone = parts[2].strip() if len(parts) > 2 else ""
             email = parts[3].strip() if len(parts) > 3 else ""
-            phone = parts[4].strip() if len(parts) > 4 else ""
+            school_name = parts[4].strip() if len(parts) > 4 else ""
             is_underviser_str = parts[5].strip().lower() if len(parts) > 5 else ""
 
             # Parse is_underviser (default True)
@@ -413,26 +413,47 @@ class BulkImportView(View):
             if not name or not school_name:
                 continue
 
-            # Find matching schools
-            matches = self._find_school_matches(school_name)
+            # Find matching schools (handle "School, Municipality" format)
+            # Extract school name before comma for matching, but keep original for display
+            if "," in school_name:
+                parts_split = school_name.split(",", 1)
+                school_search_term = parts_split[0].strip()
+                kommune_guess = parts_split[1].strip() if len(parts_split) > 1 else ""
+                # Remove "Kommune" suffix if present for cleaner display
+                if kommune_guess.lower().endswith(" kommune"):
+                    kommune_guess = kommune_guess[:-8].strip()
+            else:
+                school_search_term = school_name
+                kommune_guess = ""
+
+            matches = self._find_school_matches(school_search_term, school_name)
+
+            # Check for exact match (either full name or school name without municipality)
+            exact_match = None
+            if matches:
+                first_match_lower = matches[0].name.lower()
+                if first_match_lower == school_name.lower() or first_match_lower == school_search_term.lower():
+                    exact_match = matches[0]
 
             rows.append(
                 {
                     "index": len(rows),
                     "name": name,
                     "school_name": school_name,
+                    "school_search_term": school_search_term,
+                    "kommune_guess": kommune_guess,
                     "email": email,
                     "phone": phone,
                     "is_underviser": is_underviser,
                     "matches": matches,
-                    "exact_match": matches[0] if matches and matches[0].name.lower() == school_name.lower() else None,
+                    "exact_match": exact_match,
                 }
             )
 
         if not rows:
             messages.error(
                 request,
-                "Ingen gyldige rækker fundet. Forventet format: Fornavn, Efternavn, Skole, Email, Telefon, Er underviser (tab-separeret)",
+                "Ingen gyldige rækker fundet. Forventet format: Fornavn, Efternavn, Tlf., Mail, Skole, Underviser (tab-separeret)",
             )
             return render(request, "courses/bulk_import_modal.html", {"course": course})
 
@@ -449,16 +470,22 @@ class BulkImportView(View):
             },
         )
 
-    def _find_school_matches(self, search_term):
+    def _find_school_matches(self, search_term, original_name=None):
         from apps.schools.models import School
 
         if not search_term:
             return []
 
-        # Try exact match first
+        # Try exact match first with the search term (school name without municipality)
         exact = School.objects.active().filter(name__iexact=search_term).first()
         if exact:
             return [exact]
+
+        # Also try with original name if different (in case DB has full "School, Municipality" format)
+        if original_name and original_name != search_term:
+            exact = School.objects.active().filter(name__iexact=original_name).first()
+            if exact:
+                return [exact]
 
         # Find schools containing the search term
         contains = list(School.objects.active().filter(name__icontains=search_term)[:5])
@@ -491,6 +518,7 @@ class BulkImportConfirmView(View):
         count = int(request.POST.get("count", 0))
         created = 0
         skipped = 0
+        schools_created = 0
         errors = []
 
         for i in range(count):
@@ -498,23 +526,70 @@ class BulkImportConfirmView(View):
             name = request.POST.get(f"name_{i}")
             email = request.POST.get(f"email_{i}", "")
             phone = request.POST.get(f"phone_{i}", "")
-            is_underviser = request.POST.get(f"is_underviser_{i}", "1") == "1"
+            is_underviser = f"is_underviser_{i}" in request.POST
 
             if not school_id or school_id == "skip":
                 skipped += 1
                 continue
 
             try:
-                school = School.objects.get(pk=school_id)
+                school = None
+                other_organization = ""
 
-                # Check for duplicate
-                if CourseSignUp.objects.filter(course=course, school=school, participant_name=name).exists():
-                    errors.append(f"{name} ({school.name}) er allerede tilmeldt")
-                    continue
+                if school_id == "other":
+                    # Use other organization field
+                    other_organization = request.POST.get(f"other_org_{i}", "").strip()
+                    if not other_organization:
+                        errors.append(f"{name}: Angiv venligst navn på organisation")
+                        continue
+
+                    # Check for duplicate (by name and other_organization)
+                    if CourseSignUp.objects.filter(
+                        course=course, school__isnull=True, other_organization=other_organization, participant_name=name
+                    ).exists():
+                        errors.append(f"{name} ({other_organization}) er allerede tilmeldt")
+                        continue
+
+                elif school_id == "new_school":
+                    # Create new school
+                    new_school_name = request.POST.get(f"new_school_name_{i}", "").strip()
+                    new_school_kommune = request.POST.get(f"new_school_kommune_{i}", "").strip()
+
+                    if not new_school_name or not new_school_kommune:
+                        errors.append(f"{name}: Angiv venligst både skolenavn og kommune")
+                        continue
+
+                    # Check if school already exists
+                    existing = School.objects.filter(name__iexact=new_school_name, kommune__iexact=new_school_kommune).first()
+                    if existing:
+                        school = existing
+                    else:
+                        # Create new school with placeholder address
+                        school = School.objects.create(
+                            name=new_school_name,
+                            kommune=new_school_kommune,
+                            adresse="(ikke angivet)",
+                        )
+                        schools_created += 1
+
+                    # Check for duplicate
+                    if CourseSignUp.objects.filter(course=course, school=school, participant_name=name).exists():
+                        errors.append(f"{name} ({school.name}) er allerede tilmeldt")
+                        continue
+
+                else:
+                    # Regular school selection
+                    school = School.objects.get(pk=school_id)
+
+                    # Check for duplicate
+                    if CourseSignUp.objects.filter(course=course, school=school, participant_name=name).exists():
+                        errors.append(f"{name} ({school.name}) er allerede tilmeldt")
+                        continue
 
                 CourseSignUp.objects.create(
                     course=course,
                     school=school,
+                    other_organization=other_organization,
                     participant_name=name,
                     participant_email=email,
                     participant_phone=phone,
@@ -531,6 +606,8 @@ class BulkImportConfirmView(View):
         msg_parts = []
         if created:
             msg_parts.append(f'{created} tilmelding{"er" if created != 1 else ""} oprettet')
+        if schools_created:
+            msg_parts.append(f'{schools_created} ny{"e" if schools_created != 1 else ""} skole{"r" if schools_created != 1 else ""} oprettet')
         if skipped:
             msg_parts.append(f"{skipped} sprunget over")
         if errors:

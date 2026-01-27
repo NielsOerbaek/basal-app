@@ -132,7 +132,20 @@ class Course(models.Model):
 
 
 class CourseSignUp(models.Model):
-    school = models.ForeignKey("schools.School", on_delete=models.PROTECT, related_name="course_signups")
+    school = models.ForeignKey(
+        "schools.School",
+        on_delete=models.PROTECT,
+        related_name="course_signups",
+        null=True,
+        blank=True,
+        help_text="Skole - kan være tom hvis deltageren er fra en anden organisation",
+    )
+    other_organization = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Anden organisation",
+        help_text="Udfyldes hvis deltageren ikke er fra en skole (f.eks. kommune, forvaltning)",
+    )
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="signups")
     participant_name = models.CharField(max_length=255)
     participant_email = models.EmailField(blank=True, help_text="E-mail til kontakt")
@@ -146,12 +159,15 @@ class CourseSignUp(models.Model):
 
     class Meta:
         ordering = ["school__name", "participant_name"]
-        constraints = [
-            models.UniqueConstraint(fields=["course", "school", "participant_name"], name="unique_signup_per_course")
-        ]
 
     def __str__(self):
-        return f"{self.participant_name} ({self.school.name})"
+        org = self.school.name if self.school else self.other_organization or "Ukendt"
+        return f"{self.participant_name} ({org})"
+
+    @property
+    def organization_name(self):
+        """Returns the school name or other organization name."""
+        return self.school.name if self.school else self.other_organization or ""
 
 
 class CourseMaterial(models.Model):

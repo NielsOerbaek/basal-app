@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="bi bi-calendar-event me-2"></i>{{ course.display_name }}</h1>
+    <h2><i class="bi bi-calendar-event me-2"></i>{{ course.display_name }}</h2>
     <div>
         <a href="{% url 'courses:rollcall' course.pk %}" class="btn btn-outline-success">
             <i class="bi bi-clipboard-check me-1"></i>Fremmøde
@@ -156,7 +156,13 @@
                                 <i class="bi bi-x-circle text-secondary" title="Ikke underviser"></i>
                                 {% endif %}
                             </td>
-                            <td><a href="{% url 'schools:detail' signup.school.pk %}">{{ signup.school.name }}</a></td>
+                            <td>
+                                {% if signup.school %}
+                                <a href="{% url 'schools:detail' signup.school.pk %}">{{ signup.school.name }}</a>
+                                {% else %}
+                                <span class="text-muted">{{ signup.other_organization }}</span>
+                                {% endif %}
+                            </td>
                             <td>
                                 <span class="badge bg-{% if signup.attendance == 'present' %}success{% elif signup.attendance == 'absent' %}danger{% else %}secondary{% endif %}">
                                     {{ signup.get_attendance_display }}

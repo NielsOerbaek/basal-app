@@ -250,6 +250,7 @@ class CourseSignUpForm(forms.ModelForm):
         model = CourseSignUp
         fields = [
             "school",
+            "other_organization",
             "course",
             "participant_name",
             "participant_email",
@@ -261,10 +262,13 @@ class CourseSignUpForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["school"].queryset = School.objects.active()
+        self.fields["school"].required = False
+        self.fields["other_organization"].widget.attrs["placeholder"] = "Udfyldes hvis deltageren ikke er fra en skole"
         self.helper = FormHelper()
         self.helper.layout = Layout(
             "course",
             "school",
+            "other_organization",
             "participant_name",
             Row(
                 Column("participant_email", css_class="col-md-6"),
@@ -274,6 +278,16 @@ class CourseSignUpForm(forms.ModelForm):
             "is_underviser",
             Submit("submit", "Gem tilmelding", css_class="btn btn-primary"),
         )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        school = cleaned_data.get("school")
+        other_organization = cleaned_data.get("other_organization")
+
+        if not school and not other_organization:
+            raise forms.ValidationError("Vælg enten en skole eller angiv en anden organisation.")
+
+        return cleaned_data
 
 
 class SchoolChoiceField(forms.ModelChoiceField):

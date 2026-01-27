@@ -178,7 +178,11 @@
                 {% for signup in recent_signups %}
                 <li class="list-group-item">
                     <div class="d-flex justify-content-between">
+                        {% if signup.school %}
                         <a href="{% url 'schools:detail' signup.school.pk %}"><strong>{{ signup.school.name }} ({{ signup.school.kommune }})</strong></a>
+                        {% else %}
+                        <span class="text-muted"><strong>{{ signup.other_organization }}</strong></span>
+                        {% endif %}
                         <small class="text-muted">{{ signup.created_at|date:"d. M" }}</small>
                     </div>
                     <small class="text-muted">{{ signup.course.display_name }}{% if signup.participant_title %} - {{ signup.participant_title }}{% endif %}</small>

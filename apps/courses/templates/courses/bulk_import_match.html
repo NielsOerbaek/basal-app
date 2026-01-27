@@ -17,7 +17,7 @@
 
 <div class="alert alert-info">
     <i class="bi bi-info-circle me-2"></i>
-    Vælg den korrekte skole for hver deltager. Hvis skolens navn ikke matcher præcist, vælg fra listen eller søg efter den rigtige skole.
+    Vælg den korrekte skole for hver deltager. Brug "Anden organisation" for deltagere der ikke er fra en skole, eller "Opret ny skole" hvis skolen mangler i listen.
 </div>
 
 <form method="post" action="{% url 'courses:bulk-import-confirm' course.pk %}">
@@ -29,10 +29,12 @@
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th style="width: 25%">Deltager</th>
-                        <th style="width: 20%">Indtastet skole</th>
-                        <th style="width: 35%">Vælg skole</th>
-                        <th style="width: 20%">Email</th>
+                        <th>Deltager</th>
+                        <th>Tlf.</th>
+                        <th>Mail</th>
+                        <th>Indtastet</th>
+                        <th>Vælg skole / organisation</th>
+                        <th class="text-center">Underviser</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -41,16 +43,21 @@
                         <td>
                             <strong>{{ row.name }}</strong>
                             <input type="hidden" name="name_{{ row.index }}" value="{{ row.name }}">
-                            <input type="hidden" name="email_{{ row.index }}" value="{{ row.email }}">
-                            <input type="hidden" name="phone_{{ row.index }}" value="{{ row.phone }}">
-                            <input type="hidden" name="is_underviser_{{ row.index }}" value="{% if row.is_underviser %}1{% else %}0{% endif %}">
                         </td>
                         <td>
-                            <span class="text-muted">{{ row.school_name }}</span>
+                            <input type="text" name="phone_{{ row.index }}" value="{{ row.phone }}" class="form-control form-control-sm" style="width: 110px;" placeholder="Telefon">
                         </td>
                         <td>
-                            <select name="school_{{ row.index }}" class="form-select form-select-sm">
+                            <input type="email" name="email_{{ row.index }}" value="{{ row.email }}" class="form-control form-control-sm" style="width: 180px;" placeholder="Email">
+                        </td>
+                        <td>
+                            <span class="text-muted small">{{ row.school_name }}</span>
+                        </td>
+                        <td>
+                            <select name="school_{{ row.index }}" class="form-select form-select-sm school-select" data-index="{{ row.index }}">
                                 <option value="skip">-- Spring over --</option>
+                                <option value="other">-- Anden organisation --</option>
+                                <option value="new_school">-- Opret ny skole --</option>
                                 {% if row.exact_match %}
                                 <option value="{{ row.exact_match.pk }}" selected>
                                     {{ row.exact_match.name }} ({{ row.exact_match.kommune }})
@@ -72,9 +79,18 @@
                                     {% endfor %}
                                 </optgroup>
                             </select>
+                            <!-- Other organization field -->
+                            <div class="other-org-field mt-2" id="other_org_{{ row.index }}" style="display: none;">
+                                <input type="text" name="other_org_{{ row.index }}" class="form-control form-control-sm" placeholder="Navn på organisation (f.eks. Frederikshavn Kommune)">
+                            </div>
+                            <!-- New school fields -->
+                            <div class="new-school-fields mt-2" id="new_school_{{ row.index }}" style="display: none;">
+                                <input type="text" name="new_school_name_{{ row.index }}" class="form-control form-control-sm mb-1" placeholder="Skolens navn" value="{{ row.school_search_term }}">
+                                <input type="text" name="new_school_kommune_{{ row.index }}" class="form-control form-control-sm" placeholder="Kommune" value="{{ row.kommune_guess }}">
+                            </div>
                         </td>
-                        <td>
-                            <small class="text-muted">{{ row.email|default:"-" }}</small>
+                        <td class="text-center">
+                            <input type="checkbox" name="is_underviser_{{ row.index }}" value="1" class="form-check-input" {% if row.is_underviser %}checked{% endif %}>
                         </td>
                     </tr>
                     {% endfor %}
@@ -92,4 +108,29 @@
         </button>
     </div>
 </form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.school-select').forEach(function(select) {
+        select.addEventListener('change', function() {
+            const index = this.dataset.index;
+            const otherField = document.getElementById('other_org_' + index);
+            const newSchoolFields = document.getElementById('new_school_' + index);
+
+            // Hide all extra fields first
+            otherField.style.display = 'none';
+            newSchoolFields.style.display = 'none';
+
+            // Show relevant field based on selection
+            if (this.value === 'other') {
+                otherField.style.display = 'block';
+            } else if (this.value === 'new_school') {
+                newSchoolFields.style.display = 'block';
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

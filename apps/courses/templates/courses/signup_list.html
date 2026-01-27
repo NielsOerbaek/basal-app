@@ -57,7 +57,13 @@
                 <tr>
                     <td>{{ signup.participant_name }}</td>
                     <td>{{ signup.participant_title|default:"-" }}</td>
-                    <td><a href="{% url 'schools:detail' signup.school.pk %}">{{ signup.school.name }}</a></td>
+                    <td>
+                        {% if signup.school %}
+                        <a href="{% url 'schools:detail' signup.school.pk %}">{{ signup.school.name }}</a>
+                        {% else %}
+                        <span class="text-muted">{{ signup.other_organization }}</span>
+                        {% endif %}
+                    </td>
                     <td><a href="{% url 'courses:detail' signup.course.pk %}">{{ signup.course.display_name }}</a></td>
                     <td>
                         <span class="badge bg-{% if signup.attendance == 'present' %}success{% elif signup.attendance == 'absent' %}danger{% else %}secondary{% endif %}">
