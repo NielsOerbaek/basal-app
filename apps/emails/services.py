@@ -9,6 +9,18 @@ from .models import EmailLog, EmailTemplate, EmailType
 
 logger = logging.getLogger(__name__)
 
+EMAIL_FOOTER = """
+<hr style="margin-top: 30px; border: none; border-top: 1px solid #ccc;">
+<p style="color: #666; font-size: 12px;">
+    Har du spørgsmål? Kontakt os på <a href="mailto:basal@sundkom.dk">basal@sundkom.dk</a>
+</p>
+"""
+
+
+def add_email_footer(body_html):
+    """Add standard footer to email body."""
+    return body_html + EMAIL_FOOTER
+
 
 def render_template(template_string, context_dict):
     """Render a template string with the given context."""
@@ -50,7 +62,7 @@ def send_email(email_type, signup, attachments=None):
 
     context = get_signup_context(signup)
     subject = render_template(template.subject, context)
-    body_html = render_template(template.body_html, context)
+    body_html = add_email_footer(render_template(template.body_html, context))
 
     # Check if we have a Resend API key
     if not settings.RESEND_API_KEY:
@@ -136,14 +148,20 @@ def send_school_enrollment_confirmation(school, contact_email, contact_name):
     subject = f"Velkommen til Basal - {school.name}"
 
     signup_url = f"{settings.SITE_URL}/signup/course/?token={school.signup_token}"
+    school_page_url = f"{settings.SITE_URL}/school/{school.signup_token}/"
 
-    body_html = f"""
+    body_html = add_email_footer(
+        f"""
     <p>Hej {contact_name},</p>
 
     <p>Tak for jeres tilmelding til Basal! {school.name} er nu tilmeldt.</p>
 
+    <h3>Jeres skoleside</h3>
+    <p>I har nu en side hvor I kan se jeres tilmeldinger og pladser:</p>
+    <p><a href="{school_page_url}">{school_page_url}</a></p>
+
     <h3>Tilmelding til kurser</h3>
-    <p>I kan nu tilmelde jer kurser på to måder:</p>
+    <p>I kan tilmelde jer kurser på to måder:</p>
 
     <ol>
         <li><strong>Via direkte link:</strong><br>
@@ -154,6 +172,7 @@ def send_school_enrollment_confirmation(school, contact_email, contact_name):
 
     <p>Med venlig hilsen,<br>Basal</p>
     """
+    )
 
     if not getattr(settings, "RESEND_API_KEY", None):
         logger.info(f"[EMAIL] To: {contact_email}")
@@ -204,7 +223,8 @@ def send_school_signup_notifications(school, contact_name, contact_email):
     subject = f"Ny skoletilmelding: {school.name}"
     school_url = f"{settings.SITE_URL}/schools/{school.pk}/"
 
-    body_html = f"""
+    body_html = add_email_footer(
+        f"""
     <p>En ny skole har tilmeldt sig Basal:</p>
 
     <ul>
@@ -215,6 +235,7 @@ def send_school_signup_notifications(school, contact_name, contact_email):
 
     <p><a href="{school_url}">Se skolen i Basal</a></p>
     """
+    )
 
     count = 0
     for profile in subscribed_profiles:
