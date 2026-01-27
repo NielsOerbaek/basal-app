@@ -30,6 +30,7 @@
                     <option value="tilmeldt_forankring" {% if request.GET.status_filter == 'tilmeldt_forankring' %}selected{% endif %}>Tilmeldt (forankring)</option>
                     <option value="ikke_tilmeldt" {% if request.GET.status_filter == 'ikke_tilmeldt' %}selected{% endif %}>Ikke tilmeldt</option>
                     <option value="frameldt" {% if request.GET.status_filter == 'frameldt' %}selected{% endif %}>Frameldt</option>
+                    <option value="har_tilmeldinger_ikke_basal" {% if request.GET.status_filter == 'har_tilmeldinger_ikke_basal' %}selected{% endif %}>Har kurstilmeldinger (ikke tilmeldt)</option>
                 </select>
             </div>
             <div class="col-md-2">
