@@ -123,6 +123,7 @@
                             <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-gear me-2"></i>Admin</a></li>
                             {% endif %}
                             <li><a class="dropdown-item" href="{% url 'accounts:settings' %}"><i class="bi bi-person-gear me-2"></i>Indstillinger</a></li>
+                            <li><a class="dropdown-item" href="{% url 'core:about' %}"><i class="bi bi-info-circle me-2"></i>Om Basal</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="post" action="{% url 'logout' %}">

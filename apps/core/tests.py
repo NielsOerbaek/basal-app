@@ -173,6 +173,7 @@ class ViewSmokeTests:
     # URLs that don't require any object IDs
     SIMPLE_URLS = [
         ("core:dashboard", {}),
+        ("core:about", {}),
         ("schools:list", {}),
         ("schools:create", {}),
         ("schools:kommune-list", {}),

@@ -6,6 +6,12 @@ Oversigt over nye funktioner og ændringer i Basal-systemet.
 
 ## 27. januar 2026
 
+### Tilmeldingsfrist på kurser
+Kurser har nu en tilmeldingsfrist som automatisk sættes til 5 uger før kursusstart. Efter fristen vises kurset ikke længere på den offentlige tilmeldingsside. Fristen kan tilpasses manuelt for hvert kursus.
+
+### Om-side med ændringslog
+Der er tilføjet en "Om Basal"-side på `/om/` som viser systemets ændringslog. Siden er tilgængelig fra brugermenuen og giver overblik over nye funktioner og ændringer.
+
 ### Tilmeldingshistorik på skolens side
 Skoler kan nu se deres fulde tilmeldingshistorik når de besøger deres offentlige side på `/school/<token>/`. Historikken viser hvornår skolen blev tilmeldt og eventuelle frameldinger over tid.
 
@@ -63,10 +69,8 @@ Kommune vælges nu via en dropdown-menu med alle 98 danske kommuner i stedet for
 ### Tilmeld/Frameld-knap
 Ny knap på skoledetaljesiden til at tilmelde eller framelde skoler fra Basal. En modal åbnes hvor man kan vælge den præcise dato for tilmelding eller framelding.
 
-### Beskyttelse mod dubletter
-Systemet forhindrer nu oprettelse af dubletter:
-- To skoler kan ikke have samme navn i samme kommune
-- To kurser kan ikke have samme start- og slutdato
+### Beskyttelse mod dubletskoler
+Systemet forhindrer nu oprettelse af dubletskoler: To skoler kan ikke have samme navn i samme kommune.
 
 ### Ændrede fremmødelabels
 For at gøre status tydeligere er labels ændret:

@@ -1,9 +1,13 @@
+from pathlib import Path
+
+import markdown
 from django.conf import settings
 from django.core.management import call_command
 from django.db.models import Count
 from django.http import JsonResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
+from django.utils.safestring import mark_safe
 from django.views import View
 from django.views.generic import TemplateView
 
@@ -142,3 +146,24 @@ class CronBackupView(View):
                 },
                 status=500,
             )
+
+
+@method_decorator(staff_required, name="dispatch")
+class AboutView(TemplateView):
+    """About page showing the changelog."""
+
+    template_name = "core/about.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Read changelog from project root
+        changelog_path = Path(settings.BASE_DIR) / "CHANGELOG.md"
+        if changelog_path.exists():
+            changelog_md = changelog_path.read_text(encoding="utf-8")
+            changelog_html = markdown.markdown(changelog_md, extensions=["tables", "fenced_code"])
+            context["changelog"] = mark_safe(changelog_html)
+        else:
+            context["changelog"] = None
+
+        return context
