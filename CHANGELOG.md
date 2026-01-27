@@ -6,6 +6,18 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ## 27. januar 2026
 
+### Forbedret bulk import af kursustilmeldinger
+Bulk import er blevet forbedret med ny kolonnerækkefølge og bedre håndtering af data:
+
+- **Ny kolonnerækkefølge:** Fornavn, Efternavn, Tlf., Mail, Skole, Underviser
+- **Håndtering af "Skole, Kommune"-format:** Systemet genkender nu skoler skrevet som "Ravnshøj Skole, Frederikshavn Kommune" og matcher automatisk til den rigtige skole
+- **Anden organisation:** Deltagere der ikke er fra en skole (f.eks. fra kommunen) kan nu importeres ved at vælge "Anden organisation" og indtaste organisationens navn
+- **Opret ny skole:** Hvis en skole ikke findes i systemet, kan den oprettes direkte under importen med navn og kommune
+- **Redigerbare felter:** Telefon og underviser-status kan nu redigeres i bekræftelsestrinnet før import
+
+### Filter for skoler med kurstilmeldinger uden Basal-tilmelding
+Nyt filter på skolelisten: "Har kurstilmeldinger (ikke tilmeldt)" viser skoler der har deltagere tilmeldt kurser i indeværende skoleår, men som ikke selv er tilmeldt Basal. Dette hjælper med at identificere skoler der bør kontaktes om tilmelding.
+
 ### Tilmeldingsfrist på kurser
 Kurser har nu en tilmeldingsfrist som automatisk sættes til 5 uger før kursusstart. Efter fristen vises kurset ikke længere på den offentlige tilmeldingsside. Fristen kan tilpasses manuelt for hvert kursus.
 
