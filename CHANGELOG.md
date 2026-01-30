@@ -4,6 +4,25 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 30. januar 2026
+
+### Filupload per skole (intern)
+Medarbejdere kan nu uploade filer til hver skole direkte fra skoledetaljesiden. Filer er kun synlige for medarbejdere og vises ikke på skolens offentlige side. Hver fil kan have en beskrivelse, og alle filuploads logges i aktivitetsloggen.
+
+### Kursusdeltagelse på skolens offentlige side
+Skolens offentlige side viser nu kursusdeltagelse for kontaktpersoner. Under hver kontaktperson vises hvilke kurser de har deltaget i med status:
+- "Uddannet på" - for deltagere der mødte op
+- "Mødte ikke op til" - for deltagere der udeblev
+- "Tilmeldt" - for fremtidige kurser
+
+### Kursusdeltagere-sektion på offentlig side
+En ny "Kursusdeltagere"-sektion viser personer der har deltaget i kurser men som ikke er registreret som kontaktpersoner for skolen. Dette giver et komplet overblik over alle fra skolen der har været på kursus.
+
+### Kursusmaterialer på skolens offentlige side
+Skoler kan nu downloade kursusmaterialer direkte fra deres offentlige side. Sektionen "Kursusmaterialer" viser materialer fra alle kurser skolen har deltaget i, sorteret med de nyeste kurser først.
+
+---
+
 ## 27. januar 2026
 
 ### Faktura-skoleår ændret til enkeltvalg
