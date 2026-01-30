@@ -38,6 +38,23 @@
                     <dt class="col-sm-4">EAN-nummer</dt>
                     <dd class="col-sm-8">{{ school.ean_nummer }}</dd>
                     {% endif %}
+                    {% if school.kommunen_betaler %}
+                    <dt class="col-sm-4">Fakturering</dt>
+                    <dd class="col-sm-8">
+                        <strong>Kommunen betaler</strong><br>
+                        {{ school.fakturering_adresse }}<br>
+                        {{ school.fakturering_postnummer }} {{ school.fakturering_by }}<br>
+                        EAN: {{ school.fakturering_ean_nummer }}
+                        {% if school.fakturering_kontakt_navn or school.fakturering_kontakt_email %}
+                        <br><small class="text-muted">
+                            Kontakt: {{ school.fakturering_kontakt_navn }}
+                            {% if school.fakturering_kontakt_email %}
+                            &lt;{{ school.fakturering_kontakt_email }}&gt;
+                            {% endif %}
+                        </small>
+                        {% endif %}
+                    </dd>
+                    {% endif %}
                     <dt class="col-sm-4">Tilmeldingsstatus</dt>
                     <dd class="col-sm-8">
                         {% if school.is_enrolled %}

@@ -1827,3 +1827,39 @@ class SchoolFormBillingFieldsTest(TestCase):
         school = form.save()
         self.assertTrue(school.kommunen_betaler)
         self.assertEqual(school.fakturering_adresse, "Rådhuspladsen 1")
+
+
+class SchoolDetailBillingTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="billinguser", password="testpass123", is_staff=True)
+        self.school = School.objects.create(
+            name="Test School",
+            adresse="Testvej 1",
+            kommune="København",
+            kommunen_betaler=True,
+            fakturering_adresse="Rådhuspladsen 1",
+            fakturering_postnummer="1550",
+            fakturering_by="København V",
+            fakturering_ean_nummer="5790000000001",
+            fakturering_kontakt_navn="Kommune Kontakt",
+            fakturering_kontakt_email="faktura@kommune.dk",
+        )
+
+    def test_detail_shows_billing_info(self):
+        """School detail shows billing info when kommunen_betaler is True."""
+        self.client.login(username="billinguser", password="testpass123")
+        response = self.client.get(reverse("schools:detail", kwargs={"pk": self.school.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Kommunen betaler")
+        self.assertContains(response, "Rådhuspladsen 1")
+        self.assertContains(response, "5790000000001")
+
+    def test_detail_hides_billing_when_not_enabled(self):
+        """School detail hides billing info when kommunen_betaler is False."""
+        self.school.kommunen_betaler = False
+        self.school.save()
+        self.client.login(username="billinguser", password="testpass123")
+        response = self.client.get(reverse("schools:detail", kwargs={"pk": self.school.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Kommunen betaler")
