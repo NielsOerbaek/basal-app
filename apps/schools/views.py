@@ -848,4 +848,18 @@ class SchoolPublicView(DetailView):
         context["people_with_courses"] = people_with_courses
         context["other_participants"] = list(other_participants.values())
         context["enrollment_history"] = school.get_enrollment_history()
+
+        # Courses with materials (newest first)
+        from apps.courses.models import Course
+
+        course_ids = all_signups.values_list("course_id", flat=True).distinct()
+        courses_with_materials = (
+            Course.objects.filter(pk__in=course_ids, course_materials__isnull=False)
+            .prefetch_related("course_materials")
+            .distinct()
+            .order_by("-start_date")
+        )
+
+        context["courses_with_materials"] = courses_with_materials
+
         return context

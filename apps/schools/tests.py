@@ -2027,3 +2027,63 @@ class SchoolFileViewTest(TestCase):
         response = self.client.post(reverse("schools:file-delete", kwargs={"pk": sf.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertFalse(SchoolFile.objects.filter(pk=sf.pk).exists())
+
+
+class SchoolPublicViewCourseMaterialsTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+            enrolled_at=date.today() - timedelta(days=400),
+            signup_token="materials123token",
+        )
+
+    def test_public_view_shows_course_materials(self):
+        """Public view shows course materials section."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.courses.models import Course, CourseMaterial, CourseSignUp, Location
+
+        location = Location.objects.create(name="Test Location")
+        course = Course.objects.create(
+            start_date=date.today(),
+            end_date=date.today(),
+            location=location,
+            capacity=10,
+        )
+        CourseSignUp.objects.create(
+            school=self.school,
+            course=course,
+            participant_name="Test",
+            participant_email="test@test.com",
+        )
+        file = SimpleUploadedFile("slides.pdf", b"content")
+        CourseMaterial.objects.create(course=course, file=file, name="Kursusslides")
+
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Kursusmaterialer")
+        self.assertContains(response, "Kursusslides")
+
+    def test_public_view_hides_materials_for_courses_without_signups(self):
+        """Public view doesn't show materials for courses school didn't attend."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.courses.models import Course, CourseMaterial, Location
+
+        location = Location.objects.create(name="Test Location")
+        course = Course.objects.create(
+            start_date=date.today(),
+            end_date=date.today(),
+            location=location,
+            capacity=10,
+        )
+        # No signup for this school
+        file = SimpleUploadedFile("slides.pdf", b"content")
+        CourseMaterial.objects.create(course=course, file=file, name="Secret Slides")
+
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Secret Slides")
