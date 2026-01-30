@@ -9,7 +9,7 @@ class AuditConfig(AppConfig):
         from apps.audit import signals  # noqa
         from apps.audit.registry import register_for_audit, AuditConfig as AuditCfg
 
-        from apps.schools.models import School, SeatPurchase, Person, SchoolComment, Invoice, SchoolYear
+        from apps.schools.models import School, SeatPurchase, Person, SchoolComment, Invoice, SchoolYear, SchoolFile
         from apps.courses.models import Course, CourseSignUp, CourseMaterial
         from apps.contacts.models import ContactTime
         from apps.signups.models import SignupPage, SignupFormField
@@ -47,6 +47,14 @@ class AuditConfig(AppConfig):
         register_for_audit(
             Invoice,
             AuditCfg(
+                get_school=lambda instance: instance.school,
+            ),
+        )
+
+        register_for_audit(
+            SchoolFile,
+            AuditCfg(
+                excluded_fields=["id", "uploaded_at"],
                 get_school=lambda instance: instance.school,
             ),
         )
