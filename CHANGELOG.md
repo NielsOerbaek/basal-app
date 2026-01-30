@@ -4,6 +4,40 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 30. januar 2026
+
+### Udvidede skoleoplysninger
+Skoler har fået flere felter til bedre administration:
+
+- **Postnummer og by:** Separat fra adressefeltet for mere struktureret data
+- **EAN-nummer:** Til fakturering via offentlige indkøbssystemer
+- **Titel på personer:** Kontaktpersoner kan nu have en titel (Skoleleder, Viceskoleleder, Lærer, SFO-leder, Pædagog, Andet). Ved "Andet" kan man indtaste en brugerdefineret titel
+
+### Faktureringsoplysninger
+Ny sektion på skoledetaljesiden til faktureringsoplysninger:
+
+- **Kommunal betaling:** Markér om fakturaen skal sendes til kommunen i stedet for skolen
+- **Faktureringskommune:** Vælg hvilken kommune der skal faktureres
+- **Faktureringsadresse og EAN:** Kommunens faktureringsoplysninger
+
+Disse felter udfyldes også automatisk ved skoletilmelding hvis skolen angiver at kommunen betaler.
+
+### Advarsel om manglende oplysninger
+Skoledetaljesiden viser nu en advarselsboks hvis vigtige oplysninger mangler (f.eks. EAN-nummer når kommunen betaler). Dette hjælper med at sikre at alle nødvendige data er på plads før fakturering.
+
+### Forbedret fakturaformular
+- **Automatisk skoleårsvalg:** Skoleåret forvælges baseret på den aktuelle dato
+- **Begrænset årsvalg:** Kun indeværende og tidligere skoleår kan vælges (ikke fremtidige)
+
+### Danske datoer på kurser
+Kursustitler viser nu altid datoer med danske månedsnavne (jan, feb, mar, apr, maj, jun, jul, aug, sep, okt, nov, dec) uanset serverens systemsprog.
+
+### Mindre forbedringer
+- Søgeknappen på skolelisten viser nu en loading-animation mens der søges
+- Login-sektionen på skoledetaljesiden hedder nu "Kodeord og links" for klarhed
+
+---
+
 ## 27. januar 2026
 
 ### Faktura-skoleår ændret til enkeltvalg
