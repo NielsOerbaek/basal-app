@@ -337,43 +337,96 @@ class SchoolSignupView(View):
 
         form = SchoolSignupForm(request.POST, request.FILES, signup_page=page)
         if form.is_valid():
-            contact_name = form.cleaned_data["contact_name"]
-            contact_email = form.cleaned_data["contact_email"]
+            koordinator_email = form.cleaned_data["koordinator_email"]
+            koordinator_name = form.cleaned_data["koordinator_name"]
             municipality = form.cleaned_data["municipality"]
+            ean_nummer = form.cleaned_data["ean_nummer"]
+
+            # Billing fields
+            kommunen_betaler = form.cleaned_data.get("kommunen_betaler", False)
 
             if form.cleaned_data.get("school_not_listed"):
-                # Create new school
+                # Create new school with all fields
                 school = School.objects.create(
                     name=form.cleaned_data["new_school_name"],
                     adresse=form.cleaned_data.get("new_school_address", ""),
+                    postnummer=form.cleaned_data.get("new_school_postnummer", ""),
+                    by=form.cleaned_data.get("new_school_by", ""),
                     kommune=municipality,
+                    ean_nummer=ean_nummer,
                     enrolled_at=date.today(),
+                    # Billing fields
+                    kommunen_betaler=kommunen_betaler,
+                    fakturering_adresse=form.cleaned_data.get("fakturering_adresse", "") if kommunen_betaler else "",
+                    fakturering_postnummer=form.cleaned_data.get("fakturering_postnummer", "")
+                    if kommunen_betaler
+                    else "",
+                    fakturering_by=form.cleaned_data.get("fakturering_by", "") if kommunen_betaler else "",
+                    fakturering_ean_nummer=form.cleaned_data.get("fakturering_ean_nummer", "")
+                    if kommunen_betaler
+                    else "",
+                    fakturering_kontakt_navn=form.cleaned_data.get("fakturering_kontakt_navn", "")
+                    if kommunen_betaler
+                    else "",
+                    fakturering_kontakt_email=form.cleaned_data.get("fakturering_kontakt_email", "")
+                    if kommunen_betaler
+                    else "",
                 )
             else:
                 # Use existing school
                 school = form.cleaned_data["school"]
+                school.ean_nummer = ean_nummer
+                school.kommunen_betaler = kommunen_betaler
+                if kommunen_betaler:
+                    school.fakturering_adresse = form.cleaned_data.get("fakturering_adresse", "")
+                    school.fakturering_postnummer = form.cleaned_data.get("fakturering_postnummer", "")
+                    school.fakturering_by = form.cleaned_data.get("fakturering_by", "")
+                    school.fakturering_ean_nummer = form.cleaned_data.get("fakturering_ean_nummer", "")
+                    school.fakturering_kontakt_navn = form.cleaned_data.get("fakturering_kontakt_navn", "")
+                    school.fakturering_kontakt_email = form.cleaned_data.get("fakturering_kontakt_email", "")
                 if not school.enrolled_at:
                     school.enrolled_at = date.today()
-                    school.save(update_fields=["enrolled_at"])
+                school.save()
 
             # Generate credentials
             school.generate_credentials()
 
-            # Create contact person
+            # Helper to get titel value
+            def get_titel(titel_field, titel_other_field):
+                titel = form.cleaned_data.get(titel_field, "")
+                titel_other = form.cleaned_data.get(titel_other_field, "")
+                return titel, titel_other
+
+            # Create Koordinator (primary contact)
+            koordinator_titel, koordinator_titel_other = get_titel("koordinator_titel", "koordinator_titel_other")
             Person.objects.create(
                 school=school,
-                name=contact_name,
-                email=contact_email,
-                phone=form.cleaned_data.get("contact_phone", ""),
+                name=koordinator_name,
+                titel=koordinator_titel,
+                titel_other=koordinator_titel_other,
+                email=koordinator_email,
+                phone=form.cleaned_data.get("koordinator_phone", ""),
                 role=PersonRole.KOORDINATOR,
                 is_primary=True,
             )
 
+            # Create Økonomisk ansvarlig
+            oeko_titel, oeko_titel_other = get_titel("oeko_titel", "oeko_titel_other")
+            Person.objects.create(
+                school=school,
+                name=form.cleaned_data["oeko_name"],
+                titel=oeko_titel,
+                titel_other=oeko_titel_other,
+                email=form.cleaned_data["oeko_email"],
+                phone=form.cleaned_data.get("oeko_phone", ""),
+                role=PersonRole.OEKONOMISK_ANSVARLIG,
+            )
+
             # Send confirmation email
-            send_school_enrollment_confirmation(school, contact_email, contact_name)
+            send_school_enrollment_confirmation(school, koordinator_email, koordinator_name)
 
             # Notify subscribed users
-            send_school_signup_notifications(school, contact_name, contact_email)
+            send_school_signup_notifications(school, koordinator_name, koordinator_email)
 
             return redirect("signup:school-success")
 

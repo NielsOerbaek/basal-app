@@ -1,4 +1,3 @@
-import unittest
 from datetime import date, timedelta
 
 from django.contrib.auth.models import User
@@ -218,7 +217,6 @@ class SchoolSignupViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "signups/school_signup.html")
 
-    @unittest.skip("Requires Task 8: Update SchoolSignupView to work with new form fields")
     def test_school_signup_enrolls_existing_school(self):
         """School signup with existing school sets enrolled_at and generates credentials."""
         response = self.client.post(
@@ -243,7 +241,6 @@ class SchoolSignupViewTest(TestCase):
         self.assertEqual(len(self.school.signup_password), 19)
         self.assertEqual(len(self.school.signup_token), 32)
 
-    @unittest.skip("Requires Task 8: Update SchoolSignupView to work with new form fields")
     def test_school_signup_creates_new_school(self):
         """School signup with new school name creates school with credentials."""
         response = self.client.post(
@@ -527,3 +524,127 @@ class SchoolSignupFormExtendedFieldsTest(TestCase):
         self.assertIn("kommunen_betaler", form.fields)
         self.assertIn("fakturering_adresse", form.fields)
         self.assertIn("fakturering_ean_nummer", form.fields)
+
+
+class SchoolSignupExtendedFieldsTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.school = School.objects.create(
+            name="Existing School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+        )
+
+    def test_signup_creates_two_persons(self):
+        """School signup creates both Koordinator and Økonomisk ansvarlig persons."""
+        from apps.schools.models import Person, PersonRole
+
+        response = self.client.post(
+            reverse("signup:school"),
+            {
+                "municipality": "Test Kommune",
+                "school": self.school.pk,
+                "ean_nummer": "5790001234567",
+                "koordinator_name": "Koordinator Person",
+                "koordinator_titel": "skoleleder",
+                "koordinator_phone": "12345678",
+                "koordinator_email": "koordinator@school.dk",
+                "oeko_name": "Øko Person",
+                "oeko_titel": "skoleleder",
+                "oeko_phone": "87654321",
+                "oeko_email": "oeko@school.dk",
+            },
+        )
+        self.assertRedirects(response, reverse("signup:school-success"))
+
+        # Check two persons were created
+        persons = Person.objects.filter(school=self.school)
+        self.assertEqual(persons.count(), 2)
+
+        # Check Koordinator
+        koordinator = persons.get(role=PersonRole.KOORDINATOR)
+        self.assertEqual(koordinator.name, "Koordinator Person")
+
+        # Check Økonomisk ansvarlig
+        oeko = persons.get(role=PersonRole.OEKONOMISK_ANSVARLIG)
+        self.assertEqual(oeko.name, "Øko Person")
+
+    def test_signup_saves_ean_to_existing_school(self):
+        """School signup saves EAN to existing school."""
+        self.client.post(
+            reverse("signup:school"),
+            {
+                "municipality": "Test Kommune",
+                "school": self.school.pk,
+                "ean_nummer": "5790001234567",
+                "koordinator_name": "Test",
+                "koordinator_titel": "skoleleder",
+                "koordinator_phone": "12345678",
+                "koordinator_email": "test@school.dk",
+                "oeko_name": "Test",
+                "oeko_titel": "skoleleder",
+                "oeko_phone": "12345678",
+                "oeko_email": "test@school.dk",
+            },
+        )
+        self.school.refresh_from_db()
+        self.assertEqual(self.school.ean_nummer, "5790001234567")
+
+    def test_signup_new_school_saves_all_fields(self):
+        """School signup with new school saves all address fields."""
+        response = self.client.post(
+            reverse("signup:school"),
+            {
+                "municipality": "Test Kommune",
+                "school_not_listed": "on",
+                "new_school_name": "Brand New School",
+                "new_school_address": "New Address 123",
+                "new_school_postnummer": "2100",
+                "new_school_by": "København Ø",
+                "ean_nummer": "5790001234567",
+                "koordinator_name": "Test",
+                "koordinator_titel": "skoleleder",
+                "koordinator_phone": "12345678",
+                "koordinator_email": "test@school.dk",
+                "oeko_name": "Test",
+                "oeko_titel": "skoleleder",
+                "oeko_phone": "12345678",
+                "oeko_email": "test@school.dk",
+            },
+        )
+        self.assertRedirects(response, reverse("signup:school-success"))
+
+        new_school = School.objects.get(name="Brand New School")
+        self.assertEqual(new_school.postnummer, "2100")
+        self.assertEqual(new_school.by, "København Ø")
+        self.assertEqual(new_school.ean_nummer, "5790001234567")
+
+    def test_signup_saves_billing_fields(self):
+        """School signup saves billing fields when kommunen_betaler is checked."""
+        self.client.post(
+            reverse("signup:school"),
+            {
+                "municipality": "Test Kommune",
+                "school": self.school.pk,
+                "ean_nummer": "5790001234567",
+                "koordinator_name": "Test",
+                "koordinator_titel": "skoleleder",
+                "koordinator_phone": "12345678",
+                "koordinator_email": "test@school.dk",
+                "oeko_name": "Test",
+                "oeko_titel": "skoleleder",
+                "oeko_phone": "12345678",
+                "oeko_email": "test@school.dk",
+                "kommunen_betaler": "on",
+                "fakturering_adresse": "Rådhuspladsen 1",
+                "fakturering_postnummer": "1550",
+                "fakturering_by": "København V",
+                "fakturering_ean_nummer": "5790000000001",
+                "fakturering_kontakt_navn": "Kommune Kontakt",
+                "fakturering_kontakt_email": "faktura@kommune.dk",
+            },
+        )
+        self.school.refresh_from_db()
+        self.assertTrue(self.school.kommunen_betaler)
+        self.assertEqual(self.school.fakturering_adresse, "Rådhuspladsen 1")
+        self.assertEqual(self.school.fakturering_ean_nummer, "5790000000001")
