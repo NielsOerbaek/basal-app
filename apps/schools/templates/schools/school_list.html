@@ -18,7 +18,7 @@
 
 <div class="card mb-4">
     <div class="card-body">
-        <form method="get" class="row g-3">
+        <form method="get" class="row g-3" id="school-search-form">
             <div class="col-md-4">
                 <input type="text" name="search" value="{{ request.GET.search }}" class="form-control" placeholder="Søg skoler...">
             </div>
@@ -49,8 +49,8 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <button type="submit" class="btn btn-outline-primary w-100">
-                    <i class="bi bi-search me-1"></i>Søg
+                <button type="submit" class="btn btn-outline-primary w-100" id="search-btn">
+                    <i class="bi bi-search me-1" id="search-icon"></i><span id="search-text">Søg</span>
                 </button>
             </div>
         </form>
@@ -120,4 +120,18 @@
 </div>
 
 {% include 'core/components/pagination.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('school-search-form').addEventListener('submit', function() {
+    const btn = document.getElementById('search-btn');
+    const icon = document.getElementById('search-icon');
+    const text = document.getElementById('search-text');
+
+    btn.disabled = true;
+    icon.className = 'spinner-border spinner-border-sm me-1';
+    text.textContent = 'Søger...';
+});
+</script>
 {% endblock %}
