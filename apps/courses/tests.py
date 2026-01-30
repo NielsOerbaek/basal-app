@@ -40,6 +40,20 @@ class CourseModelTest(TestCase):
         )
         self.assertIn(" - ", str(course))
 
+    def test_display_name_uses_danish_months(self):
+        """Course display_name uses Danish month abbreviations."""
+        # Test various months to ensure Danish locale is used
+        test_cases = [
+            (date(2025, 1, 15), "jan"),
+            (date(2025, 3, 15), "mar"),
+            (date(2025, 5, 15), "maj"),  # Different from English "may"
+            (date(2025, 10, 15), "okt"),  # Different from English "oct"
+        ]
+        for test_date, expected_month in test_cases:
+            course = Course.objects.create(start_date=test_date, end_date=test_date)
+            self.assertIn(expected_month, course.display_name.lower(), f"Expected {expected_month} for {test_date}")
+            course.delete()
+
     def test_signup_count(self):
         """Course.signup_count returns correct count."""
         school = School.objects.create(name="Test School", adresse="Test Address", kommune="Test Kommune")

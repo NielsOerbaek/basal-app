@@ -2,6 +2,8 @@ from datetime import date
 
 from django.db import models
 
+from apps.courses.utils import format_date_danish
+
 
 class AttendanceStatus(models.TextChoices):
     UNMARKED = "unmarked", "Tilmeldt"
@@ -116,10 +118,10 @@ class Course(models.Model):
     def display_name(self):
         """Auto-generated course name with dates and location."""
         if self.start_date == self.end_date:
-            date_str = self.start_date.strftime("%-d. %b %Y").lower()
+            date_str = format_date_danish(self.start_date)
         else:
-            start_str = self.start_date.strftime("%-d. %b").lower()
-            end_str = self.end_date.strftime("%-d. %b %Y").lower()
+            start_str = format_date_danish(self.start_date, include_year=False)
+            end_str = format_date_danish(self.end_date)
             date_str = f"{start_str} - {end_str}"
 
         name = f"Kompetenceudviklingskursus, {date_str}"

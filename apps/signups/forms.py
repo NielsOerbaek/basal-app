@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from apps.courses.models import Course
+from apps.courses.utils import format_date_danish
 from apps.schools.models import School, TitelChoice
 
 from .models import FieldType
@@ -63,11 +64,11 @@ class CourseChoiceField(forms.ModelChoiceField):
     """Custom field to display course with available seats."""
 
     def label_from_instance(self, obj):
-        # Format date
+        # Format date in Danish locale
         if obj.start_date == obj.end_date:
-            date_str = obj.start_date.strftime("%-d. %b %Y")
+            date_str = format_date_danish(obj.start_date)
         else:
-            date_str = f"{obj.start_date.strftime('%-d. %b')} - {obj.end_date.strftime('%-d. %b %Y')}"
+            date_str = f"{format_date_danish(obj.start_date, include_year=False)} - {format_date_danish(obj.end_date)}"
 
         # Format available seats
         available = obj.spots_remaining
