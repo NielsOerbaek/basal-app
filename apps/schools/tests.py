@@ -1794,3 +1794,36 @@ class SchoolBillingFieldsTest(TestCase):
         )
         self.assertFalse(school.kommunen_betaler)
         self.assertEqual(school.fakturering_adresse, "")
+
+
+class SchoolFormBillingFieldsTest(TestCase):
+    def test_school_form_includes_billing_fields(self):
+        """SchoolForm includes billing fields."""
+        from .forms import SchoolForm
+
+        form = SchoolForm()
+        self.assertIn("kommunen_betaler", form.fields)
+        self.assertIn("fakturering_adresse", form.fields)
+        self.assertIn("fakturering_ean_nummer", form.fields)
+
+    def test_school_form_saves_billing_fields(self):
+        """SchoolForm saves billing fields."""
+        from .forms import SchoolForm
+
+        form = SchoolForm(
+            data={
+                "name": "Test School",
+                "kommune": "Københavns Kommune",
+                "kommunen_betaler": True,
+                "fakturering_adresse": "Rådhuspladsen 1",
+                "fakturering_postnummer": "1550",
+                "fakturering_by": "København V",
+                "fakturering_ean_nummer": "5790000000001",
+                "fakturering_kontakt_navn": "Kommune Kontakt",
+                "fakturering_kontakt_email": "faktura@kommune.dk",
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        school = form.save()
+        self.assertTrue(school.kommunen_betaler)
+        self.assertEqual(school.fakturering_adresse, "Rådhuspladsen 1")

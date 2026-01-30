@@ -1,5 +1,5 @@
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Column, Layout, Row, Submit
+from crispy_forms.layout import HTML, Column, Layout, Row, Submit
 from django import forms
 
 from .constants import DANISH_KOMMUNER
@@ -14,7 +14,23 @@ class SchoolForm(forms.ModelForm):
 
     class Meta:
         model = School
-        fields = ["name", "adresse", "postnummer", "by", "kommune", "ean_nummer", "enrolled_at", "opted_out_at"]
+        fields = [
+            "name",
+            "adresse",
+            "postnummer",
+            "by",
+            "kommune",
+            "ean_nummer",
+            "kommunen_betaler",
+            "fakturering_adresse",
+            "fakturering_postnummer",
+            "fakturering_by",
+            "fakturering_ean_nummer",
+            "fakturering_kontakt_navn",
+            "fakturering_kontakt_email",
+            "enrolled_at",
+            "opted_out_at",
+        ]
         widgets = {
             "enrolled_at": forms.DateInput(attrs={"type": "date"}),
             "opted_out_at": forms.DateInput(attrs={"type": "date"}),
@@ -49,6 +65,18 @@ class SchoolForm(forms.ModelForm):
             Row(
                 Column("enrolled_at", css_class="col-md-6"),
                 Column("opted_out_at", css_class="col-md-6"),
+            ),
+            HTML("<hr><h5>Fakturering</h5>"),
+            "kommunen_betaler",
+            Row(
+                Column("fakturering_adresse", css_class="col-md-6"),
+                Column("fakturering_postnummer", css_class="col-md-2"),
+                Column("fakturering_by", css_class="col-md-4"),
+            ),
+            Row(
+                Column("fakturering_ean_nummer", css_class="col-md-4"),
+                Column("fakturering_kontakt_navn", css_class="col-md-4"),
+                Column("fakturering_kontakt_email", css_class="col-md-4"),
             ),
             Submit("submit", "Gem skole", css_class="btn btn-primary"),
         )
