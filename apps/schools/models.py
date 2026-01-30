@@ -449,3 +449,25 @@ class Invoice(models.Model):
 
     def __str__(self):
         return f"{self.invoice_number} - {self.school.name}"
+
+
+class SchoolFile(models.Model):
+    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="files")
+    file = models.FileField(upload_to="school_files/%Y/%m/", verbose_name="Fil")
+    description = models.TextField(blank=True, verbose_name="Beskrivelse")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="school_files_uploaded")
+
+    class Meta:
+        ordering = ["-uploaded_at"]
+        verbose_name = "Skolefil"
+        verbose_name_plural = "Skolefiler"
+
+    def __str__(self):
+        return f"{self.school.name} - {self.filename}"
+
+    @property
+    def filename(self):
+        import os
+
+        return os.path.basename(self.file.name)

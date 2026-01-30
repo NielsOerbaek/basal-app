@@ -1827,3 +1827,55 @@ class SchoolFormBillingFieldsTest(TestCase):
         school = form.save()
         self.assertTrue(school.kommunen_betaler)
         self.assertEqual(school.fakturering_adresse, "Rådhuspladsen 1")
+
+
+class SchoolFileModelTest(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+        )
+        self.user = User.objects.create_user(username="testuser", password="testpass123")
+
+    def test_create_school_file(self):
+        """SchoolFile model can be created and saved."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.schools.models import SchoolFile
+
+        file = SimpleUploadedFile("test.pdf", b"file_content", content_type="application/pdf")
+        school_file = SchoolFile.objects.create(
+            school=self.school,
+            file=file,
+            description="Test description",
+            uploaded_by=self.user,
+        )
+        self.assertEqual(school_file.school, self.school)
+        self.assertEqual(school_file.description, "Test description")
+        self.assertEqual(school_file.uploaded_by, self.user)
+        self.assertIsNotNone(school_file.uploaded_at)
+
+    def test_school_file_ordering(self):
+        """SchoolFiles are ordered by uploaded_at descending."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.schools.models import SchoolFile
+
+        file1 = SimpleUploadedFile("test1.pdf", b"content1")
+        file2 = SimpleUploadedFile("test2.pdf", b"content2")
+        sf1 = SchoolFile.objects.create(school=self.school, file=file1)
+        sf2 = SchoolFile.objects.create(school=self.school, file=file2)
+        files = list(self.school.files.all())
+        self.assertEqual(files[0], sf2)  # Most recent first
+        self.assertEqual(files[1], sf1)
+
+    def test_school_file_filename_property(self):
+        """SchoolFile.filename returns just the filename."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.schools.models import SchoolFile
+
+        file = SimpleUploadedFile("my_document.pdf", b"content")
+        sf = SchoolFile.objects.create(school=self.school, file=file)
+        self.assertEqual(sf.filename, "my_document.pdf")
