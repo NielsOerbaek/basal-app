@@ -7,6 +7,44 @@ from django.urls import reverse
 from .models import Invoice, Person, PersonRole, School, SchoolComment, SchoolYear, SeatPurchase
 
 
+class SchoolExtendedFieldsTest(TestCase):
+    def test_school_has_postnummer_field(self):
+        """School model has postnummer field."""
+        school = School.objects.create(
+            name="Test School",
+            adresse="Testvej 1",
+            kommune="København",
+            postnummer="2100",
+            by="København Ø",
+            ean_nummer="5790001234567",
+        )
+        self.assertEqual(school.postnummer, "2100")
+
+    def test_school_has_by_field(self):
+        """School model has by field."""
+        school = School.objects.create(
+            name="Test School",
+            adresse="Testvej 1",
+            kommune="København",
+            postnummer="2100",
+            by="København Ø",
+            ean_nummer="5790001234567",
+        )
+        self.assertEqual(school.by, "København Ø")
+
+    def test_school_has_ean_nummer_field(self):
+        """School model has ean_nummer field."""
+        school = School.objects.create(
+            name="Test School",
+            adresse="Testvej 1",
+            kommune="København",
+            postnummer="2100",
+            by="København Ø",
+            ean_nummer="5790001234567",
+        )
+        self.assertEqual(school.ean_nummer, "5790001234567")
+
+
 class SchoolModelTest(TestCase):
     def test_create_school(self):
         """School model can be created and saved."""

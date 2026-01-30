@@ -74,7 +74,10 @@ class School(models.Model):
 
     name = models.CharField(max_length=255, verbose_name="Navn")
     adresse = models.CharField(max_length=255, verbose_name="Adresse")
+    postnummer = models.CharField(max_length=4, blank=True, verbose_name="Postnummer")
+    by = models.CharField(max_length=100, blank=True, verbose_name="By")
     kommune = models.CharField(max_length=100, verbose_name="Kommune")
+    ean_nummer = models.CharField(max_length=13, blank=True, verbose_name="EAN-nummer")
     enrolled_at = models.DateField(
         null=True, blank=True, verbose_name="Tilmeldt dato", help_text="Dato for skolens tilmelding til Basal"
     )
