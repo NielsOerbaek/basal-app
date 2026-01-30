@@ -3,49 +3,49 @@ from collections import defaultdict
 from django.core.management.base import BaseCommand
 from openpyxl import load_workbook
 
-from apps.schools.models import School, Person, PersonRole
+from apps.schools.models import Person, PersonRole, School
 
 
 class Command(BaseCommand):
-    help = 'Importer skoler fra Excel-fil'
+    help = "Importer skoler fra Excel-fil"
 
     def add_arguments(self, parser):
         parser.add_argument(
-            'file_path',
+            "file_path",
             type=str,
-            help='Sti til Excel-fil',
+            help="Sti til Excel-fil",
         )
         parser.add_argument(
-            '--dry-run',
-            action='store_true',
-            help='Vis hvad der ville blive importeret uden at gemme',
+            "--dry-run",
+            action="store_true",
+            help="Vis hvad der ville blive importeret uden at gemme",
         )
         parser.add_argument(
-            '--sheet',
+            "--sheet",
             type=int,
             default=0,
-            help='Sheet index (0-baseret, standard: 0)',
+            help="Sheet index (0-baseret, standard: 0)",
         )
         parser.add_argument(
-            '--start-row',
+            "--start-row",
             type=int,
             default=5,
-            help='Første række med data (standard: 5, efter header)',
+            help="Første række med data (standard: 5, efter header)",
         )
 
     def handle(self, *args, **options):
-        file_path = options['file_path']
-        dry_run = options['dry_run']
-        sheet_index = options['sheet']
-        start_row = options['start_row']
+        file_path = options["file_path"]
+        dry_run = options["dry_run"]
+        sheet_index = options["sheet"]
+        start_row = options["start_row"]
 
-        self.stdout.write(f'Læser fil: {file_path}')
+        self.stdout.write(f"Læser fil: {file_path}")
 
         try:
             wb = load_workbook(filename=file_path, read_only=True)
             ws = wb.worksheets[sheet_index]
         except Exception as e:
-            self.stderr.write(self.style.ERROR(f'Kunne ikke åbne fil: {e}'))
+            self.stderr.write(self.style.ERROR(f"Kunne ikke åbne fil: {e}"))
             return
 
         # Parse rows and group by school
@@ -73,18 +73,20 @@ class Command(BaseCommand):
                 schools_data[school_key] = []
 
             # Only add person if name is valid (not empty or just "?")
-            if navn and navn not in ('?', '-', ''):
-                schools_data[school_key].append({
-                    'navn': navn,
-                    'titel': titel,
-                    'telefon': str(telefon) if telefon else '',
-                    'email': email,
-                })
+            if navn and navn not in ("?", "-", ""):
+                schools_data[school_key].append(
+                    {
+                        "navn": navn,
+                        "titel": titel,
+                        "telefon": str(telefon) if telefon else "",
+                        "email": email,
+                    }
+                )
 
         wb.close()
 
         if dry_run:
-            self.stdout.write(self.style.WARNING('\n=== DRY RUN - Ingen data gemmes ===\n'))
+            self.stdout.write(self.style.WARNING("\n=== DRY RUN - Ingen data gemmes ===\n"))
 
         schools_created = 0
         schools_existing = 0
@@ -92,12 +94,12 @@ class Command(BaseCommand):
 
         for (kommune, skole_navn), people in schools_data.items():
             if dry_run:
-                self.stdout.write(f'\nSkole: {skole_navn} ({kommune})')
+                self.stdout.write(f"\nSkole: {skole_navn} ({kommune})")
                 for person in people:
                     self.stdout.write(f'  - {person["navn"]} ({person["titel"]})')
-                    if person['email']:
+                    if person["email"]:
                         self.stdout.write(f'    Email: {person["email"]}')
-                    if person['telefon']:
+                    if person["telefon"]:
                         self.stdout.write(f'    Tlf: {person["telefon"]}')
             else:
                 # Create or get school
@@ -105,30 +107,29 @@ class Command(BaseCommand):
                     name=skole_navn,
                     kommune=kommune,
                     defaults={
-                        'adresse': '',
-                    }
+                        "adresse": "",
+                    },
                 )
 
                 if created:
                     schools_created += 1
-                    self.stdout.write(self.style.SUCCESS(f'Oprettet skole: {skole_navn} ({kommune})'))
+                    self.stdout.write(self.style.SUCCESS(f"Oprettet skole: {skole_navn} ({kommune})"))
                 else:
                     schools_existing += 1
-                    self.stdout.write(f'Skole findes allerede: {skole_navn} ({kommune})')
+                    self.stdout.write(f"Skole findes allerede: {skole_navn} ({kommune})")
 
                 # Create people
-                is_first = True
                 for person in people:
-                    if not person['navn']:
+                    if not person["navn"]:
                         continue
 
                     # Map titel to PersonRole
-                    role = self.map_role(person['titel'])
+                    role = self.map_role(person["titel"])
 
                     # Check if person already exists
                     existing = Person.objects.filter(
                         school=school,
-                        name=person['navn'],
+                        name=person["navn"],
                     ).first()
 
                     if existing:
@@ -137,33 +138,33 @@ class Command(BaseCommand):
 
                     Person.objects.create(
                         school=school,
-                        name=person['navn'],
+                        name=person["navn"],
                         role=role,
-                        role_other=person['titel'] if role == PersonRole.OTHER else '',
-                        phone=person['telefon'],
-                        email=person['email'],
-                        is_primary=is_first and created,  # First person is primary for new schools
+                        role_other=person["titel"] if role == PersonRole.OTHER else "",
+                        phone=person["telefon"],
+                        email=person["email"],
                     )
                     people_created += 1
                     self.stdout.write(f'  Oprettet person: {person["navn"]}')
-                    is_first = False
 
-        self.stdout.write('')
+        self.stdout.write("")
         if dry_run:
-            self.stdout.write(self.style.WARNING(f'Ville oprette {len(schools_data)} skoler'))
+            self.stdout.write(self.style.WARNING(f"Ville oprette {len(schools_data)} skoler"))
         else:
-            self.stdout.write(self.style.SUCCESS(
-                f'Import færdig: {schools_created} skoler oprettet, '
-                f'{schools_existing} fandtes allerede, {people_created} personer oprettet'
-            ))
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"Import færdig: {schools_created} skoler oprettet, "
+                    f"{schools_existing} fandtes allerede, {people_created} personer oprettet"
+                )
+            )
 
     def clean_value(self, value):
         """Clean and normalize a cell value."""
         if value is None:
-            return ''
+            return ""
         if isinstance(value, str):
             # Remove zero-width characters and normalize whitespace
-            value = value.replace('\u200b', '').replace('\u200c', '').replace('\u200d', '')
+            value = value.replace("\u200b", "").replace("\u200c", "").replace("\u200d", "")
             return value.strip()
         return value
 
@@ -174,11 +175,11 @@ class Command(BaseCommand):
 
         titel_lower = titel.lower()
 
-        if 'koordinator' in titel_lower:
+        if "koordinator" in titel_lower:
             return PersonRole.KOORDINATOR
-        elif 'skoleleder' in titel_lower and 'udskoling' not in titel_lower:
+        elif "skoleleder" in titel_lower and "udskoling" not in titel_lower:
             return PersonRole.SKOLELEDER
-        elif 'udskoling' in titel_lower:
+        elif "udskoling" in titel_lower:
             return PersonRole.UDSKOLINGSLEDER
         else:
             return PersonRole.OTHER

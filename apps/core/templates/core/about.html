@@ -6,21 +6,38 @@
 <style>
     .changelog h2 {
         border-bottom: 2px solid var(--basal-purple);
-        padding-bottom: 0.5rem;
-        margin-top: 2rem;
+        padding-bottom: 0.25rem;
+        margin-top: 1.25rem;
+        margin-bottom: 0.5rem;
     }
     .changelog h2:first-child {
         margin-top: 0;
     }
     .changelog h3 {
         color: var(--basal-purple);
-        margin-top: 1.5rem;
+        margin-top: 0.75rem;
+        margin-bottom: 0.25rem;
+        font-size: 1rem;
+        padding-left: 1rem;
+        position: relative;
+    }
+    .changelog h3::before {
+        content: "•";
+        position: absolute;
+        left: 0;
+        color: var(--basal-purple);
+        font-weight: bold;
+    }
+    .changelog h3 + p {
+        padding-left: 1rem;
+        margin-bottom: 0.5rem;
     }
     .changelog ul {
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
+        padding-left: 2rem;
     }
     .changelog li {
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.125rem;
     }
     .changelog code {
         background-color: #f8f9fa;
@@ -32,7 +49,7 @@
         color: #333;
     }
     .changelog hr {
-        margin: 2rem 0;
+        margin: 1rem 0;
         border-color: #dee2e6;
     }
 </style>

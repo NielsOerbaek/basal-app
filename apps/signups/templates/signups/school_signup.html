@@ -37,58 +37,97 @@
 
 {% block signup_extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const municipalitySelect = document.getElementById('id_municipality');
-        const schoolSelect = document.getElementById('id_school');
-        const schoolNotListedCheckbox = document.getElementById('id_school_not_listed');
-        const schoolSelection = document.getElementById('school-selection');
-        const newSchoolFields = document.getElementById('new-school-fields');
+document.addEventListener('DOMContentLoaded', function() {
+    const municipalitySelect = document.getElementById('id_municipality');
+    const schoolSelect = document.getElementById('id_school');
+    const schoolNotListedCheckbox = document.getElementById('id_school_not_listed');
+    const newSchoolFields = document.getElementById('new-school-fields');
+    const kommunenBetalerCheckbox = document.getElementById('id_kommunen_betaler');
+    const billingFields = document.getElementById('billing-fields');
 
-        function updateSchoolDropdown() {
-            const kommune = municipalitySelect.value;
-            if (!kommune) {
+    // Titel "andet" handling
+    const koordinatorTitel = document.getElementById('id_koordinator_titel');
+    const koordinatorTitelOther = document.getElementById('id_koordinator_titel_other');
+    const oekoTitel = document.getElementById('id_oeko_titel');
+    const oekoTitelOther = document.getElementById('id_oeko_titel_other');
+
+    function updateSchoolDropdown() {
+        const kommune = municipalitySelect.value;
+        if (!kommune) {
+            schoolSelect.innerHTML = '<option value="">Vælg en skole...</option>';
+            return;
+        }
+
+        fetch('{% url "signup:schools-by-kommune" %}?kommune=' + encodeURIComponent(kommune))
+            .then(response => response.json())
+            .then(data => {
                 schoolSelect.innerHTML = '<option value="">Vælg en skole...</option>';
-                return;
-            }
-
-            fetch('{% url "signup:schools-by-kommune" %}?kommune=' + encodeURIComponent(kommune))
-                .then(response => response.json())
-                .then(data => {
-                    schoolSelect.innerHTML = '<option value="">Vælg en skole...</option>';
-                    data.schools.forEach(school => {
-                        const option = document.createElement('option');
-                        option.value = school.id;
-                        option.textContent = school.name;
-                        schoolSelect.appendChild(option);
-                    });
-                })
-                .catch(() => {
-                    schoolSelect.innerHTML = '<option value="">Fejl ved hentning af skoler</option>';
+                data.schools.forEach(school => {
+                    const option = document.createElement('option');
+                    option.value = school.id;
+                    option.textContent = school.name;
+                    schoolSelect.appendChild(option);
                 });
-        }
+            })
+            .catch(() => {
+                schoolSelect.innerHTML = '<option value="">Fejl ved hentning af skoler</option>';
+            });
+    }
 
-        function toggleNewSchoolFields() {
-            if (schoolNotListedCheckbox && schoolNotListedCheckbox.checked) {
-                if (schoolSelect) schoolSelect.closest('.mb-3')?.style.setProperty('display', 'none');
-                if (newSchoolFields) newSchoolFields.style.display = 'block';
-            } else {
-                if (schoolSelect) schoolSelect.closest('.mb-3')?.style.removeProperty('display');
-                if (newSchoolFields) newSchoolFields.style.display = 'none';
+    function toggleNewSchoolFields() {
+        if (schoolNotListedCheckbox && schoolNotListedCheckbox.checked) {
+            if (schoolSelect) schoolSelect.closest('.mb-3')?.style.setProperty('display', 'none');
+            if (newSchoolFields) newSchoolFields.style.display = 'block';
+        } else {
+            if (schoolSelect) schoolSelect.closest('.mb-3')?.style.removeProperty('display');
+            if (newSchoolFields) newSchoolFields.style.display = 'none';
+        }
+    }
+
+    function toggleBillingFields() {
+        if (kommunenBetalerCheckbox && billingFields) {
+            billingFields.style.display = kommunenBetalerCheckbox.checked ? 'block' : 'none';
+        }
+    }
+
+    function toggleTitelOther(titelSelect, titelOtherInput) {
+        if (titelSelect && titelOtherInput) {
+            const container = titelOtherInput.closest('.mb-3') || titelOtherInput.closest('.col-md-3');
+            if (container) {
+                container.style.display = titelSelect.value === 'andet' ? '' : 'none';
             }
         }
+    }
 
-        if (municipalitySelect) {
-            municipalitySelect.addEventListener('change', updateSchoolDropdown);
-            // Load schools if municipality is already selected
-            if (municipalitySelect.value) {
-                updateSchoolDropdown();
-            }
+    // Municipality change handler
+    if (municipalitySelect) {
+        municipalitySelect.addEventListener('change', updateSchoolDropdown);
+        if (municipalitySelect.value) {
+            updateSchoolDropdown();
         }
+    }
 
-        if (schoolNotListedCheckbox) {
-            schoolNotListedCheckbox.addEventListener('change', toggleNewSchoolFields);
-            toggleNewSchoolFields();
-        }
-    });
+    // School not listed toggle
+    if (schoolNotListedCheckbox) {
+        schoolNotListedCheckbox.addEventListener('change', toggleNewSchoolFields);
+        toggleNewSchoolFields();
+    }
+
+    // Billing fields toggle
+    if (kommunenBetalerCheckbox) {
+        kommunenBetalerCheckbox.addEventListener('change', toggleBillingFields);
+        toggleBillingFields();
+    }
+
+    // Titel other field toggles
+    if (koordinatorTitel) {
+        koordinatorTitel.addEventListener('change', () => toggleTitelOther(koordinatorTitel, koordinatorTitelOther));
+        toggleTitelOther(koordinatorTitel, koordinatorTitelOther);
+    }
+    if (oekoTitel) {
+        oekoTitel.addEventListener('change', () => toggleTitelOther(oekoTitel, oekoTitelOther));
+        toggleTitelOther(oekoTitel, oekoTitelOther);
+    }
+});
 </script>
 {% endblock %}
