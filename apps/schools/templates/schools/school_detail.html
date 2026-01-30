@@ -22,20 +22,16 @@
     </div>
 </div>
 
-{% if school.is_enrolled %}
-{% with missing_postnummer=not school.postnummer missing_by=not school.by missing_ean=not school.ean_nummer %}
-{% if missing_postnummer or missing_by or missing_ean %}
+{% if school.is_enrolled and not school.postnummer or school.is_enrolled and not school.by or school.is_enrolled and not school.ean_nummer %}
 <div class="alert alert-warning alert-dismissible fade show py-2 mb-3" role="alert">
     <small>
         <i class="bi bi-exclamation-triangle me-1"></i>
         <strong>Manglende oplysninger:</strong>
-        {% if missing_postnummer %}Postnummer{% endif %}{% if missing_postnummer and missing_by %}, {% endif %}{% if missing_by %}By{% endif %}{% if missing_ean and missing_postnummer or missing_ean and missing_by %}, {% endif %}{% if missing_ean %}EAN-nummer{% endif %}
+        {% if not school.postnummer %}Postnummer{% endif %}{% if not school.postnummer and not school.by %}, {% endif %}{% if not school.by %}By{% endif %}{% if not school.ean_nummer and not school.postnummer or not school.ean_nummer and not school.by %}, {% endif %}{% if not school.ean_nummer %}EAN-nummer{% endif %}
         <a href="{% url 'schools:update' school.pk %}" class="alert-link ms-2">Udfyld nu</a>
     </small>
     <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Luk" style="padding: 0.5rem;"></button>
 </div>
-{% endif %}
-{% endwith %}
 {% endif %}
 
 <div class="row">
