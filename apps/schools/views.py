@@ -273,6 +273,7 @@ class SchoolDetailView(DetailView):
         context["comment_form"] = SchoolCommentForm()
         context["recent_activities"] = self.object.activity_logs.select_related("user", "content_type")[:5]
         context["today"] = date.today()
+        context["school_files"] = self.object.files.select_related("uploaded_by").all()
         return context
 
 
