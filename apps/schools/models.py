@@ -87,6 +87,16 @@ class School(models.Model):
     by = models.CharField(max_length=100, blank=True, verbose_name="By")
     kommune = models.CharField(max_length=100, verbose_name="Kommune")
     ean_nummer = models.CharField(max_length=13, blank=True, verbose_name="EAN-nummer")
+
+    # Billing fields (when municipality pays)
+    kommunen_betaler = models.BooleanField(default=False, verbose_name="Kommunen betaler")
+    fakturering_adresse = models.CharField(max_length=255, blank=True, verbose_name="Faktureringsadresse")
+    fakturering_postnummer = models.CharField(max_length=4, blank=True, verbose_name="Postnummer")
+    fakturering_by = models.CharField(max_length=100, blank=True, verbose_name="By")
+    fakturering_ean_nummer = models.CharField(max_length=13, blank=True, verbose_name="EAN-nummer")
+    fakturering_kontakt_navn = models.CharField(max_length=255, blank=True, verbose_name="Kontaktperson")
+    fakturering_kontakt_email = models.EmailField(blank=True, verbose_name="E-mail")
+
     enrolled_at = models.DateField(
         null=True, blank=True, verbose_name="Tilmeldt dato", help_text="Dato for skolens tilmelding til Basal"
     )

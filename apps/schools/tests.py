@@ -1760,3 +1760,37 @@ class PersonDetailTitelTest(TestCase):
         response = self.client.get(reverse("schools:detail", kwargs={"pk": self.school.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "skoleleder")  # lowercase due to |lower filter
+
+
+class SchoolBillingFieldsTest(TestCase):
+    def test_school_has_billing_fields(self):
+        """School model has billing fields for municipality billing."""
+        school = School.objects.create(
+            name="Test School",
+            adresse="Testvej 1",
+            kommune="København",
+            kommunen_betaler=True,
+            fakturering_adresse="Rådhuspladsen 1",
+            fakturering_postnummer="1550",
+            fakturering_by="København V",
+            fakturering_ean_nummer="5790000000001",
+            fakturering_kontakt_navn="Kommune Kontakt",
+            fakturering_kontakt_email="faktura@kommune.dk",
+        )
+        self.assertTrue(school.kommunen_betaler)
+        self.assertEqual(school.fakturering_adresse, "Rådhuspladsen 1")
+        self.assertEqual(school.fakturering_postnummer, "1550")
+        self.assertEqual(school.fakturering_by, "København V")
+        self.assertEqual(school.fakturering_ean_nummer, "5790000000001")
+        self.assertEqual(school.fakturering_kontakt_navn, "Kommune Kontakt")
+        self.assertEqual(school.fakturering_kontakt_email, "faktura@kommune.dk")
+
+    def test_school_billing_fields_optional(self):
+        """Billing fields are optional."""
+        school = School.objects.create(
+            name="Test School",
+            adresse="Testvej 1",
+            kommune="København",
+        )
+        self.assertFalse(school.kommunen_betaler)
+        self.assertEqual(school.fakturering_adresse, "")
