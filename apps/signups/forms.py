@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from apps.courses.models import Course
-from apps.schools.models import School
+from apps.schools.models import School, TitelChoice
 
 from .models import FieldType
 
@@ -172,6 +172,7 @@ class CourseSignupForm(DynamicFieldsMixin, forms.Form):
 class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
     """School signup form for joining the Basal project."""
 
+    # School selection
     municipality = forms.ChoiceField(
         label="Kommune",
         choices=[("", "Vælg kommune...")],
@@ -186,21 +187,38 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
         required=False,
         label="Min skole er ikke på listen",
     )
-    new_school_name = forms.CharField(
-        max_length=255,
-        required=False,
-        label="Skolens navn",
-    )
-    new_school_address = forms.CharField(
-        max_length=255,
-        required=False,
-        label="Skolens adresse",
-    )
 
-    contact_name = forms.CharField(max_length=255, label="Dit navn")
-    contact_email = forms.EmailField(label="E-mail")
-    contact_phone = forms.CharField(max_length=50, required=False, label="Telefon")
-    contact_title = forms.CharField(max_length=255, required=False, label="Din stilling")
+    # New school fields (only shown when school_not_listed)
+    new_school_name = forms.CharField(max_length=255, required=False, label="Skolens navn")
+    new_school_address = forms.CharField(max_length=255, required=False, label="Adresse")
+    new_school_postnummer = forms.CharField(max_length=4, required=False, label="Postnummer")
+    new_school_by = forms.CharField(max_length=100, required=False, label="By")
+
+    # School EAN (required for all)
+    ean_nummer = forms.CharField(max_length=13, label="EAN-nummer", help_text="13-cifret EAN-nummer til fakturering")
+
+    # Koordinator - contact to Komiteen for Sundhedsoplysning
+    koordinator_name = forms.CharField(max_length=255, label="Navn")
+    koordinator_titel = forms.ChoiceField(label="Titel", choices=[])  # Will be set in __init__
+    koordinator_titel_other = forms.CharField(max_length=100, required=False, label="Anden titel")
+    koordinator_phone = forms.CharField(max_length=50, label="Telefon")
+    koordinator_email = forms.EmailField(label="E-mail")
+
+    # Økonomisk ansvarlig
+    oeko_name = forms.CharField(max_length=255, label="Navn")
+    oeko_titel = forms.ChoiceField(label="Titel", choices=[])  # Will be set in __init__
+    oeko_titel_other = forms.CharField(max_length=100, required=False, label="Anden titel")
+    oeko_phone = forms.CharField(max_length=50, label="Telefon")
+    oeko_email = forms.EmailField(label="E-mail")
+
+    # Billing fields (when municipality pays)
+    kommunen_betaler = forms.BooleanField(required=False, label="Kommunen betaler (anden faktureringsadresse)")
+    fakturering_adresse = forms.CharField(max_length=255, required=False, label="Faktureringsadresse")
+    fakturering_postnummer = forms.CharField(max_length=4, required=False, label="Postnummer")
+    fakturering_by = forms.CharField(max_length=100, required=False, label="By")
+    fakturering_ean_nummer = forms.CharField(max_length=13, required=False, label="EAN-nummer")
+    fakturering_kontakt_navn = forms.CharField(max_length=255, required=False, label="Kontaktperson")
+    fakturering_kontakt_email = forms.EmailField(required=False, label="E-mail")
 
     comments = forms.CharField(
         required=False,
@@ -215,6 +233,11 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
         # Get unique municipalities from active schools
         municipalities = School.objects.active().values_list("kommune", flat=True).distinct().order_by("kommune")
         self.fields["municipality"].choices = [("", "Vælg kommune...")] + [(m, m) for m in municipalities]
+
+        # Add empty choice and set choices for titel fields
+        titel_choices = [("", "Vælg titel...")] + list(TitelChoice.choices)
+        self.fields["koordinator_titel"].choices = titel_choices
+        self.fields["oeko_titel"].choices = titel_choices
 
         # If form is bound (POST), populate school queryset based on municipality
         if self.is_bound:
@@ -234,14 +257,53 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
             HTML("<h5>Skoleoplysninger</h5>"),
             "municipality",
             Div("school", "school_not_listed", css_id="school-selection"),
-            Div("new_school_name", "new_school_address", css_id="new-school-fields", style="display: none;"),
-            HTML("<hr><h5>Kontaktoplysninger</h5>"),
-            "contact_name",
-            Row(
-                Column("contact_email", css_class="col-md-6"),
-                Column("contact_phone", css_class="col-md-6"),
+            Div(
+                "new_school_name",
+                "new_school_address",
+                Row(
+                    Column("new_school_postnummer", css_class="col-md-4"),
+                    Column("new_school_by", css_class="col-md-8"),
+                ),
+                css_id="new-school-fields",
+                style="display: none;",
             ),
-            "contact_title",
+            "ean_nummer",
+            HTML("<hr><h5>Koordinator - kontaktperson til Komiteen for Sundhedsoplysning</h5>"),
+            Row(
+                Column("koordinator_name", css_class="col-md-6"),
+                Column("koordinator_titel", css_class="col-md-3"),
+                Column("koordinator_titel_other", css_class="col-md-3"),
+            ),
+            Row(
+                Column("koordinator_email", css_class="col-md-6"),
+                Column("koordinator_phone", css_class="col-md-6"),
+            ),
+            HTML("<hr><h5>Økonomisk ansvarlig</h5>"),
+            Row(
+                Column("oeko_name", css_class="col-md-6"),
+                Column("oeko_titel", css_class="col-md-3"),
+                Column("oeko_titel_other", css_class="col-md-3"),
+            ),
+            Row(
+                Column("oeko_email", css_class="col-md-6"),
+                Column("oeko_phone", css_class="col-md-6"),
+            ),
+            HTML("<hr><h5>Fakturering</h5>"),
+            "kommunen_betaler",
+            Div(
+                "fakturering_adresse",
+                Row(
+                    Column("fakturering_postnummer", css_class="col-md-4"),
+                    Column("fakturering_by", css_class="col-md-8"),
+                ),
+                "fakturering_ean_nummer",
+                Row(
+                    Column("fakturering_kontakt_navn", css_class="col-md-6"),
+                    Column("fakturering_kontakt_email", css_class="col-md-6"),
+                ),
+                css_id="billing-fields",
+                style="display: none;",
+            ),
             "comments",
         ]
 
@@ -259,16 +321,25 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
         cleaned_data = super().clean()
         school_not_listed = cleaned_data.get("school_not_listed")
         school = cleaned_data.get("school")
-        new_school_name = cleaned_data.get("new_school_name")
-        new_school_address = cleaned_data.get("new_school_address")
+        kommunen_betaler = cleaned_data.get("kommunen_betaler")
 
         if school_not_listed:
-            if not new_school_name:
+            if not cleaned_data.get("new_school_name"):
                 raise ValidationError({"new_school_name": "Angiv venligst skolens navn."})
-            if not new_school_address:
+            if not cleaned_data.get("new_school_address"):
                 raise ValidationError({"new_school_address": "Angiv venligst skolens adresse."})
+            if not cleaned_data.get("new_school_postnummer"):
+                raise ValidationError({"new_school_postnummer": "Angiv venligst postnummer."})
+            if not cleaned_data.get("new_school_by"):
+                raise ValidationError({"new_school_by": "Angiv venligst by."})
         else:
             if not school:
                 raise ValidationError({"school": "Vælg venligst en skole eller marker at din skole ikke er på listen."})
+
+        if kommunen_betaler:
+            if not cleaned_data.get("fakturering_adresse"):
+                raise ValidationError({"fakturering_adresse": "Angiv venligst faktureringsadresse."})
+            if not cleaned_data.get("fakturering_ean_nummer"):
+                raise ValidationError({"fakturering_ean_nummer": "Angiv venligst EAN-nummer for fakturering."})
 
         return cleaned_data
