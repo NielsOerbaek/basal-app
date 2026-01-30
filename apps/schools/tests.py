@@ -2087,3 +2087,77 @@ class SchoolPublicViewCourseMaterialsTest(TestCase):
         response = self.client.get(f"/school/{self.school.signup_token}/")
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Secret Slides")
+
+
+class SchoolPublicPageIntegrationTest(TestCase):
+    """Integration test for all public page features."""
+
+    def setUp(self):
+        self.client = Client()
+        self.school = School.objects.create(
+            name="Integration Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+            enrolled_at=date.today() - timedelta(days=400),
+            signup_token="integration123token",
+        )
+
+    def test_full_public_page_with_all_features(self):
+        """Public page shows contacts, participants, and materials correctly."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.courses.models import Course, CourseMaterial, CourseSignUp, Location
+
+        # Create contact person
+        Person.objects.create(
+            school=self.school,
+            name="Contact Person",
+            role=PersonRole.KOORDINATOR,
+            email="contact@test.com",
+            is_primary=True,
+        )
+
+        # Create course with material
+        location = Location.objects.create(name="Copenhagen")
+        course = Course.objects.create(
+            start_date=date.today() - timedelta(days=30),
+            end_date=date.today() - timedelta(days=28),
+            location=location,
+            capacity=20,
+        )
+        file = SimpleUploadedFile("course_slides.pdf", b"content")
+        CourseMaterial.objects.create(course=course, file=file, name="Kursusslides")
+
+        # Contact person attended course
+        CourseSignUp.objects.create(
+            school=self.school,
+            course=course,
+            participant_name="Contact Person",
+            participant_email="contact@test.com",
+            attendance="present",
+        )
+
+        # Another person attended (not a contact)
+        CourseSignUp.objects.create(
+            school=self.school,
+            course=course,
+            participant_name="Other Attendee",
+            participant_email="other@test.com",
+            attendance="present",
+        )
+
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertEqual(response.status_code, 200)
+
+        # Contact person section
+        self.assertContains(response, "Kontaktpersoner")
+        self.assertContains(response, "Contact Person")
+        self.assertContains(response, "Uddannet på")
+
+        # Other participants section
+        self.assertContains(response, "Kursusdeltagere")
+        self.assertContains(response, "Other Attendee")
+
+        # Materials section
+        self.assertContains(response, "Kursusmaterialer")
+        self.assertContains(response, "Kursusslides")
