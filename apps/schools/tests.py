@@ -1679,3 +1679,31 @@ class PersonExtendedFieldsTest(TestCase):
             role_other="Custom Role",
         )
         self.assertEqual(person.display_role, "Custom Role")
+
+
+class PersonFormExtendedFieldsTest(TestCase):
+    def test_person_form_includes_titel_fields(self):
+        """PersonForm includes titel and titel_other fields."""
+        from .forms import PersonForm
+
+        form = PersonForm()
+        self.assertIn("titel", form.fields)
+        self.assertIn("titel_other", form.fields)
+
+    def test_person_form_saves_titel(self):
+        """PersonForm saves titel field."""
+        from .forms import PersonForm
+
+        school = School.objects.create(name="Test", adresse="Test", kommune="Test")
+        form = PersonForm(
+            data={
+                "name": "Test Person",
+                "role": PersonRole.KOORDINATOR,
+                "titel": TitelChoice.SKOLELEDER,
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        person = form.save(commit=False)
+        person.school = school
+        person.save()
+        self.assertEqual(person.titel, TitelChoice.SKOLELEDER)

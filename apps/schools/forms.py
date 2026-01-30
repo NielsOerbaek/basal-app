@@ -72,7 +72,7 @@ class SchoolForm(forms.ModelForm):
 class PersonForm(forms.ModelForm):
     class Meta:
         model = Person
-        fields = ["name", "role", "role_other", "phone", "email", "comment", "is_primary"]
+        fields = ["name", "titel", "titel_other", "role", "role_other", "phone", "email", "comment", "is_primary"]
         widgets = {
             "comment": forms.Textarea(attrs={"rows": 2}),
         }
@@ -81,7 +81,11 @@ class PersonForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.layout = Layout(
-            "name",
+            Row(
+                Column("name", css_class="col-md-6"),
+                Column("titel", css_class="col-md-3"),
+                Column("titel_other", css_class="col-md-3"),
+            ),
             Row(
                 Column("role", css_class="col-md-6"),
                 Column("role_other", css_class="col-md-6"),
