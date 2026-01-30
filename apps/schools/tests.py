@@ -1736,3 +1736,27 @@ class SchoolDetailExtendedFieldsTest(TestCase):
         response = self.client.get(reverse("schools:detail", kwargs={"pk": self.school.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "5790001234567")
+
+
+class PersonDetailTitelTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="personuser", password="testpass123", is_staff=True)
+        self.school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="København",
+        )
+        self.person = Person.objects.create(
+            school=self.school,
+            name="Test Person",
+            role=PersonRole.KOORDINATOR,
+            titel=TitelChoice.SKOLELEDER,
+        )
+
+    def test_detail_shows_person_titel(self):
+        """School detail shows person titel."""
+        self.client.login(username="personuser", password="testpass123")
+        response = self.client.get(reverse("schools:detail", kwargs={"pk": self.school.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "skoleleder")  # lowercase due to |lower filter
