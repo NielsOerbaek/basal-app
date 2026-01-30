@@ -1599,6 +1599,37 @@ class MissingInvoicesViewTest(TestCase):
         self.assertIn("2025/26", content)
 
 
+class SchoolFormExtendedFieldsTest(TestCase):
+    def test_school_form_includes_new_fields(self):
+        """SchoolForm includes postnummer, by, and ean_nummer fields."""
+        from .forms import SchoolForm
+
+        form = SchoolForm()
+        self.assertIn("postnummer", form.fields)
+        self.assertIn("by", form.fields)
+        self.assertIn("ean_nummer", form.fields)
+
+    def test_school_form_saves_new_fields(self):
+        """SchoolForm saves postnummer, by, and ean_nummer."""
+        from .forms import SchoolForm
+
+        form = SchoolForm(
+            data={
+                "name": "Test School",
+                "adresse": "Testvej 1",
+                "kommune": "Københavns Kommune",
+                "postnummer": "2100",
+                "by": "København Ø",
+                "ean_nummer": "5790001234567",
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        school = form.save()
+        self.assertEqual(school.postnummer, "2100")
+        self.assertEqual(school.by, "København Ø")
+        self.assertEqual(school.ean_nummer, "5790001234567")
+
+
 class PersonExtendedFieldsTest(TestCase):
     def setUp(self):
         self.school = School.objects.create(

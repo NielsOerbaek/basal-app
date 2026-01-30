@@ -14,7 +14,7 @@ class SchoolForm(forms.ModelForm):
 
     class Meta:
         model = School
-        fields = ["name", "adresse", "kommune", "enrolled_at", "opted_out_at"]
+        fields = ["name", "adresse", "postnummer", "by", "kommune", "ean_nummer", "enrolled_at", "opted_out_at"]
         widgets = {
             "enrolled_at": forms.DateInput(attrs={"type": "date"}),
             "opted_out_at": forms.DateInput(attrs={"type": "date"}),
@@ -31,12 +31,20 @@ class SchoolForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["adresse"].required = False
+        self.fields["postnummer"].required = False
+        self.fields["by"].required = False
+        self.fields["ean_nummer"].required = False
         self.helper = FormHelper()
         self.helper.layout = Layout(
             "name",
             Row(
-                Column("adresse", css_class="col-md-8"),
-                Column("kommune", css_class="col-md-4"),
+                Column("adresse", css_class="col-md-6"),
+                Column("postnummer", css_class="col-md-2"),
+                Column("by", css_class="col-md-4"),
+            ),
+            Row(
+                Column("kommune", css_class="col-md-6"),
+                Column("ean_nummer", css_class="col-md-6"),
             ),
             Row(
                 Column("enrolled_at", css_class="col-md-6"),
