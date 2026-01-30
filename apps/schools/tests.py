@@ -245,6 +245,17 @@ class SchoolViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "schools/school_detail.html")
 
+    def test_school_detail_enrolled_with_missing_fields_shows_warning(self):
+        """School detail shows warning for enrolled school missing postnummer/by/ean."""
+        from datetime import date
+
+        self.school.enrolled_at = date.today()
+        self.school.save()
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:detail", kwargs={"pk": self.school.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Manglende oplysninger")
+
     def test_school_create_loads(self):
         """School create form should load for staff users."""
         self.client.login(username="testuser", password="testpass123")
