@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from .models import Invoice, Person, PersonRole, School, SchoolComment, SchoolYear, SeatPurchase
+from .models import Invoice, Person, PersonRole, School, SchoolComment, SchoolYear, SeatPurchase, TitelChoice
 
 
 class SchoolExtendedFieldsTest(TestCase):
@@ -171,13 +171,13 @@ class PersonModelTest(TestCase):
         self.assertEqual(person.display_role, "Koordinator")
 
     def test_display_role_other(self):
-        """display_role returns role_other for OTHER role."""
-        person = Person.objects.create(school=self.school, name="Test", role=PersonRole.OTHER, role_other="Custom Role")
+        """display_role returns role_other for ANDET role."""
+        person = Person.objects.create(school=self.school, name="Test", role=PersonRole.ANDET, role_other="Custom Role")
         self.assertEqual(person.display_role, "Custom Role")
 
     def test_display_role_other_empty(self):
-        """display_role returns 'Andet' when OTHER role has no role_other."""
-        person = Person.objects.create(school=self.school, name="Test", role=PersonRole.OTHER)
+        """display_role returns 'Andet' when ANDET role has no role_other."""
+        person = Person.objects.create(school=self.school, name="Test", role=PersonRole.ANDET)
         self.assertEqual(person.display_role, "Andet")
 
     def test_person_ordering(self):
@@ -292,7 +292,7 @@ class PersonViewTest(TestCase):
             reverse("schools:person-create", kwargs={"school_pk": self.school.pk}),
             {
                 "name": "New Person",
-                "role": PersonRole.SKOLELEDER,
+                "role": PersonRole.KOORDINATOR,
                 "email": "new@example.com",
                 "phone": "87654321",
             },
@@ -693,13 +693,13 @@ class FormValidationTest(TestCase):
         self.assertIn("name", form.errors)
 
     def test_person_form_with_other_role(self):
-        """PersonForm accepts OTHER role with role_other."""
+        """PersonForm accepts ANDET role with role_other."""
         from .forms import PersonForm
 
         form = PersonForm(
             data={
                 "name": "Test Person",
-                "role": PersonRole.OTHER,
+                "role": PersonRole.ANDET,
                 "role_other": "Custom Role",
             }
         )
@@ -1597,3 +1597,54 @@ class MissingInvoicesViewTest(TestCase):
         # Check that the school appears with the missing year
         self.assertIn("Multi Year School", content)
         self.assertIn("2025/26", content)
+
+
+class PersonExtendedFieldsTest(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+        )
+
+    def test_person_has_titel_field(self):
+        """Person model has titel field with choices."""
+        person = Person.objects.create(
+            school=self.school,
+            name="Test Person",
+            role=PersonRole.KOORDINATOR,
+            titel=TitelChoice.SKOLELEDER,
+        )
+        self.assertEqual(person.titel, TitelChoice.SKOLELEDER)
+        self.assertEqual(person.display_titel, "Skoleleder")
+
+    def test_person_titel_other(self):
+        """Person titel_other works when titel is ANDET."""
+        person = Person.objects.create(
+            school=self.school,
+            name="Test Person",
+            role=PersonRole.KOORDINATOR,
+            titel=TitelChoice.ANDET,
+            titel_other="Speciallærer",
+        )
+        self.assertEqual(person.display_titel, "Speciallærer")
+
+    def test_person_role_oekonomisk_ansvarlig(self):
+        """Person can have OEKONOMISK_ANSVARLIG role."""
+        person = Person.objects.create(
+            school=self.school,
+            name="Test Person",
+            role=PersonRole.OEKONOMISK_ANSVARLIG,
+        )
+        self.assertEqual(person.role, PersonRole.OEKONOMISK_ANSVARLIG)
+        self.assertEqual(person.get_role_display(), "Økonomisk ansvarlig")
+
+    def test_person_role_andet(self):
+        """Person role ANDET uses role_other."""
+        person = Person.objects.create(
+            school=self.school,
+            name="Test Person",
+            role=PersonRole.ANDET,
+            role_other="Custom Role",
+        )
+        self.assertEqual(person.display_role, "Custom Role")

@@ -6,9 +6,18 @@ from django.db import models
 
 class PersonRole(models.TextChoices):
     KOORDINATOR = "koordinator", "Koordinator"
+    OEKONOMISK_ANSVARLIG = "oekonomisk_ansvarlig", "Økonomisk ansvarlig"
+    ANDET = "andet", "Andet"
+
+
+class TitelChoice(models.TextChoices):
     SKOLELEDER = "skoleleder", "Skoleleder"
     UDSKOLINGSLEDER = "udskolingsleder", "Udskolingsleder"
-    OTHER = "other", "Andet"
+    KLASSELAERER = "klasselaerer", "Klasselærer"
+    PAEDAGOG = "paedagog", "Pædagog"
+    AKT_INKLUSIONSVEJLEDER = "akt_inklusionsvejleder", "AKT/inklusionsvejleder"
+    TRIVSELSVEJLEDER = "trivselsvejleder", "Trivselsvejleder"
+    ANDET = "andet", "Andet"
 
 
 class InvoiceStatus(models.TextChoices):
@@ -348,6 +357,8 @@ class SeatPurchase(models.Model):
 class Person(models.Model):
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="people")
     name = models.CharField(max_length=255, verbose_name="Navn")
+    titel = models.CharField(max_length=30, choices=TitelChoice.choices, blank=True, verbose_name="Titel")
+    titel_other = models.CharField(max_length=100, blank=True, verbose_name="Anden titel")
     role = models.CharField(
         max_length=20, choices=PersonRole.choices, default=PersonRole.KOORDINATOR, verbose_name="Funktion"
     )
@@ -367,8 +378,16 @@ class Person(models.Model):
         return f"{self.name} ({self.display_role})"
 
     @property
+    def display_titel(self):
+        if self.titel == TitelChoice.ANDET:
+            return self.titel_other or "Andet"
+        if self.titel:
+            return self.get_titel_display()
+        return ""
+
+    @property
     def display_role(self):
-        if self.role == PersonRole.OTHER:
+        if self.role == PersonRole.ANDET:
             return self.role_other or "Andet"
         return self.get_role_display()
 
