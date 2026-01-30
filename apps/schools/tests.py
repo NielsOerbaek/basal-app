@@ -1913,6 +1913,72 @@ class SchoolFileFormTest(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
 
 
+class SchoolPublicViewCourseAttendanceTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+            enrolled_at=date.today() - timedelta(days=400),
+            signup_token="abc123def456ghi789",
+        )
+        # Create person
+        self.person = Person.objects.create(
+            school=self.school,
+            name="John Doe",
+            role=PersonRole.KOORDINATOR,
+            email="john@test.com",
+        )
+
+    def test_public_view_shows_person_course_attendance(self):
+        """Public view shows course attendance under person."""
+        from apps.courses.models import Course, CourseSignUp, Location
+
+        location = Location.objects.create(name="Test Location")
+        course = Course.objects.create(
+            start_date=date.today(),
+            end_date=date.today(),
+            location=location,
+            capacity=10,
+        )
+        # Create signup matching person email
+        CourseSignUp.objects.create(
+            school=self.school,
+            course=course,
+            participant_name="John Doe",
+            participant_email="john@test.com",
+            attendance="present",
+        )
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Uddannet på")
+
+    def test_public_view_shows_separate_course_participants(self):
+        """Public view shows course participants not matching contacts."""
+        from apps.courses.models import Course, CourseSignUp, Location
+
+        location = Location.objects.create(name="Test Location")
+        course = Course.objects.create(
+            start_date=date.today(),
+            end_date=date.today(),
+            location=location,
+            capacity=10,
+        )
+        # Create signup NOT matching any person
+        CourseSignUp.objects.create(
+            school=self.school,
+            course=course,
+            participant_name="Jane Smith",
+            participant_email="jane@test.com",
+            attendance="unmarked",
+        )
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Jane Smith")
+        self.assertContains(response, "Kursusdeltagere")
+
+
 class SchoolFileViewTest(TestCase):
     def setUp(self):
         self.client = Client()
