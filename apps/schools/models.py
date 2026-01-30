@@ -468,6 +468,6 @@ class SchoolFile(models.Model):
 
     @property
     def filename(self):
-        import os
-
-        return os.path.basename(self.file.name)
+        if not self.file:
+            return ""
+        return self.file.name.split("/")[-1]
