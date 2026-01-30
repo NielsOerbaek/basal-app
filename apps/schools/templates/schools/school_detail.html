@@ -29,9 +29,15 @@
             <div class="card-body">
                 <dl class="row mb-0">
                     <dt class="col-sm-4">Adresse</dt>
-                    <dd class="col-sm-8">{{ school.adresse }}</dd>
+                    <dd class="col-sm-8">
+                        {{ school.adresse }}{% if school.postnummer or school.by %}<br>{{ school.postnummer }} {{ school.by }}{% endif %}
+                    </dd>
                     <dt class="col-sm-4">Kommune</dt>
                     <dd class="col-sm-8">{{ school.kommune }}</dd>
+                    {% if school.ean_nummer %}
+                    <dt class="col-sm-4">EAN-nummer</dt>
+                    <dd class="col-sm-8">{{ school.ean_nummer }}</dd>
+                    {% endif %}
                     <dt class="col-sm-4">Tilmeldingsstatus</dt>
                     <dd class="col-sm-8">
                         {% if school.is_enrolled %}

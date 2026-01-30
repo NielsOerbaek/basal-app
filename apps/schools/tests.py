@@ -1707,3 +1707,32 @@ class PersonFormExtendedFieldsTest(TestCase):
         person.school = school
         person.save()
         self.assertEqual(person.titel, TitelChoice.SKOLELEDER)
+
+
+class SchoolDetailExtendedFieldsTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="detailuser", password="testpass123", is_staff=True)
+        self.school = School.objects.create(
+            name="Test School",
+            adresse="Testvej 1",
+            kommune="København",
+            postnummer="2100",
+            by="København Ø",
+            ean_nummer="5790001234567",
+        )
+
+    def test_detail_shows_postnummer_and_by(self):
+        """School detail shows postnummer and by."""
+        self.client.login(username="detailuser", password="testpass123")
+        response = self.client.get(reverse("schools:detail", kwargs={"pk": self.school.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "2100")
+        self.assertContains(response, "København Ø")
+
+    def test_detail_shows_ean_nummer(self):
+        """School detail shows EAN-nummer."""
+        self.client.login(username="detailuser", password="testpass123")
+        response = self.client.get(reverse("schools:detail", kwargs={"pk": self.school.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "5790001234567")
