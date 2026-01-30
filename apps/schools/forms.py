@@ -1,5 +1,5 @@
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import HTML, Column, Layout, Row, Submit
+from crispy_forms.layout import HTML, Column, Div, Layout, Row, Submit
 from django import forms
 
 from .constants import DANISH_KOMMUNER
@@ -68,15 +68,18 @@ class SchoolForm(forms.ModelForm):
             ),
             HTML("<hr><h5>Fakturering</h5>"),
             "kommunen_betaler",
-            Row(
-                Column("fakturering_adresse", css_class="col-md-6"),
-                Column("fakturering_postnummer", css_class="col-md-2"),
-                Column("fakturering_by", css_class="col-md-4"),
-            ),
-            Row(
-                Column("fakturering_ean_nummer", css_class="col-md-4"),
-                Column("fakturering_kontakt_navn", css_class="col-md-4"),
-                Column("fakturering_kontakt_email", css_class="col-md-4"),
+            Div(
+                Row(
+                    Column("fakturering_adresse", css_class="col-md-6"),
+                    Column("fakturering_postnummer", css_class="col-md-2"),
+                    Column("fakturering_by", css_class="col-md-4"),
+                ),
+                Row(
+                    Column("fakturering_ean_nummer", css_class="col-md-4"),
+                    Column("fakturering_kontakt_navn", css_class="col-md-4"),
+                    Column("fakturering_kontakt_email", css_class="col-md-4"),
+                ),
+                css_id="billing-fields",
             ),
             Submit("submit", "Gem skole", css_class="btn btn-primary"),
         )

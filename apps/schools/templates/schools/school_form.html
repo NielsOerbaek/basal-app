@@ -17,3 +17,26 @@
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const kommunenBetalerCheckbox = document.getElementById('id_kommunen_betaler');
+    const billingFields = document.getElementById('billing-fields');
+
+    function toggleBillingFields() {
+        if (kommunenBetalerCheckbox && billingFields) {
+            billingFields.style.display = kommunenBetalerCheckbox.checked ? 'block' : 'none';
+        }
+    }
+
+    // Initial state
+    toggleBillingFields();
+
+    // Listen for changes
+    if (kommunenBetalerCheckbox) {
+        kommunenBetalerCheckbox.addEventListener('change', toggleBillingFields);
+    }
+});
+</script>
+{% endblock %}
