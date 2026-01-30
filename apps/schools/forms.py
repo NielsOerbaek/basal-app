@@ -3,7 +3,7 @@ from crispy_forms.layout import HTML, Column, Layout, Row, Submit
 from django import forms
 
 from .constants import DANISH_KOMMUNER
-from .models import Invoice, Person, School, SchoolComment
+from .models import Invoice, Person, School, SchoolComment, SchoolFile
 
 
 class SchoolForm(forms.ModelForm):
@@ -192,3 +192,21 @@ class InvoiceForm(forms.ModelForm):
                 )
 
         return cleaned_data
+
+
+class SchoolFileForm(forms.ModelForm):
+    class Meta:
+        model = SchoolFile
+        fields = ["file", "description"]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            "file",
+            "description",
+            Submit("submit", "Upload fil", css_class="btn btn-primary"),
+        )

@@ -1881,3 +1881,33 @@ class SchoolFileModelTest(TestCase):
         # Django may add a random suffix to avoid collisions (e.g., my_document_abc123.pdf)
         self.assertTrue(sf.filename.startswith("my_document"))
         self.assertTrue(sf.filename.endswith(".pdf"))
+
+
+class SchoolFileFormTest(TestCase):
+    def test_school_file_form_valid(self):
+        """SchoolFileForm accepts valid data."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.schools.forms import SchoolFileForm
+
+        file = SimpleUploadedFile("test.pdf", b"content", content_type="application/pdf")
+        form = SchoolFileForm(data={"description": "Test"}, files={"file": file})
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_school_file_form_requires_file(self):
+        """SchoolFileForm requires file field."""
+        from apps.schools.forms import SchoolFileForm
+
+        form = SchoolFileForm(data={"description": "Test"})
+        self.assertFalse(form.is_valid())
+        self.assertIn("file", form.errors)
+
+    def test_school_file_form_description_optional(self):
+        """SchoolFileForm description is optional."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.schools.forms import SchoolFileForm
+
+        file = SimpleUploadedFile("test.pdf", b"content")
+        form = SchoolFileForm(data={}, files={"file": file})
+        self.assertTrue(form.is_valid(), form.errors)
