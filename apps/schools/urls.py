@@ -29,4 +29,7 @@ urlpatterns = [
     path("<int:school_pk>/invoice/add/", views.InvoiceCreateView.as_view(), name="invoice-create"),
     path("invoice/<int:pk>/delete/", views.InvoiceDeleteView.as_view(), name="invoice-delete"),
     path("fakturaer/manglende/", views.MissingInvoicesView.as_view(), name="missing-invoices"),
+    # File URLs
+    path("<int:school_pk>/file/add/", views.SchoolFileCreateView.as_view(), name="file-create"),
+    path("file/<int:pk>/delete/", views.SchoolFileDeleteView.as_view(), name="file-delete"),
 ]

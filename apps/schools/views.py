@@ -14,8 +14,8 @@ from apps.core.decorators import staff_required
 from apps.core.export import export_queryset_to_excel
 from apps.core.mixins import SortableMixin
 
-from .forms import InvoiceForm, PersonForm, SchoolCommentForm, SchoolForm
-from .models import Invoice, Person, School, SchoolComment, SchoolYear
+from .forms import InvoiceForm, PersonForm, SchoolCommentForm, SchoolFileForm, SchoolForm
+from .models import Invoice, Person, School, SchoolComment, SchoolFile, SchoolYear
 
 
 @method_decorator(staff_required, name="dispatch")
@@ -665,7 +665,6 @@ class MissingInvoicesView(ListView):
         # Forankring invoices are per school year
         # Extra seats invoices are NOT per school year - only one needed ever
         missing = []
-        schools_with_extra_seats_shown = set()  # Track schools already shown for extra seats
 
         for school_year in relevant_years:
             enrolled_schools = school_year.get_enrolled_schools()
@@ -698,9 +697,7 @@ class MissingInvoicesView(ListView):
                 extra_seats = max(0, school.used_seats - school.total_seats)
                 if extra_seats > 0:
                     # Check if ANY extra seats invoice exists (across all years)
-                    has_extra_seats_invoice = school.invoices.filter(
-                        comment__icontains="ekstra"
-                    ).exists()
+                    has_extra_seats_invoice = school.invoices.filter(comment__icontains="ekstra").exists()
 
                     if not has_extra_seats_invoice:
                         missing.append(
@@ -736,6 +733,61 @@ class RegenerateCredentialsView(View):
                 "password": school.signup_password,
                 "token": school.signup_token,
             }
+        )
+
+
+@method_decorator(staff_required, name="dispatch")
+class SchoolFileCreateView(View):
+    def get(self, request, school_pk):
+        school = get_object_or_404(School, pk=school_pk)
+        form = SchoolFileForm()
+        return render(
+            request,
+            "schools/file_form.html",
+            {"school": school, "form": form},
+        )
+
+    def post(self, request, school_pk):
+        school = get_object_or_404(School, pk=school_pk)
+        form = SchoolFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            school_file = form.save(commit=False)
+            school_file.school = school
+            school_file.uploaded_by = request.user
+            school_file.save()
+            messages.success(request, f'Filen "{school_file.filename}" blev uploadet.')
+            return redirect("schools:detail", pk=school.pk)
+        return render(
+            request,
+            "schools/file_form.html",
+            {"school": school, "form": form},
+        )
+
+
+@method_decorator(staff_required, name="dispatch")
+class SchoolFileDeleteView(View):
+    def get(self, request, pk):
+        school_file = get_object_or_404(SchoolFile, pk=pk)
+        return render(
+            request,
+            "core/components/confirm_delete_modal.html",
+            {
+                "title": "Slet fil",
+                "message": format_html("Er du sikker på, at du vil slette <strong>{}</strong>?", school_file.filename),
+                "delete_url": reverse_lazy("schools:file-delete", kwargs={"pk": pk}),
+                "button_text": "Slet",
+            },
+        )
+
+    def post(self, request, pk):
+        school_file = get_object_or_404(SchoolFile, pk=pk)
+        school_pk = school_file.school.pk
+        filename = school_file.filename
+        school_file.file.delete()  # Delete actual file
+        school_file.delete()
+        messages.success(request, f'Filen "{filename}" er blevet slettet.')
+        return JsonResponse(
+            {"success": True, "redirect": str(reverse_lazy("schools:detail", kwargs={"pk": school_pk}))}
         )
 
 

@@ -1911,3 +1911,53 @@ class SchoolFileFormTest(TestCase):
         file = SimpleUploadedFile("test.pdf", b"content")
         form = SchoolFileForm(data={}, files={"file": file})
         self.assertTrue(form.is_valid(), form.errors)
+
+
+class SchoolFileViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="fileuser", password="testpass123", is_staff=True)
+        self.school = School.objects.create(
+            name="File Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+        )
+
+    def test_file_create_requires_login(self):
+        """File create should redirect unauthenticated users."""
+        response = self.client.get(reverse("schools:file-create", kwargs={"school_pk": self.school.pk}))
+        self.assertEqual(response.status_code, 302)
+
+    def test_file_create_loads(self):
+        """File create form should load for staff users."""
+        self.client.login(username="fileuser", password="testpass123")
+        response = self.client.get(reverse("schools:file-create", kwargs={"school_pk": self.school.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    def test_file_create_post(self):
+        """File can be created via POST."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.schools.models import SchoolFile
+
+        self.client.login(username="fileuser", password="testpass123")
+        file = SimpleUploadedFile("test.pdf", b"content", content_type="application/pdf")
+        response = self.client.post(
+            reverse("schools:file-create", kwargs={"school_pk": self.school.pk}),
+            {"file": file, "description": "Test file"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(SchoolFile.objects.filter(school=self.school).exists())
+
+    def test_file_delete_post(self):
+        """File can be deleted via POST."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.schools.models import SchoolFile
+
+        self.client.login(username="fileuser", password="testpass123")
+        file = SimpleUploadedFile("test.pdf", b"content")
+        sf = SchoolFile.objects.create(school=self.school, file=file, uploaded_by=self.user)
+        response = self.client.post(reverse("schools:file-delete", kwargs={"pk": sf.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(SchoolFile.objects.filter(pk=sf.pk).exists())
