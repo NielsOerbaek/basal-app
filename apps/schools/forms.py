@@ -158,7 +158,7 @@ class InvoiceForm(forms.ModelForm):
             "school_year": forms.Select(attrs={"class": "form-select"}),
         }
 
-    def __init__(self, *args, school=None, **kwargs):
+    def __init__(self, *args, school=None, initial_school_year=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.school = school
         self.helper = FormHelper()
@@ -175,9 +175,24 @@ class InvoiceForm(forms.ModelForm):
             "comment",
             Submit("submit", "Gem faktura", css_class="btn btn-primary"),
         )
-        # Limit school_year choices to years the school is enrolled in
+        # Limit school_year choices to years the school is enrolled in, up to next year
         if school:
-            self.fields["school_year"].queryset = school.get_enrolled_years().order_by("-start_date")
+            from .models import SchoolYear
+
+            # Get current school year to determine cutoff
+            current_year = SchoolYear.objects.get_current()
+            enrolled_years = school.get_enrolled_years().order_by("-start_date")
+
+            if current_year:
+                # Only show up to 1 year after current (the "next" year)
+                next_year_end = current_year.end_date.replace(year=current_year.end_date.year + 1)
+                enrolled_years = enrolled_years.filter(start_date__lte=next_year_end)
+
+            self.fields["school_year"].queryset = enrolled_years
+
+        # Set initial school_year if provided
+        if initial_school_year:
+            self.fields["school_year"].initial = initial_school_year
 
     def clean(self):
         cleaned_data = super().clean()

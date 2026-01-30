@@ -43,7 +43,7 @@
                         {% endif %}
                     </td>
                     <td class="text-end">
-                        <a href="{% url 'schools:invoice-create' item.school.pk %}" class="btn btn-sm btn-primary">
+                        <a href="{% url 'schools:invoice-create' item.school.pk %}?school_year={{ item.school_year.pk }}" class="btn btn-sm btn-primary">
                             <i class="bi bi-plus-lg me-1"></i>Opret faktura
                         </a>
                     </td>

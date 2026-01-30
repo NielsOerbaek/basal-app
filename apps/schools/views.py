@@ -589,7 +589,12 @@ class SchoolCommentDeleteView(View):
 class InvoiceCreateView(View):
     def get(self, request, school_pk):
         school = get_object_or_404(School, pk=school_pk)
-        form = InvoiceForm(school=school)
+        # Check for preselected school_year from query param
+        initial_school_year = None
+        school_year_pk = request.GET.get("school_year")
+        if school_year_pk:
+            initial_school_year = SchoolYear.objects.filter(pk=school_year_pk).first()
+        form = InvoiceForm(school=school, initial_school_year=initial_school_year)
         return render(
             request,
             "schools/invoice_form.html",
@@ -665,7 +670,6 @@ class MissingInvoicesView(ListView):
         # Forankring invoices are per school year
         # Extra seats invoices are NOT per school year - only one needed ever
         missing = []
-        schools_with_extra_seats_shown = set()  # Track schools already shown for extra seats
 
         for school_year in relevant_years:
             enrolled_schools = school_year.get_enrolled_schools()
@@ -698,9 +702,7 @@ class MissingInvoicesView(ListView):
                 extra_seats = max(0, school.used_seats - school.total_seats)
                 if extra_seats > 0:
                     # Check if ANY extra seats invoice exists (across all years)
-                    has_extra_seats_invoice = school.invoices.filter(
-                        comment__icontains="ekstra"
-                    ).exists()
+                    has_extra_seats_invoice = school.invoices.filter(comment__icontains="ekstra").exists()
 
                     if not has_extra_seats_invoice:
                         missing.append(
