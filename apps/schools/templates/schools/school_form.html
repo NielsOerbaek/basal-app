@@ -13,6 +13,14 @@
         <form method="post">
             {% csrf_token %}
             {% crispy form %}
+            <div class="d-flex gap-2 mt-3">
+                <button type="submit" class="btn btn-primary">Gem skole</button>
+                {% if object %}
+                <a href="{% url 'schools:detail' object.pk %}" class="btn btn-outline-secondary">Annuller</a>
+                {% else %}
+                <a href="{% url 'schools:list' %}" class="btn btn-outline-secondary">Annuller</a>
+                {% endif %}
+            </div>
         </form>
     </div>
 </div>

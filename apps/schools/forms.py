@@ -28,21 +28,7 @@ class SchoolForm(forms.ModelForm):
             "fakturering_ean_nummer",
             "fakturering_kontakt_navn",
             "fakturering_kontakt_email",
-            "enrolled_at",
-            "opted_out_at",
         ]
-        widgets = {
-            "enrolled_at": forms.DateInput(attrs={"type": "date"}),
-            "opted_out_at": forms.DateInput(attrs={"type": "date"}),
-        }
-        labels = {
-            "enrolled_at": "Tilmeldt siden",
-            "opted_out_at": "Frameldt dato",
-        }
-        help_texts = {
-            "enrolled_at": "Dato for tilmelding til Basal",
-            "opted_out_at": "Udfyld kun hvis skolen har frameldt sig permanent",
-        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -62,10 +48,6 @@ class SchoolForm(forms.ModelForm):
                 Column("kommune", css_class="col-md-6"),
                 Column("ean_nummer", css_class="col-md-6"),
             ),
-            Row(
-                Column("enrolled_at", css_class="col-md-6"),
-                Column("opted_out_at", css_class="col-md-6"),
-            ),
             HTML("<hr><h5>Fakturering</h5>"),
             "kommunen_betaler",
             Div(
@@ -81,7 +63,6 @@ class SchoolForm(forms.ModelForm):
                 ),
                 css_id="billing-fields",
             ),
-            Submit("submit", "Gem skole", css_class="btn btn-primary"),
         )
 
     def clean(self):
