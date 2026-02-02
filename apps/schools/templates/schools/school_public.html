@@ -117,6 +117,26 @@
                     </dl>
                 </div>
             </div>
+
+            {% if courses_with_materials %}
+            <div class="card mb-4">
+                <div class="card-header"><i class="bi bi-file-earmark-text me-2"></i>Kursusmaterialer</div>
+                <ul class="list-group list-group-flush">
+                    {% for course in courses_with_materials %}
+                    <li class="list-group-item">
+                        <div class="fw-bold mb-2">{{ course.display_name }}</div>
+                        {% for material in course.course_materials.all %}
+                        <div class="small ms-3">
+                            <a href="{{ material.file.url }}" target="_blank" class="text-decoration-none">
+                                <i class="bi bi-file-earmark-pdf me-1"></i>{{ material.display_name }}
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
         </div>
 
         <div class="col-lg-6">
@@ -168,26 +188,6 @@
                             <i class="bi bi-arrow-return-right me-1"></i>
                             {% if signup.attendance == 'present' %}Uddannet på{% elif signup.attendance == 'absent' %}Mødte ikke op til{% else %}Tilmeldt{% endif %}
                             {{ signup.course.display_name }}
-                        </div>
-                        {% endfor %}
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
-
-            {% if courses_with_materials %}
-            <div class="card mb-4">
-                <div class="card-header"><i class="bi bi-file-earmark-text me-2"></i>Kursusmaterialer</div>
-                <ul class="list-group list-group-flush">
-                    {% for course in courses_with_materials %}
-                    <li class="list-group-item">
-                        <div class="fw-bold mb-2">{{ course.display_name }}</div>
-                        {% for material in course.course_materials.all %}
-                        <div class="small ms-3">
-                            <a href="{{ material.file.url }}" target="_blank" class="text-decoration-none">
-                                <i class="bi bi-file-earmark-pdf me-1"></i>{{ material.display_name }}
-                            </a>
                         </div>
                         {% endfor %}
                     </li>
