@@ -856,7 +856,7 @@ class SchoolCredentialsViewTest(TestCase):
         self.client.login(username="credsuser", password="testpass123")
         response = self.client.get(reverse("schools:detail", kwargs={"pk": self.school.pk}))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Kodeord og tilmeldingslink")
+        self.assertContains(response, "Kodeord og links")
         self.assertContains(response, "bafimoku")
 
     def test_detail_hides_credentials_for_unenrolled(self):
@@ -866,7 +866,7 @@ class SchoolCredentialsViewTest(TestCase):
         self.client.login(username="credsuser", password="testpass123")
         response = self.client.get(reverse("schools:detail", kwargs={"pk": self.school.pk}))
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Kodeord og tilmeldingslink")
+        self.assertNotContains(response, "Kodeord og links")
 
     def test_regenerate_credentials(self):
         """Regenerate credentials creates new password and token."""
@@ -1226,10 +1226,10 @@ class InvoiceFormTest(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_form_school_year_queryset_filtered(self):
-        """Form queryset is filtered to school's enrolled years."""
+        """Form queryset is filtered to school's enrolled years and excludes future years."""
         from .forms import InvoiceForm
 
-        # Create another school year that the school wasn't enrolled in
+        # Create another school year that is in the future
         future_year, _ = SchoolYear.objects.get_or_create(
             name="2030/31",
             defaults={"start_date": date(2030, 8, 1), "end_date": date(2031, 7, 31)},
@@ -1240,8 +1240,8 @@ class InvoiceFormTest(TestCase):
 
         # School enrolled in 2024-09-01, so 2024/25 should be included
         self.assertIn(self.school_year, queryset)
-        # Future year should also be included (enrolled school covers all years from enrollment onwards)
-        self.assertIn(future_year, queryset)
+        # Future years are excluded (only current and past years allowed)
+        self.assertNotIn(future_year, queryset)
 
     def test_form_school_year_queryset_excludes_opted_out_years(self):
         """Form queryset excludes years after school opted out."""
@@ -1874,3 +1874,337 @@ class SchoolDetailBillingTest(TestCase):
         response = self.client.get(reverse("schools:detail", kwargs={"pk": self.school.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Kommunen betaler")
+
+
+class SchoolFileModelTest(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+        )
+        self.user = User.objects.create_user(username="testuser", password="testpass123")
+
+    def test_create_school_file(self):
+        """SchoolFile model can be created and saved."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.schools.models import SchoolFile
+
+        file = SimpleUploadedFile("test.pdf", b"file_content", content_type="application/pdf")
+        school_file = SchoolFile.objects.create(
+            school=self.school,
+            file=file,
+            description="Test description",
+            uploaded_by=self.user,
+        )
+        self.assertEqual(school_file.school, self.school)
+        self.assertEqual(school_file.description, "Test description")
+        self.assertEqual(school_file.uploaded_by, self.user)
+        self.assertIsNotNone(school_file.uploaded_at)
+
+    def test_school_file_ordering(self):
+        """SchoolFiles are ordered by uploaded_at descending."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.schools.models import SchoolFile
+
+        file1 = SimpleUploadedFile("test1.pdf", b"content1")
+        file2 = SimpleUploadedFile("test2.pdf", b"content2")
+        sf1 = SchoolFile.objects.create(school=self.school, file=file1)
+        sf2 = SchoolFile.objects.create(school=self.school, file=file2)
+        files = list(self.school.files.all())
+        self.assertEqual(files[0], sf2)  # Most recent first
+        self.assertEqual(files[1], sf1)
+
+    def test_school_file_filename_property(self):
+        """SchoolFile.filename returns just the filename."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.schools.models import SchoolFile
+
+        file = SimpleUploadedFile("my_document.pdf", b"content")
+        sf = SchoolFile.objects.create(school=self.school, file=file)
+        # Django may add a random suffix to avoid collisions (e.g., my_document_abc123.pdf)
+        self.assertTrue(sf.filename.startswith("my_document"))
+        self.assertTrue(sf.filename.endswith(".pdf"))
+
+
+class SchoolFileFormTest(TestCase):
+    def test_school_file_form_valid(self):
+        """SchoolFileForm accepts valid data."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.schools.forms import SchoolFileForm
+
+        file = SimpleUploadedFile("test.pdf", b"content", content_type="application/pdf")
+        form = SchoolFileForm(data={"description": "Test"}, files={"file": file})
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_school_file_form_requires_file(self):
+        """SchoolFileForm requires file field."""
+        from apps.schools.forms import SchoolFileForm
+
+        form = SchoolFileForm(data={"description": "Test"})
+        self.assertFalse(form.is_valid())
+        self.assertIn("file", form.errors)
+
+    def test_school_file_form_description_optional(self):
+        """SchoolFileForm description is optional."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.schools.forms import SchoolFileForm
+
+        file = SimpleUploadedFile("test.pdf", b"content")
+        form = SchoolFileForm(data={}, files={"file": file})
+        self.assertTrue(form.is_valid(), form.errors)
+
+
+class SchoolPublicViewCourseAttendanceTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+            enrolled_at=date.today() - timedelta(days=400),
+            signup_token="abc123def456ghi789",
+        )
+        # Create person
+        self.person = Person.objects.create(
+            school=self.school,
+            name="John Doe",
+            role=PersonRole.KOORDINATOR,
+            email="john@test.com",
+        )
+
+    def test_public_view_shows_person_course_attendance(self):
+        """Public view shows course attendance under person."""
+        from apps.courses.models import Course, CourseSignUp, Location
+
+        location = Location.objects.create(name="Test Location")
+        course = Course.objects.create(
+            start_date=date.today(),
+            end_date=date.today(),
+            location=location,
+            capacity=10,
+        )
+        # Create signup matching person email
+        CourseSignUp.objects.create(
+            school=self.school,
+            course=course,
+            participant_name="John Doe",
+            participant_email="john@test.com",
+            attendance="present",
+        )
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Uddannet på")
+
+    def test_public_view_shows_separate_course_participants(self):
+        """Public view shows course participants not matching contacts."""
+        from apps.courses.models import Course, CourseSignUp, Location
+
+        location = Location.objects.create(name="Test Location")
+        course = Course.objects.create(
+            start_date=date.today(),
+            end_date=date.today(),
+            location=location,
+            capacity=10,
+        )
+        # Create signup NOT matching any person
+        CourseSignUp.objects.create(
+            school=self.school,
+            course=course,
+            participant_name="Jane Smith",
+            participant_email="jane@test.com",
+            attendance="unmarked",
+        )
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Jane Smith")
+        self.assertContains(response, "Kursusdeltagere")
+
+
+class SchoolFileViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="fileuser", password="testpass123", is_staff=True)
+        self.school = School.objects.create(
+            name="File Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+        )
+
+    def test_file_create_requires_login(self):
+        """File create should redirect unauthenticated users."""
+        response = self.client.get(reverse("schools:file-create", kwargs={"school_pk": self.school.pk}))
+        self.assertEqual(response.status_code, 302)
+
+    def test_file_create_loads(self):
+        """File create form should load for staff users."""
+        self.client.login(username="fileuser", password="testpass123")
+        response = self.client.get(reverse("schools:file-create", kwargs={"school_pk": self.school.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    def test_file_create_post(self):
+        """File can be created via POST."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.schools.models import SchoolFile
+
+        self.client.login(username="fileuser", password="testpass123")
+        file = SimpleUploadedFile("test.pdf", b"content", content_type="application/pdf")
+        response = self.client.post(
+            reverse("schools:file-create", kwargs={"school_pk": self.school.pk}),
+            {"file": file, "description": "Test file"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(SchoolFile.objects.filter(school=self.school).exists())
+
+    def test_file_delete_post(self):
+        """File can be deleted via POST."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.schools.models import SchoolFile
+
+        self.client.login(username="fileuser", password="testpass123")
+        file = SimpleUploadedFile("test.pdf", b"content")
+        sf = SchoolFile.objects.create(school=self.school, file=file, uploaded_by=self.user)
+        response = self.client.post(reverse("schools:file-delete", kwargs={"pk": sf.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(SchoolFile.objects.filter(pk=sf.pk).exists())
+
+
+class SchoolPublicViewCourseMaterialsTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+            enrolled_at=date.today() - timedelta(days=400),
+            signup_token="materials123token",
+        )
+
+    def test_public_view_shows_course_materials(self):
+        """Public view shows course materials section."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.courses.models import Course, CourseMaterial, CourseSignUp, Location
+
+        location = Location.objects.create(name="Test Location")
+        course = Course.objects.create(
+            start_date=date.today(),
+            end_date=date.today(),
+            location=location,
+            capacity=10,
+        )
+        CourseSignUp.objects.create(
+            school=self.school,
+            course=course,
+            participant_name="Test",
+            participant_email="test@test.com",
+        )
+        file = SimpleUploadedFile("slides.pdf", b"content")
+        CourseMaterial.objects.create(course=course, file=file, name="Kursusslides")
+
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Kursusmaterialer")
+        self.assertContains(response, "Kursusslides")
+
+    def test_public_view_hides_materials_for_courses_without_signups(self):
+        """Public view doesn't show materials for courses school didn't attend."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.courses.models import Course, CourseMaterial, Location
+
+        location = Location.objects.create(name="Test Location")
+        course = Course.objects.create(
+            start_date=date.today(),
+            end_date=date.today(),
+            location=location,
+            capacity=10,
+        )
+        # No signup for this school
+        file = SimpleUploadedFile("slides.pdf", b"content")
+        CourseMaterial.objects.create(course=course, file=file, name="Secret Slides")
+
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Secret Slides")
+
+
+class SchoolPublicPageIntegrationTest(TestCase):
+    """Integration test for all public page features."""
+
+    def setUp(self):
+        self.client = Client()
+        self.school = School.objects.create(
+            name="Integration Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+            enrolled_at=date.today() - timedelta(days=400),
+            signup_token="integration123token",
+        )
+
+    def test_full_public_page_with_all_features(self):
+        """Public page shows contacts, participants, and materials correctly."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.courses.models import Course, CourseMaterial, CourseSignUp, Location
+
+        # Create contact person
+        Person.objects.create(
+            school=self.school,
+            name="Contact Person",
+            role=PersonRole.KOORDINATOR,
+            email="contact@test.com",
+            is_primary=True,
+        )
+
+        # Create course with material
+        location = Location.objects.create(name="Copenhagen")
+        course = Course.objects.create(
+            start_date=date.today() - timedelta(days=30),
+            end_date=date.today() - timedelta(days=28),
+            location=location,
+            capacity=20,
+        )
+        file = SimpleUploadedFile("course_slides.pdf", b"content")
+        CourseMaterial.objects.create(course=course, file=file, name="Kursusslides")
+
+        # Contact person attended course
+        CourseSignUp.objects.create(
+            school=self.school,
+            course=course,
+            participant_name="Contact Person",
+            participant_email="contact@test.com",
+            attendance="present",
+        )
+
+        # Another person attended (not a contact)
+        CourseSignUp.objects.create(
+            school=self.school,
+            course=course,
+            participant_name="Other Attendee",
+            participant_email="other@test.com",
+            attendance="present",
+        )
+
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertEqual(response.status_code, 200)
+
+        # Contact person section
+        self.assertContains(response, "Kontaktpersoner")
+        self.assertContains(response, "Contact Person")
+        self.assertContains(response, "Uddannet på")
+
+        # Other participants section
+        self.assertContains(response, "Kursusdeltagere")
+        self.assertContains(response, "Other Attendee")
+
+        # Materials section
+        self.assertContains(response, "Kursusmaterialer")
+        self.assertContains(response, "Kursusslides")

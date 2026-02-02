@@ -14,8 +14,8 @@ from apps.core.decorators import staff_required
 from apps.core.export import export_queryset_to_excel
 from apps.core.mixins import SortableMixin
 
-from .forms import InvoiceForm, PersonForm, SchoolCommentForm, SchoolForm
-from .models import Invoice, Person, School, SchoolComment, SchoolYear
+from .forms import InvoiceForm, PersonForm, SchoolCommentForm, SchoolFileForm, SchoolForm
+from .models import Invoice, Person, School, SchoolComment, SchoolFile, SchoolYear
 
 
 @method_decorator(staff_required, name="dispatch")
@@ -273,6 +273,7 @@ class SchoolDetailView(DetailView):
         context["comment_form"] = SchoolCommentForm()
         context["recent_activities"] = self.object.activity_logs.select_related("user", "content_type")[:5]
         context["today"] = date.today()
+        context["school_files"] = self.object.files.select_related("uploaded_by").all()
         return context
 
 
@@ -741,6 +742,61 @@ class RegenerateCredentialsView(View):
         )
 
 
+@method_decorator(staff_required, name="dispatch")
+class SchoolFileCreateView(View):
+    def get(self, request, school_pk):
+        school = get_object_or_404(School, pk=school_pk)
+        form = SchoolFileForm()
+        return render(
+            request,
+            "schools/file_form.html",
+            {"school": school, "form": form},
+        )
+
+    def post(self, request, school_pk):
+        school = get_object_or_404(School, pk=school_pk)
+        form = SchoolFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            school_file = form.save(commit=False)
+            school_file.school = school
+            school_file.uploaded_by = request.user
+            school_file.save()
+            messages.success(request, f'Filen "{school_file.filename}" blev uploadet.')
+            return redirect("schools:detail", pk=school.pk)
+        return render(
+            request,
+            "schools/file_form.html",
+            {"school": school, "form": form},
+        )
+
+
+@method_decorator(staff_required, name="dispatch")
+class SchoolFileDeleteView(View):
+    def get(self, request, pk):
+        school_file = get_object_or_404(SchoolFile, pk=pk)
+        return render(
+            request,
+            "core/components/confirm_delete_modal.html",
+            {
+                "title": "Slet fil",
+                "message": format_html("Er du sikker på, at du vil slette <strong>{}</strong>?", school_file.filename),
+                "delete_url": reverse_lazy("schools:file-delete", kwargs={"pk": pk}),
+                "button_text": "Slet",
+            },
+        )
+
+    def post(self, request, pk):
+        school_file = get_object_or_404(SchoolFile, pk=pk)
+        school_pk = school_file.school.pk
+        filename = school_file.filename
+        school_file.file.delete()  # Delete actual file
+        school_file.delete()
+        messages.success(request, f'Filen "{filename}" er blevet slettet.')
+        return JsonResponse(
+            {"success": True, "redirect": str(reverse_lazy("schools:detail", kwargs={"pk": school_pk}))}
+        )
+
+
 class SchoolPublicView(DetailView):
     """Public read-only view of school for token-based access."""
 
@@ -756,7 +812,59 @@ class SchoolPublicView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         school = self.object
-        context["people"] = school.people.all()
-        context["course_signups"] = school.course_signups.select_related("course").order_by("-course__start_date")
+        people = school.people.all()
+        all_signups = school.course_signups.select_related("course", "course__location").order_by("course__start_date")
+
+        # Build set of person emails for matching
+        person_emails = {p.email.lower() for p in people if p.email}
+
+        # For each person, find their course signups
+        people_with_courses = []
+        for person in people:
+            person_signups = []
+            if person.email:
+                person_signups = [
+                    s
+                    for s in all_signups
+                    if s.participant_email and s.participant_email.lower() == person.email.lower()
+                ]
+            people_with_courses.append(
+                {
+                    "person": person,
+                    "signups": person_signups,
+                }
+            )
+
+        # Course participants not matching any Person
+        other_participants = {}
+        for signup in all_signups:
+            # Include signups that either have no email or have email not matching any person
+            if not signup.participant_email or signup.participant_email.lower() not in person_emails:
+                # Use email as key if available, otherwise use a unique key based on name + signup id
+                email_key = signup.participant_email.lower() if signup.participant_email else f"no_email_{signup.pk}"
+                if email_key not in other_participants:
+                    other_participants[email_key] = {
+                        "name": signup.participant_name,
+                        "email": signup.participant_email or "",
+                        "signups": [],
+                    }
+                other_participants[email_key]["signups"].append(signup)
+
+        context["people_with_courses"] = people_with_courses
+        context["other_participants"] = list(other_participants.values())
         context["enrollment_history"] = school.get_enrollment_history()
+
+        # Courses with materials (newest first)
+        from apps.courses.models import Course
+
+        course_ids = all_signups.values_list("course_id", flat=True).distinct()
+        courses_with_materials = (
+            Course.objects.filter(pk__in=course_ids, course_materials__isnull=False)
+            .prefetch_related("course_materials")
+            .distinct()
+            .order_by("-start_date")
+        )
+
+        context["courses_with_materials"] = courses_with_materials
+
         return context

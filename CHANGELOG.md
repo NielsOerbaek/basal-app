@@ -36,6 +36,21 @@ Kursustitler viser nu altid datoer med danske månedsnavne (jan, feb, mar, apr, 
 - Søgeknappen på skolelisten viser nu en loading-animation mens der søges
 - Login-sektionen på skoledetaljesiden hedder nu "Kodeord og links" for klarhed
 
+### Filupload per skole (intern)
+Medarbejdere kan nu uploade filer til hver skole direkte fra skoledetaljesiden. Filer er kun synlige for medarbejdere og vises ikke på skolens offentlige side. Hver fil kan have en beskrivelse, og alle filuploads logges i aktivitetsloggen.
+
+### Kursusdeltagelse på skolens offentlige side
+Skolens offentlige side viser nu kursusdeltagelse for kontaktpersoner. Under hver kontaktperson vises hvilke kurser de har deltaget i med status:
+- "Uddannet på" - for deltagere der mødte op
+- "Mødte ikke op til" - for deltagere der udeblev
+- "Tilmeldt" - for fremtidige kurser
+
+### Kursusdeltagere-sektion på offentlig side
+En ny "Kursusdeltagere"-sektion viser personer der har deltaget i kurser men som ikke er registreret som kontaktpersoner for skolen. Dette giver et komplet overblik over alle fra skolen der har været på kursus.
+
+### Kursusmaterialer på skolens offentlige side
+Skoler kan nu downloade kursusmaterialer direkte fra deres offentlige side. Sektionen "Kursusmaterialer" viser materialer fra alle kurser skolen har deltaget i, sorteret med de nyeste kurser først.
+
 ---
 
 ## 27. januar 2026

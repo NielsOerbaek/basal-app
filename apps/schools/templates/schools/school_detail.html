@@ -376,6 +376,44 @@
 
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-folder me-2"></i>Filer</span>
+                <a href="{% url 'schools:file-create' school.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-lg me-1"></i>Upload fil
+                </a>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for file in school_files %}
+                <li class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="mb-1">
+                                <a href="{{ file.file.url }}" target="_blank" class="text-decoration-none">
+                                    <i class="bi bi-file-earmark me-1"></i>{{ file.filename }}
+                                </a>
+                            </div>
+                            {% if file.description %}
+                            <div class="small text-muted">{{ file.description }}</div>
+                            {% endif %}
+                            <div class="small text-muted">
+                                {{ file.uploaded_at|date:"d. M Y" }}
+                                {% if file.uploaded_by %} - {{ file.uploaded_by.get_full_name|default:file.uploaded_by.username }}{% endif %}
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger ms-2" title="Slet"
+                                hx-get="{% url 'schools:file-delete' file.pk %}"
+                                hx-target="#modal-container">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted">Ingen filer uploadet.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <span>Henvendelser</span>
                 <a href="{% url 'contacts:create' %}?school={{ school.pk }}" class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-plus-lg"></i> Tilføj henvendelse
