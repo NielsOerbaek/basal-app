@@ -377,6 +377,8 @@ class Person(models.Model):
     email = models.EmailField(blank=True, verbose_name="E-mail")
     comment = models.TextField(blank=True, verbose_name="Kommentar")
     is_primary = models.BooleanField(default=False, verbose_name="Primær kontakt")
+    is_koordinator = models.BooleanField(default=False, verbose_name="Koordinator")
+    is_oekonomisk_ansvarlig = models.BooleanField(default=False, verbose_name="Økonomisk ansvarlig")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -400,6 +402,16 @@ class Person(models.Model):
         if self.role == PersonRole.ANDET:
             return self.role_other or "Andet"
         return self.get_role_display()
+
+    @property
+    def roles(self):
+        """Return list of role labels for chip display."""
+        result = []
+        if self.is_koordinator:
+            result.append("Koordinator")
+        if self.is_oekonomisk_ansvarlig:
+            result.append("Økonomisk ansvarlig")
+        return result
 
 
 class SchoolComment(models.Model):
