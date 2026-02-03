@@ -148,8 +148,9 @@
                     <li class="list-group-item">
                         <div class="mb-1">
                             <strong>{{ item.person.name }}</strong>
-                            <span class="text-muted">, {{ item.person.display_role|lower }}</span>
-                            {% if item.person.is_primary %}<span class="badge bg-primary ms-2">primær kontakt</span>{% endif %}
+                            {% for role in item.person.roles %}
+                            <span class="badge {% if role == 'Koordinator' %}bg-primary{% else %}bg-secondary{% endif %} ms-1">{{ role }}</span>
+                            {% endfor %}
                         </div>
                         <div class="small text-muted">
                             {% if item.person.email %}<i class="bi bi-envelope me-1"></i>{{ item.person.email }}{% endif %}
