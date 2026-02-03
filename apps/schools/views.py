@@ -13,6 +13,8 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from apps.core.decorators import staff_required
 from apps.core.export import export_queryset_to_excel
 from apps.core.mixins import SortableMixin
+from apps.courses.forms import CourseSignUpParticipantForm
+from apps.courses.models import CourseSignUp
 
 from .forms import InvoiceForm, PersonForm, SchoolCommentForm, SchoolFileForm, SchoolForm
 from .models import Invoice, Person, School, SchoolComment, SchoolFile, SchoolYear
@@ -522,6 +524,72 @@ class PersonDeleteView(View):
         person_name = person.name
         person.delete()
         messages.success(request, f'Person "{person_name}" er blevet slettet.')
+        return JsonResponse(
+            {"success": True, "redirect": str(reverse_lazy("schools:detail", kwargs={"pk": school_pk}))}
+        )
+
+
+@method_decorator(staff_required, name="dispatch")
+class CourseSignUpUpdateView(View):
+    def get(self, request, school_pk, pk):
+        school = get_object_or_404(School, pk=school_pk)
+        signup = get_object_or_404(CourseSignUp, pk=pk, school=school)
+        form = CourseSignUpParticipantForm(instance=signup)
+        return render(
+            request,
+            "schools/signup_form.html",
+            {
+                "school": school,
+                "signup": signup,
+                "form": form,
+            },
+        )
+
+    def post(self, request, school_pk, pk):
+        school = get_object_or_404(School, pk=school_pk)
+        signup = get_object_or_404(CourseSignUp, pk=pk, school=school)
+        form = CourseSignUpParticipantForm(request.POST, instance=signup)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Kursusdeltageren "{signup.participant_name}" er opdateret.')
+            return redirect("schools:detail", pk=school.pk)
+        return render(
+            request,
+            "schools/signup_form.html",
+            {
+                "school": school,
+                "signup": signup,
+                "form": form,
+            },
+        )
+
+
+@method_decorator(staff_required, name="dispatch")
+class CourseSignUpDeleteView(View):
+    def get(self, request, school_pk, pk):
+        school = get_object_or_404(School, pk=school_pk)
+        signup = get_object_or_404(CourseSignUp, pk=pk, school=school)
+        return render(
+            request,
+            "core/components/confirm_delete_modal.html",
+            {
+                "title": "Slet kursusdeltagere",
+                "message": format_html(
+                    "Er du sikker på, at du vil slette <strong>{}</strong> fra {}?",
+                    signup.participant_name,
+                    signup.course.display_name,
+                ),
+                "delete_url": reverse_lazy("schools:signup-delete", kwargs={"school_pk": school_pk, "pk": pk}),
+                "button_text": "Slet",
+            },
+        )
+
+    def post(self, request, school_pk, pk):
+        school = get_object_or_404(School, pk=school_pk)
+        signup = get_object_or_404(CourseSignUp, pk=pk, school=school)
+        participant_name = signup.participant_name
+        signup.delete()
+        messages.success(request, f'Kursusdeltageren "{participant_name}" er blevet slettet.')
         return JsonResponse(
             {"success": True, "redirect": str(reverse_lazy("schools:detail", kwargs={"pk": school_pk}))}
         )

@@ -2223,3 +2223,81 @@ class SchoolPublicPageIntegrationTest(TestCase):
         # Materials section
         self.assertContains(response, "Kursusmaterialer")
         self.assertContains(response, "Kursusslides")
+
+
+class CourseSignUpUpdateViewTest(TestCase):
+    def setUp(self):
+        from apps.courses.models import Course, CourseSignUp
+
+        self.user = User.objects.create_user(username="staff", password="pass", is_staff=True)
+        self.client.login(username="staff", password="pass")
+        self.school = School.objects.create(name="Test School", kommune="København")
+        self.course = Course.objects.create(
+            start_date=date.today(),
+            end_date=date.today(),
+        )
+        self.signup = CourseSignUp.objects.create(
+            course=self.course,
+            school=self.school,
+            participant_name="Test Person",
+            participant_email="test@example.com",
+        )
+
+    def test_get_edit_form(self):
+        """Staff can access the edit form for a course signup."""
+        response = self.client.get(
+            reverse("schools:signup-update", kwargs={"school_pk": self.school.pk, "pk": self.signup.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Test Person")
+
+    def test_post_updates_signup(self):
+        """Staff can update participant details."""
+        response = self.client.post(
+            reverse("schools:signup-update", kwargs={"school_pk": self.school.pk, "pk": self.signup.pk}),
+            {
+                "participant_name": "Updated Name",
+                "participant_title": "Lærer",
+                "participant_email": "updated@example.com",
+                "participant_phone": "12345678",
+            },
+        )
+        self.assertEqual(response.status_code, 302)  # Redirect after success
+        self.signup.refresh_from_db()
+        self.assertEqual(self.signup.participant_name, "Updated Name")
+
+
+class CourseSignUpDeleteViewTest(TestCase):
+    def setUp(self):
+        from apps.courses.models import Course, CourseSignUp
+
+        self.user = User.objects.create_user(username="staff", password="pass", is_staff=True)
+        self.client.login(username="staff", password="pass")
+        self.school = School.objects.create(name="Test School", kommune="København")
+        self.course = Course.objects.create(
+            start_date=date.today(),
+            end_date=date.today(),
+        )
+        self.signup = CourseSignUp.objects.create(
+            course=self.course,
+            school=self.school,
+            participant_name="Test Person",
+        )
+
+    def test_get_delete_confirmation(self):
+        """Staff can access delete confirmation."""
+        response = self.client.get(
+            reverse("schools:signup-delete", kwargs={"school_pk": self.school.pk, "pk": self.signup.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Test Person")
+
+    def test_post_deletes_signup(self):
+        """Staff can delete a signup."""
+        from apps.courses.models import CourseSignUp
+
+        response = self.client.post(
+            reverse("schools:signup-delete", kwargs={"school_pk": self.school.pk, "pk": self.signup.pk})
+        )
+        self.assertEqual(response.status_code, 200)  # JSON response
+        self.assertFalse(CourseSignUp.objects.filter(pk=self.signup.pk).exists())

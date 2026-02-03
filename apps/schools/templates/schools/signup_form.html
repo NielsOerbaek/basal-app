@@ -1,0 +1,56 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Rediger kursusdeltagere - {{ school.name }} - Basal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-person me-2"></i>Rediger kursusdeltagere</h1>
+</div>
+
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'schools:list' %}">Skoler</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a></li>
+        <li class="breadcrumb-item active">Rediger kursusdeltagere</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Rediger kursusdeltagere</div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted">Kursus</label>
+                    <p class="mb-0">{{ signup.course.display_name }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted">Status</label>
+                    <p class="mb-0">
+                        <span class="badge bg-{% if signup.attendance == 'present' %}success{% elif signup.attendance == 'absent' %}danger{% else %}secondary{% endif %}">
+                            {{ signup.get_attendance_display }}
+                        </span>
+                    </p>
+                </div>
+                <hr>
+                <form method="post">
+                    {% csrf_token %}
+                    {% crispy form %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'schools:detail' school.pk %}" class="btn btn-secondary">Annuller</a>
+                        <button type="submit" class="btn btn-primary">Gem</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer bg-transparent">
+                <button type="button" class="btn btn-outline-danger btn-sm"
+                        hx-get="{% url 'schools:signup-delete' school.pk signup.pk %}"
+                        hx-target="#modal-container">
+                    <i class="bi bi-trash me-1"></i>Slet kursusdeltagere
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

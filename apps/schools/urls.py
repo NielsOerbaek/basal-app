@@ -22,6 +22,9 @@ urlpatterns = [
     path("<int:school_pk>/person/add/", views.PersonCreateView.as_view(), name="person-create"),
     path("person/<int:pk>/edit/", views.PersonUpdateView.as_view(), name="person-update"),
     path("person/<int:pk>/delete/", views.PersonDeleteView.as_view(), name="person-delete"),
+    # CourseSignUp URLs (for kursusdeltagere)
+    path("<int:school_pk>/signup/<int:pk>/edit/", views.CourseSignUpUpdateView.as_view(), name="signup-update"),
+    path("<int:school_pk>/signup/<int:pk>/delete/", views.CourseSignUpDeleteView.as_view(), name="signup-delete"),
     # Comment URLs
     path("<int:school_pk>/comment/add/", views.SchoolCommentCreateView.as_view(), name="comment-create"),
     path("comment/<int:pk>/delete/", views.SchoolCommentDeleteView.as_view(), name="comment-delete"),
