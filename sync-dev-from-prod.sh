@@ -119,9 +119,9 @@ ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose stop app"
 
 echo ""
 echo "==> Restoring database to dev..."
-# Drop and recreate database
-ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose exec -T db psql -U basal -c 'DROP DATABASE IF EXISTS basal;'" || true
-ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose exec -T db psql -U basal -c 'CREATE DATABASE basal;'"
+# Drop and recreate database (connect to template1 to avoid "cannot drop current database")
+ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose exec -T db psql -U basal -d template1 -c 'DROP DATABASE IF EXISTS basal;'"
+ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose exec -T db psql -U basal -d template1 -c 'CREATE DATABASE basal;'"
 
 # Restore dump
 cat "$DUMP_FILE" | ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose exec -T db psql -U basal basal" > /dev/null
