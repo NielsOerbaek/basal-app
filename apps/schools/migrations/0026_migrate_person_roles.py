@@ -1,5 +1,11 @@
 from django.db import migrations
 
+# Mapping from role_other values (set by migration 0022) to titel choices
+ROLE_OTHER_TO_TITEL = {
+    "Skoleleder": "skoleleder",
+    "Udskolingsleder": "udskolingsleder",
+}
+
 
 def migrate_person_roles(apps, schema_editor):
     Person = apps.get_model("schools", "Person")
@@ -19,11 +25,24 @@ def migrate_person_roles(apps, schema_editor):
         elif person.role == "oekonomisk_ansvarlig":
             person.is_oekonomisk_ansvarlig = True
 
-        person.save(update_fields=["is_koordinator", "is_oekonomisk_ansvarlig"])
+        # Migrate role_other to titel (if titel is not already set)
+        if not person.titel and person.role_other:
+            if person.role_other in ROLE_OTHER_TO_TITEL:
+                # Known job title - map to titel choice
+                person.titel = ROLE_OTHER_TO_TITEL[person.role_other]
+            else:
+                # Custom title - put in titel_other
+                person.titel = "andet"
+                person.titel_other = person.role_other
+
+        person.save(update_fields=["is_koordinator", "is_oekonomisk_ansvarlig", "titel", "titel_other"])
 
 
 def reverse_migrate(apps, schema_editor):
     Person = apps.get_model("schools", "Person")
+
+    # Reverse mapping
+    titel_to_role_other = {v: k for k, v in ROLE_OTHER_TO_TITEL.items()}
 
     for person in Person.objects.all():
         if person.is_koordinator:
@@ -33,7 +52,17 @@ def reverse_migrate(apps, schema_editor):
             person.role = "oekonomisk_ansvarlig"
         else:
             person.role = "andet"
-        person.save(update_fields=["role", "is_primary"])
+
+        # Reverse titel migration
+        if person.titel in titel_to_role_other:
+            person.role_other = titel_to_role_other[person.titel]
+            person.titel = ""
+        elif person.titel == "andet" and person.titel_other:
+            person.role_other = person.titel_other
+            person.titel = ""
+            person.titel_other = ""
+
+        person.save(update_fields=["role", "is_primary", "role_other", "titel", "titel_other"])
 
 
 class Migration(migrations.Migration):
