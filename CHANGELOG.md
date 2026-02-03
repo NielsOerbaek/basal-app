@@ -6,6 +6,27 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ## 3. februar 2026
 
+### Opdelt personvisning på skolens offentlige side
+Skolens offentlige side viser nu personer i to separate bokse:
+
+- **Kontaktpersoner:** Skolens primære kontakter med roller og kontaktoplysninger
+- **Kursusdeltagere:** Personer der har deltaget i kurser men ikke er registreret som kontaktpersoner
+
+### Redigering fra skolens offentlige side
+Skoler kan nu selv administrere deres personer direkte fra den offentlige side:
+
+- **Kontaktpersoner:** Tilføj nye, rediger eksisterende, eller slet personer der ikke længere er tilknyttet
+- **Kursusdeltagere:** Rediger titel og email på personer der har deltaget i kurser
+
+Dette gør det muligt for skoler at holde deres oplysninger opdateret uden at kontakte Basal.
+
+### Badges for kursusdeltagelse
+Kursusdeltagelse vises nu med farvede badges i stedet for tekst:
+
+- **Uddannet** (grøn) - deltog i kurset
+- **Mødte ikke op** (rød) - udeblev fra kurset
+- **Tilmeldt** (grå) - tilmeldt fremtidigt kursus
+
 ### Nye rollefelter på kontaktpersoner
 Kontaktpersoner har fået to nye afkrydsningsfelter:
 
