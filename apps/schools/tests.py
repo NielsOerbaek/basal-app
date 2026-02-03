@@ -1,3 +1,4 @@
+import re
 from datetime import date, timedelta
 
 from django.contrib.auth.models import User
@@ -269,6 +270,36 @@ class SchoolViewTest(TestCase):
         response = self.client.get(reverse("schools:update", kwargs={"pk": self.school.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "schools/school_form.html")
+
+    def test_school_update_post(self):
+        """School can be updated via POST."""
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.post(
+            reverse("schools:update", kwargs={"pk": self.school.pk}),
+            {
+                "name": "Updated School",
+                "kommune": "Københavns Kommune",
+            },
+        )
+        self.assertEqual(response.status_code, 302)  # Redirect on success
+        self.school.refresh_from_db()
+        self.assertEqual(self.school.name, "Updated School")
+
+    def test_school_form_no_nested_forms(self):
+        """School form should not have nested form tags."""
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:update", kwargs={"pk": self.school.pk}))
+        content = response.content.decode()
+        # Find form that posts to the school update URL (the main edit form)
+        main_form_pattern = r'<form[^>]*method="post"[^>]*>.*?</form>'
+        forms = re.findall(main_form_pattern, content, re.DOTALL | re.IGNORECASE)
+        # Filter to forms that don't have an action (post to same page) - the edit form
+        edit_forms = [f for f in forms if 'action="' not in f or 'action=""' in f]
+        self.assertTrue(len(edit_forms) >= 1, "Should have at least one edit form")
+        # The edit form should not contain another <form tag (nested forms)
+        for form in edit_forms:
+            nested_forms = form.count("<form")
+            self.assertEqual(nested_forms, 1, f"Form should not have nested forms, found {nested_forms}")
 
 
 class PersonViewTest(TestCase):
