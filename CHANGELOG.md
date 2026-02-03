@@ -4,6 +4,22 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 3. februar 2026
+
+### Nye rollefelter på kontaktpersoner
+Kontaktpersoner har fået to nye afkrydsningsfelter:
+
+- **Koordinator:** Markerer skolens primære kontaktperson for Basal
+- **Økonomisk ansvarlig:** Markerer personen der håndterer fakturering
+
+En person kan nu have begge roller, én rolle, eller ingen. Rollerne vises som farvede badges på skoledetaljesiden og skolens offentlige side:
+- Koordinator vises med blåt badge
+- Økonomisk ansvarlig vises med gråt badge
+
+Dette erstatter det tidligere "Primær kontakt"-felt og rolle-dropdown.
+
+---
+
 ## 30. januar 2026
 
 ### Udvidede skoleoplysninger
