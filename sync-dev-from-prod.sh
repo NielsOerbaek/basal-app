@@ -109,7 +109,7 @@ fi
 echo ""
 echo "==> Dumping prod database..."
 DUMP_FILE="/tmp/basal-prod-dump-$(date +%Y%m%d-%H%M%S).sql"
-ssh "$PROD_SERVER" "cd $REMOTE_PATH && docker compose exec -T db pg_dump -U postgres basal" > "$DUMP_FILE"
+ssh "$PROD_SERVER" "cd $REMOTE_PATH && docker compose exec -T db pg_dump -U basal basal" > "$DUMP_FILE"
 DUMP_SIZE=$(du -h "$DUMP_FILE" | cut -f1)
 echo "    Dump saved to $DUMP_FILE ($DUMP_SIZE)"
 
@@ -120,11 +120,11 @@ ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose stop app"
 echo ""
 echo "==> Restoring database to dev..."
 # Drop and recreate database
-ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose exec -T db psql -U postgres -c 'DROP DATABASE IF EXISTS basal;'" || true
-ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose exec -T db psql -U postgres -c 'CREATE DATABASE basal;'"
+ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose exec -T db psql -U basal -c 'DROP DATABASE IF EXISTS basal;'" || true
+ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose exec -T db psql -U basal -c 'CREATE DATABASE basal;'"
 
 # Restore dump
-cat "$DUMP_FILE" | ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose exec -T db psql -U postgres basal" > /dev/null
+cat "$DUMP_FILE" | ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose exec -T db psql -U basal basal" > /dev/null
 echo "    Database restored"
 
 echo ""
