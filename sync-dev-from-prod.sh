@@ -131,15 +131,25 @@ echo ""
 echo "==> Starting dev app..."
 ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose start app"
 
-# Media files sync (via local machine)
+# Media files sync (via local machine, from Docker volumes)
 echo ""
 echo "==> Syncing media files (prod → local → dev)..."
 TEMP_MEDIA="/tmp/basal-media-sync"
 rm -rf "$TEMP_MEDIA"
 mkdir -p "$TEMP_MEDIA"
-rsync -avz "$PROD_SERVER:$REMOTE_PATH/media/" "$TEMP_MEDIA/"
-rsync -avz "$TEMP_MEDIA/" "$DEV_SERVER:$REMOTE_PATH/media/"
-rm -rf "$TEMP_MEDIA"
+# Copy from prod container to local
+ssh "$PROD_SERVER" "cd $REMOTE_PATH && docker compose cp app:/app/media/. -" | tar -xf - -C "$TEMP_MEDIA" 2>/dev/null || {
+  echo "    No media files on prod (or copy failed), skipping..."
+  TEMP_MEDIA=""
+}
+if [ -n "$TEMP_MEDIA" ] && [ -d "$TEMP_MEDIA" ] && [ "$(ls -A "$TEMP_MEDIA" 2>/dev/null)" ]; then
+  # Copy from local to dev container
+  tar -cf - -C "$TEMP_MEDIA" . | ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose cp - app:/app/media/"
+  echo "    Media files synced"
+  rm -rf "$TEMP_MEDIA"
+else
+  echo "    No media files to sync"
+fi
 
 # Run migrations (in case dev code is ahead)
 if [ "$SYNC_CODE" = false ]; then
