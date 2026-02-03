@@ -166,30 +166,45 @@ class PersonModelTest(TestCase):
         self.assertEqual(person.name, "Test Person")
         self.assertEqual(person.school, self.school)
 
-    def test_display_role_standard(self):
-        """display_role returns label for standard roles."""
-        person = Person.objects.create(school=self.school, name="Test", role=PersonRole.KOORDINATOR)
-        self.assertEqual(person.display_role, "Koordinator")
-
-    def test_display_role_other(self):
-        """display_role returns role_other for ANDET role."""
-        person = Person.objects.create(school=self.school, name="Test", role=PersonRole.ANDET, role_other="Custom Role")
-        self.assertEqual(person.display_role, "Custom Role")
-
     def test_display_role_other_empty(self):
         """display_role returns 'Andet' when ANDET role has no role_other."""
         person = Person.objects.create(school=self.school, name="Test", role=PersonRole.ANDET)
         self.assertEqual(person.display_role, "Andet")
 
     def test_person_ordering(self):
-        """Persons are ordered by is_primary (desc), then name."""
-        person1 = Person.objects.create(school=self.school, name="Zach", is_primary=False)
-        person2 = Person.objects.create(school=self.school, name="Alice", is_primary=True)
-        person3 = Person.objects.create(school=self.school, name="Bob", is_primary=False)
+        """Persons are ordered by is_koordinator (desc), is_oekonomisk_ansvarlig (desc), then name."""
+        person1 = Person.objects.create(school=self.school, name="Zach", is_koordinator=False)
+        person2 = Person.objects.create(school=self.school, name="Alice", is_koordinator=True)
+        person3 = Person.objects.create(school=self.school, name="Bob", is_oekonomisk_ansvarlig=True)
         people = list(self.school.people.all())
-        self.assertEqual(people[0], person2)  # Alice (primary)
-        self.assertEqual(people[1], person3)  # Bob
-        self.assertEqual(people[2], person1)  # Zach
+        self.assertEqual(people[0], person2)  # Alice (koordinator)
+        self.assertEqual(people[1], person3)  # Bob (oekonomisk_ansvarlig)
+        self.assertEqual(people[2], person1)  # Zach (neither)
+
+    def test_person_can_have_both_roles(self):
+        """Person can be both koordinator and oekonomisk_ansvarlig."""
+        person = Person.objects.create(
+            school=self.school,
+            name="Both Roles",
+            is_koordinator=True,
+            is_oekonomisk_ansvarlig=True,
+        )
+        self.assertTrue(person.is_koordinator)
+        self.assertTrue(person.is_oekonomisk_ansvarlig)
+
+    def test_person_roles_property(self):
+        """roles property returns correct labels."""
+        person1 = Person.objects.create(school=self.school, name="P1", is_koordinator=True)
+        person2 = Person.objects.create(school=self.school, name="P2", is_oekonomisk_ansvarlig=True)
+        person3 = Person.objects.create(
+            school=self.school, name="P3", is_koordinator=True, is_oekonomisk_ansvarlig=True
+        )
+        person4 = Person.objects.create(school=self.school, name="P4")
+
+        self.assertEqual(person1.roles, ["Koordinator"])
+        self.assertEqual(person2.roles, ["Økonomisk ansvarlig"])
+        self.assertEqual(person3.roles, ["Koordinator", "Økonomisk ansvarlig"])
+        self.assertEqual(person4.roles, [])
 
 
 class SchoolCommentModelTest(TestCase):
