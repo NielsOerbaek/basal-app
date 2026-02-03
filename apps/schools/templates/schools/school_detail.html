@@ -188,7 +188,7 @@
                             <div class="mb-1">
                                 <strong>{{ person.name }}</strong>{% if person.display_titel %}, {{ person.display_titel|lower }}{% endif %}
                                 {% for role in person.roles %}
-                                <span class="badge bg-secondary ms-1">{{ role }}</span>
+                                <span class="badge {% if role == 'Koordinator' %}bg-primary{% else %}bg-secondary{% endif %} ms-1">{{ role }}</span>
                                 {% endfor %}
                             </div>
                             <div class="small text-muted">
