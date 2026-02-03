@@ -263,11 +263,11 @@ class SchoolDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["contact_history"] = self.object.contact_history.select_related("created_by")[:10]
-        context["course_signups"] = self.object.course_signups.select_related("course").order_by("-course__start_date")[
-            :10
-        ]
+        context["kursusdeltagere"] = self.object.course_signups.select_related("course").order_by(
+            "participant_name", "-course__start_date"
+        )
         context["seat_purchases"] = self.object.seat_purchases.all()
-        context["people"] = self.object.people.all()
+        context["kontaktpersoner"] = self.object.people.all()
         context["school_comments"] = self.object.school_comments.select_related("created_by").all()
         context["invoices"] = self.object.invoices.all()
         context["enrollment_history"] = self.object.get_enrollment_history()
