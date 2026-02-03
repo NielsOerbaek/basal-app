@@ -102,6 +102,7 @@ class PersonForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
+        self.helper.form_tag = False
         self.helper.layout = Layout(
             Row(
                 Column("name", css_class="col-md-6"),
@@ -117,7 +118,6 @@ class PersonForm(forms.ModelForm):
                 Column("is_koordinator", css_class="col-md-6"),
                 Column("is_oekonomisk_ansvarlig", css_class="col-md-6"),
             ),
-            Submit("submit", "Gem person", css_class="btn btn-primary"),
         )
 
 

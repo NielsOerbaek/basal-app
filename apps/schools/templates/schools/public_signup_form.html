@@ -37,9 +37,9 @@
                     <form method="post">
                         {% csrf_token %}
                         {% crispy form %}
-                        <div class="d-flex gap-2 mt-3">
-                            <button type="submit" class="btn btn-primary">Gem ændringer</button>
+                        <div class="d-flex justify-content-between mt-3">
                             <a href="{% url 'school-public' school.signup_token %}" class="btn btn-outline-secondary">Annuller</a>
+                            <button type="submit" class="btn btn-primary">Gem ændringer</button>
                         </div>
                     </form>
                 </div>

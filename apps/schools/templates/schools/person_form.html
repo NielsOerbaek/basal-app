@@ -24,7 +24,10 @@
                 <form method="post">
                     {% csrf_token %}
                     {% crispy form %}
-                    <a href="{% url 'schools:detail' school.pk %}" class="btn btn-outline-secondary ms-2">Annuller</a>
+                    <div class="d-flex justify-content-between mt-3">
+                        <a href="{% url 'schools:detail' school.pk %}" class="btn btn-outline-secondary">Annuller</a>
+                        <button type="submit" class="btn btn-primary">Gem person</button>
+                    </div>
                 </form>
             </div>
             {% if person %}
