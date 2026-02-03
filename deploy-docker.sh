@@ -33,6 +33,19 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Check for uncommitted changes
+if ! git diff-index --quiet HEAD -- 2>/dev/null; then
+  echo "⚠️  WARNING: You have uncommitted changes:"
+  git status --short
+  echo ""
+  read -p "Deploy anyway? [y/N] " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Deployment cancelled. Commit your changes first."
+    exit 0
+  fi
+fi
+
 # Determine server based on environment or explicit argument
 if [ -n "$EXPLICIT_SERVER" ]; then
   SERVER="$EXPLICIT_SERVER"
