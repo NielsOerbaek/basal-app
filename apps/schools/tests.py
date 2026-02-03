@@ -2014,7 +2014,8 @@ class SchoolPublicViewCourseAttendanceTest(TestCase):
         )
         response = self.client.get(f"/school/{self.school.signup_token}/")
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Uddannet på")
+        # Check for the badge-style display (course name + "Uddannet" badge)
+        self.assertContains(response, "Uddannet")
 
     def test_public_view_shows_separate_course_participants(self):
         """Public view shows course participants not matching contacts."""
@@ -2213,7 +2214,8 @@ class SchoolPublicPageIntegrationTest(TestCase):
         # Contact person section
         self.assertContains(response, "Kontaktpersoner")
         self.assertContains(response, "Contact Person")
-        self.assertContains(response, "Uddannet på")
+        # Check for the badge-style display (course name + "Uddannet" badge)
+        self.assertContains(response, "Uddannet")
 
         # Other participants section
         self.assertContains(response, "Kursusdeltagere")
@@ -2432,3 +2434,67 @@ class PublicCourseSignUpUpdateViewTest(TestCase):
         )
         self.signup.refresh_from_db()
         self.assertEqual(self.signup.participant_name, "Updated Name")
+
+
+class KontaktpersonerKursusdeltagereIntegrationTest(TestCase):
+    """Integration tests for the split kontaktpersoner/kursusdeltagere feature."""
+
+    def setUp(self):
+        from apps.courses.models import Course, CourseSignUp
+
+        self.user = User.objects.create_user(username="staff", password="pass", is_staff=True)
+        self.school = School.objects.create(name="Test School", kommune="København")
+        self.school.generate_credentials()
+        self.course = Course.objects.create(
+            start_date=date.today(),
+            end_date=date.today(),
+        )
+        # Create a kontaktperson
+        self.person = Person.objects.create(
+            school=self.school,
+            name="Contact Person",
+            email="contact@example.com",
+            is_koordinator=True,
+        )
+        # Create a kursusdeltagere (signup)
+        self.signup = CourseSignUp.objects.create(
+            course=self.course,
+            school=self.school,
+            participant_name="Course Participant",
+            participant_email="participant@example.com",
+        )
+
+    def test_staff_view_shows_both_boxes(self):
+        """Staff view shows separate kontaktpersoner and kursusdeltagere boxes."""
+        self.client.login(username="staff", password="pass")
+        response = self.client.get(reverse("schools:detail", kwargs={"pk": self.school.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Kontaktpersoner")
+        self.assertContains(response, "Kursusdeltagere")
+        self.assertContains(response, "Contact Person")
+        self.assertContains(response, "Course Participant")
+
+    def test_public_view_shows_both_boxes(self):
+        """Public view shows separate kontaktpersoner and kursusdeltagere boxes."""
+        response = self.client.get(reverse("school-public", kwargs={"token": self.school.signup_token}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Kontaktpersoner")
+        self.assertContains(response, "Kursusdeltagere")
+        self.assertContains(response, "Contact Person")
+        self.assertContains(response, "Course Participant")
+
+    def test_same_email_appears_in_both_lists(self):
+        """A person and signup with the same email appear in both boxes (no matching)."""
+        from apps.courses.models import CourseSignUp
+
+        # Create signup with same email as person
+        CourseSignUp.objects.create(
+            course=self.course,
+            school=self.school,
+            participant_name="Same Email Person",
+            participant_email="contact@example.com",  # Same as self.person
+        )
+        response = self.client.get(reverse("school-public", kwargs={"token": self.school.signup_token}))
+        # Both should appear - kontaktperson in first box, signup in second box
+        self.assertContains(response, "Contact Person")
+        self.assertContains(response, "Same Email Person")
