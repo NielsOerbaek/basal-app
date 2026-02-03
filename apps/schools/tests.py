@@ -2387,3 +2387,49 @@ class PublicPersonDeleteViewTest(TestCase):
             )
         )
         self.assertFalse(Person.objects.filter(pk=self.person.pk).exists())
+
+
+class PublicCourseSignUpUpdateViewTest(TestCase):
+    def setUp(self):
+        from apps.courses.models import Course, CourseSignUp
+
+        self.school = School.objects.create(name="Test School", kommune="København")
+        self.school.generate_credentials()
+        self.course = Course.objects.create(
+            start_date=date.today(),
+            end_date=date.today(),
+        )
+        self.signup = CourseSignUp.objects.create(
+            course=self.course,
+            school=self.school,
+            participant_name="Test Person",
+            participant_email="test@example.com",
+        )
+
+    def test_get_form(self):
+        """Anyone with token can access edit form for signup."""
+        response = self.client.get(
+            reverse(
+                "school-public-signup-update",
+                kwargs={"token": self.school.signup_token, "pk": self.signup.pk},
+            )
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Test Person")
+
+    def test_post_updates_signup(self):
+        """Anyone with token can update participant details."""
+        self.client.post(
+            reverse(
+                "school-public-signup-update",
+                kwargs={"token": self.school.signup_token, "pk": self.signup.pk},
+            ),
+            {
+                "participant_name": "Updated Name",
+                "participant_title": "Lærer",
+                "participant_email": "updated@example.com",
+                "participant_phone": "12345678",
+            },
+        )
+        self.signup.refresh_from_db()
+        self.assertEqual(self.signup.participant_name, "Updated Name")

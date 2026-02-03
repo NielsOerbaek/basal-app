@@ -1036,3 +1036,37 @@ class PublicPersonDeleteView(View):
         person.delete()
         messages.success(request, f'Person "{person_name}" er blevet slettet.')
         return JsonResponse({"success": True, "redirect": str(reverse_lazy("school-public", kwargs={"token": token}))})
+
+
+class PublicCourseSignUpUpdateView(View):
+    """Public view for editing a course signup's participant details via token."""
+
+    def get_school_and_signup(self, token, pk):
+        school = get_object_or_404(
+            School.objects.filter(signup_token__isnull=False).exclude(signup_token=""),
+            signup_token=token,
+        )
+        signup = get_object_or_404(CourseSignUp, pk=pk, school=school)
+        return school, signup
+
+    def get(self, request, token, pk):
+        school, signup = self.get_school_and_signup(token, pk)
+        form = CourseSignUpParticipantForm(instance=signup)
+        return render(
+            request,
+            "schools/public_signup_form.html",
+            {"school": school, "signup": signup, "form": form},
+        )
+
+    def post(self, request, token, pk):
+        school, signup = self.get_school_and_signup(token, pk)
+        form = CourseSignUpParticipantForm(request.POST, instance=signup)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Kursusdeltageren "{signup.participant_name}" er opdateret.')
+            return redirect("school-public", token=token)
+        return render(
+            request,
+            "schools/public_signup_form.html",
+            {"school": school, "signup": signup, "form": form},
+        )

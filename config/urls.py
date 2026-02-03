@@ -5,6 +5,7 @@ from django.urls import include, path
 
 from apps.core.views import CronBackupView, CronSendRemindersView
 from apps.schools.views import (
+    PublicCourseSignUpUpdateView,
     PublicPersonCreateView,
     PublicPersonDeleteView,
     PublicPersonUpdateView,
@@ -33,6 +34,11 @@ urlpatterns = [
         "school/<str:token>/person/<int:pk>/delete/",
         PublicPersonDeleteView.as_view(),
         name="school-public-person-delete",
+    ),
+    path(
+        "school/<str:token>/signup/<int:pk>/edit/",
+        PublicCourseSignUpUpdateView.as_view(),
+        name="school-public-signup-update",
     ),
     path("", include("apps.core.urls")),
     path("schools/", include("apps.schools.urls")),
