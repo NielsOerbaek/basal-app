@@ -303,6 +303,45 @@ class CourseFormDateTest(TestCase):
         self.assertContains(response, 'value="2025-06-16"')
 
 
+class CourseSignUpParticipantFormTest(TestCase):
+    """Tests for CourseSignUpParticipantForm."""
+
+    def test_form_only_has_participant_fields(self):
+        """Form should only allow editing participant details, not course."""
+        from apps.courses.forms import CourseSignUpParticipantForm
+
+        form = CourseSignUpParticipantForm()
+        expected_fields = {"participant_name", "participant_title", "participant_email", "participant_phone"}
+        self.assertEqual(set(form.fields.keys()), expected_fields)
+
+    def test_form_saves_participant_details(self):
+        """Form should update participant details on existing signup."""
+        from apps.courses.forms import CourseSignUpParticipantForm
+
+        course = Course.objects.create(
+            start_date=date.today(),
+            end_date=date.today(),
+        )
+        signup = CourseSignUp.objects.create(
+            course=course,
+            participant_name="Original Name",
+            participant_email="original@example.com",
+        )
+        form = CourseSignUpParticipantForm(
+            instance=signup,
+            data={
+                "participant_name": "Updated Name",
+                "participant_title": "Lærer",
+                "participant_email": "updated@example.com",
+                "participant_phone": "12345678",
+            },
+        )
+        self.assertTrue(form.is_valid())
+        updated = form.save()
+        self.assertEqual(updated.participant_name, "Updated Name")
+        self.assertEqual(updated.participant_email, "updated@example.com")
+
+
 class InstructorModelTest(TestCase):
     def test_create_instructor(self):
         """Instructor model can be created with a name."""

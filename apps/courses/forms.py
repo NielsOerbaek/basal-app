@@ -297,6 +297,32 @@ class SchoolChoiceField(forms.ModelChoiceField):
         return f"{obj.name} ({obj.kommune})"
 
 
+class CourseSignUpParticipantForm(forms.ModelForm):
+    """Form for editing only participant details of a CourseSignUp."""
+
+    class Meta:
+        model = CourseSignUp
+        fields = [
+            "participant_name",
+            "participant_title",
+            "participant_email",
+            "participant_phone",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            "participant_name",
+            "participant_title",
+            Row(
+                Column("participant_email", css_class="col-md-6"),
+                Column("participant_phone", css_class="col-md-6"),
+            ),
+        )
+        self.helper.form_tag = False
+
+
 class PublicSignUpForm(forms.Form):
     course = forms.ModelChoiceField(
         queryset=Course.objects.filter(
