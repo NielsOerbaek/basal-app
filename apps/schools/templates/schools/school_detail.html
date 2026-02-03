@@ -186,8 +186,10 @@
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="flex-grow-1">
                             <div class="mb-1">
-                                <strong>{{ person.name }}</strong>{% if person.display_titel %}, {{ person.display_titel|lower }}{% endif %}<span class="text-muted"> - {{ person.display_role|lower }}</span>
-                                {% if person.is_primary %}<span class="badge bg-primary ms-2">primær kontakt</span>{% endif %}
+                                <strong>{{ person.name }}</strong>{% if person.display_titel %}, {{ person.display_titel|lower }}{% endif %}
+                                {% for role in person.roles %}
+                                <span class="badge {% if role == 'Koordinator' %}bg-primary{% else %}bg-secondary{% endif %} ms-1">{{ role }}</span>
+                                {% endfor %}
                             </div>
                             <div class="small text-muted">
                                 {% if person.email %}<i class="bi bi-envelope me-1"></i><a href="mailto:{{ person.email }}">{{ person.email }}</a>{% endif %}

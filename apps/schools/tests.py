@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from .models import Invoice, Person, PersonRole, School, SchoolComment, SchoolYear, SeatPurchase, TitelChoice
+from .models import Invoice, Person, School, SchoolComment, SchoolYear, SeatPurchase, TitelChoice
 
 
 class SchoolExtendedFieldsTest(TestCase):
@@ -159,37 +159,47 @@ class PersonModelTest(TestCase):
         person = Person.objects.create(
             school=self.school,
             name="Test Person",
-            role=PersonRole.KOORDINATOR,
+            is_koordinator=True,
             email="test@example.com",
             phone="12345678",
         )
         self.assertEqual(person.name, "Test Person")
         self.assertEqual(person.school, self.school)
 
-    def test_display_role_standard(self):
-        """display_role returns label for standard roles."""
-        person = Person.objects.create(school=self.school, name="Test", role=PersonRole.KOORDINATOR)
-        self.assertEqual(person.display_role, "Koordinator")
-
-    def test_display_role_other(self):
-        """display_role returns role_other for ANDET role."""
-        person = Person.objects.create(school=self.school, name="Test", role=PersonRole.ANDET, role_other="Custom Role")
-        self.assertEqual(person.display_role, "Custom Role")
-
-    def test_display_role_other_empty(self):
-        """display_role returns 'Andet' when ANDET role has no role_other."""
-        person = Person.objects.create(school=self.school, name="Test", role=PersonRole.ANDET)
-        self.assertEqual(person.display_role, "Andet")
-
     def test_person_ordering(self):
-        """Persons are ordered by is_primary (desc), then name."""
-        person1 = Person.objects.create(school=self.school, name="Zach", is_primary=False)
-        person2 = Person.objects.create(school=self.school, name="Alice", is_primary=True)
-        person3 = Person.objects.create(school=self.school, name="Bob", is_primary=False)
+        """Persons are ordered by is_koordinator (desc), is_oekonomisk_ansvarlig (desc), then name."""
+        person1 = Person.objects.create(school=self.school, name="Zach", is_koordinator=False)
+        person2 = Person.objects.create(school=self.school, name="Alice", is_koordinator=True)
+        person3 = Person.objects.create(school=self.school, name="Bob", is_oekonomisk_ansvarlig=True)
         people = list(self.school.people.all())
-        self.assertEqual(people[0], person2)  # Alice (primary)
-        self.assertEqual(people[1], person3)  # Bob
-        self.assertEqual(people[2], person1)  # Zach
+        self.assertEqual(people[0], person2)  # Alice (koordinator)
+        self.assertEqual(people[1], person3)  # Bob (oekonomisk_ansvarlig)
+        self.assertEqual(people[2], person1)  # Zach (neither)
+
+    def test_person_can_have_both_roles(self):
+        """Person can be both koordinator and oekonomisk_ansvarlig."""
+        person = Person.objects.create(
+            school=self.school,
+            name="Both Roles",
+            is_koordinator=True,
+            is_oekonomisk_ansvarlig=True,
+        )
+        self.assertTrue(person.is_koordinator)
+        self.assertTrue(person.is_oekonomisk_ansvarlig)
+
+    def test_person_roles_property(self):
+        """roles property returns correct labels."""
+        person1 = Person.objects.create(school=self.school, name="P1", is_koordinator=True)
+        person2 = Person.objects.create(school=self.school, name="P2", is_oekonomisk_ansvarlig=True)
+        person3 = Person.objects.create(
+            school=self.school, name="P3", is_koordinator=True, is_oekonomisk_ansvarlig=True
+        )
+        person4 = Person.objects.create(school=self.school, name="P4")
+
+        self.assertEqual(person1.roles, ["Koordinator"])
+        self.assertEqual(person2.roles, ["Økonomisk ansvarlig"])
+        self.assertEqual(person3.roles, ["Koordinator", "Økonomisk ansvarlig"])
+        self.assertEqual(person4.roles, [])
 
 
 class SchoolCommentModelTest(TestCase):
@@ -312,7 +322,7 @@ class PersonViewTest(TestCase):
             kommune="Test Kommune",
         )
         self.person = Person.objects.create(
-            school=self.school, name="Test Person", role=PersonRole.KOORDINATOR, email="test@example.com"
+            school=self.school, name="Test Person", is_koordinator=True, email="test@example.com"
         )
 
     def test_person_create_requires_login(self):
@@ -334,7 +344,7 @@ class PersonViewTest(TestCase):
             reverse("schools:person-create", kwargs={"school_pk": self.school.pk}),
             {
                 "name": "New Person",
-                "role": PersonRole.KOORDINATOR,
+                "is_koordinator": True,
                 "email": "new@example.com",
                 "phone": "87654321",
             },
@@ -356,7 +366,7 @@ class PersonViewTest(TestCase):
             reverse("schools:person-update", kwargs={"pk": self.person.pk}),
             {
                 "name": "Updated Name",
-                "role": PersonRole.KOORDINATOR,
+                "is_koordinator": True,
                 "email": "updated@example.com",
             },
         )
@@ -585,9 +595,7 @@ class SchoolSearchViewTest(TestCase):
             kommune="Aarhus",
         )
         # Add person to school1
-        Person.objects.create(
-            school=self.school1, name="John Doe", email="john@example.com", role=PersonRole.KOORDINATOR
-        )
+        Person.objects.create(school=self.school1, name="John Doe", email="john@example.com", is_koordinator=True)
 
     def test_search_by_school_name(self):
         """Search finds schools by name."""
@@ -717,7 +725,7 @@ class FormValidationTest(TestCase):
         form = PersonForm(
             data={
                 "name": "Test Person",
-                "role": PersonRole.KOORDINATOR,
+                "is_koordinator": True,
             }
         )
         self.assertTrue(form.is_valid())
@@ -728,24 +736,11 @@ class FormValidationTest(TestCase):
 
         form = PersonForm(
             data={
-                "role": PersonRole.KOORDINATOR,
+                "is_koordinator": True,
             }
         )
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-
-    def test_person_form_with_other_role(self):
-        """PersonForm accepts ANDET role with role_other."""
-        from .forms import PersonForm
-
-        form = PersonForm(
-            data={
-                "name": "Test Person",
-                "role": PersonRole.ANDET,
-                "role_other": "Custom Role",
-            }
-        )
-        self.assertTrue(form.is_valid())
 
     def test_person_form_validates_email(self):
         """PersonForm validates email format."""
@@ -754,7 +749,7 @@ class FormValidationTest(TestCase):
         form = PersonForm(
             data={
                 "name": "Test Person",
-                "role": PersonRole.KOORDINATOR,
+                "is_koordinator": True,
                 "email": "invalid-email",
             }
         )
@@ -945,7 +940,7 @@ class SchoolPublicViewTest(TestCase):
         Person.objects.create(
             school=self.school,
             name="John Doe",
-            role=PersonRole.KOORDINATOR,
+            is_koordinator=True,
             email="john@test.com",
         )
         response = self.client.get(f"/school/{self.school.signup_token}/")
@@ -973,7 +968,7 @@ class SchoolPublicViewTest(TestCase):
 
     def test_public_view_no_edit_buttons(self):
         """Public view does not show edit buttons."""
-        Person.objects.create(school=self.school, name="John", role=PersonRole.KOORDINATOR)
+        Person.objects.create(school=self.school, name="John", is_koordinator=True)
         response = self.client.get(f"/school/{self.school.signup_token}/")
         self.assertNotContains(response, "Rediger")
         self.assertNotContains(response, "bi-pencil")
@@ -995,7 +990,7 @@ class SchoolDetailMergedPeopleTest(TestCase):
         """School detail shows people and signups in same section."""
         from apps.courses.models import Course, CourseSignUp, Location
 
-        Person.objects.create(school=self.school, name="Contact Person", role=PersonRole.KOORDINATOR)
+        Person.objects.create(school=self.school, name="Contact Person", is_koordinator=True)
         location = Location.objects.create(name="Test Location")
         course = Course.objects.create(start_date=date.today(), end_date=date.today(), location=location, capacity=10)
         CourseSignUp.objects.create(
@@ -1685,7 +1680,7 @@ class PersonExtendedFieldsTest(TestCase):
         person = Person.objects.create(
             school=self.school,
             name="Test Person",
-            role=PersonRole.KOORDINATOR,
+            is_koordinator=True,
             titel=TitelChoice.SKOLELEDER,
         )
         self.assertEqual(person.titel, TitelChoice.SKOLELEDER)
@@ -1696,31 +1691,21 @@ class PersonExtendedFieldsTest(TestCase):
         person = Person.objects.create(
             school=self.school,
             name="Test Person",
-            role=PersonRole.KOORDINATOR,
+            is_koordinator=True,
             titel=TitelChoice.ANDET,
             titel_other="Speciallærer",
         )
         self.assertEqual(person.display_titel, "Speciallærer")
 
-    def test_person_role_oekonomisk_ansvarlig(self):
-        """Person can have OEKONOMISK_ANSVARLIG role."""
+    def test_person_is_oekonomisk_ansvarlig(self):
+        """Person can have is_oekonomisk_ansvarlig set to True."""
         person = Person.objects.create(
             school=self.school,
             name="Test Person",
-            role=PersonRole.OEKONOMISK_ANSVARLIG,
+            is_oekonomisk_ansvarlig=True,
         )
-        self.assertEqual(person.role, PersonRole.OEKONOMISK_ANSVARLIG)
-        self.assertEqual(person.get_role_display(), "Økonomisk ansvarlig")
-
-    def test_person_role_andet(self):
-        """Person role ANDET uses role_other."""
-        person = Person.objects.create(
-            school=self.school,
-            name="Test Person",
-            role=PersonRole.ANDET,
-            role_other="Custom Role",
-        )
-        self.assertEqual(person.display_role, "Custom Role")
+        self.assertTrue(person.is_oekonomisk_ansvarlig)
+        self.assertEqual(person.roles, ["Økonomisk ansvarlig"])
 
 
 class PersonFormExtendedFieldsTest(TestCase):
@@ -1740,7 +1725,7 @@ class PersonFormExtendedFieldsTest(TestCase):
         form = PersonForm(
             data={
                 "name": "Test Person",
-                "role": PersonRole.KOORDINATOR,
+                "is_koordinator": True,
                 "titel": TitelChoice.SKOLELEDER,
             }
         )
@@ -1792,7 +1777,7 @@ class PersonDetailTitelTest(TestCase):
         self.person = Person.objects.create(
             school=self.school,
             name="Test Person",
-            role=PersonRole.KOORDINATOR,
+            is_koordinator=True,
             titel=TitelChoice.SKOLELEDER,
         )
 
@@ -2005,7 +1990,7 @@ class SchoolPublicViewCourseAttendanceTest(TestCase):
         self.person = Person.objects.create(
             school=self.school,
             name="John Doe",
-            role=PersonRole.KOORDINATOR,
+            is_koordinator=True,
             email="john@test.com",
         )
 
@@ -2190,9 +2175,8 @@ class SchoolPublicPageIntegrationTest(TestCase):
         Person.objects.create(
             school=self.school,
             name="Contact Person",
-            role=PersonRole.KOORDINATOR,
+            is_koordinator=True,
             email="contact@test.com",
-            is_primary=True,
         )
 
         # Create course with material

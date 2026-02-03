@@ -4,12 +4,6 @@ from django.contrib.auth.models import User
 from django.db import models
 
 
-class PersonRole(models.TextChoices):
-    KOORDINATOR = "koordinator", "Koordinator"
-    OEKONOMISK_ANSVARLIG = "oekonomisk_ansvarlig", "Økonomisk ansvarlig"
-    ANDET = "andet", "Andet"
-
-
 class TitelChoice(models.TextChoices):
     SKOLELEDER = "skoleleder", "Skoleleder"
     UDSKOLINGSLEDER = "udskolingsleder", "Udskolingsleder"
@@ -369,23 +363,21 @@ class Person(models.Model):
     name = models.CharField(max_length=255, verbose_name="Navn")
     titel = models.CharField(max_length=30, choices=TitelChoice.choices, blank=True, verbose_name="Titel")
     titel_other = models.CharField(max_length=100, blank=True, verbose_name="Anden titel")
-    role = models.CharField(
-        max_length=20, choices=PersonRole.choices, default=PersonRole.KOORDINATOR, verbose_name="Funktion"
-    )
-    role_other = models.CharField(max_length=255, blank=True, verbose_name="Anden funktion")
     phone = models.CharField(max_length=50, blank=True, verbose_name="Telefon")
     email = models.EmailField(blank=True, verbose_name="E-mail")
     comment = models.TextField(blank=True, verbose_name="Kommentar")
-    is_primary = models.BooleanField(default=False, verbose_name="Primær kontakt")
+    is_koordinator = models.BooleanField(default=False, verbose_name="Koordinator")
+    is_oekonomisk_ansvarlig = models.BooleanField(default=False, verbose_name="Økonomisk ansvarlig")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["-is_primary", "name"]
+        ordering = ["-is_koordinator", "-is_oekonomisk_ansvarlig", "name"]
         verbose_name = "Person"
         verbose_name_plural = "Personer"
 
     def __str__(self):
-        return f"{self.name} ({self.display_role})"
+        roles = ", ".join(self.roles) if self.roles else "Ingen rolle"
+        return f"{self.name} ({roles})"
 
     @property
     def display_titel(self):
@@ -396,10 +388,14 @@ class Person(models.Model):
         return ""
 
     @property
-    def display_role(self):
-        if self.role == PersonRole.ANDET:
-            return self.role_other or "Andet"
-        return self.get_role_display()
+    def roles(self):
+        """Return list of role labels for chip display."""
+        result = []
+        if self.is_koordinator:
+            result.append("Koordinator")
+        if self.is_oekonomisk_ansvarlig:
+            result.append("Økonomisk ansvarlig")
+        return result
 
 
 class SchoolComment(models.Model):
