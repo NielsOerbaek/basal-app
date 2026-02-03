@@ -198,17 +198,9 @@
                             </div>
                             {% if person.comment %}<div class="small mt-1">{{ person.comment }}</div>{% endif %}
                         </div>
-                        <div class="btn-group btn-group-sm">
-                            <a href="{% url 'schools:person-update' person.pk %}" class="btn btn-outline-secondary" title="Rediger">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <button type="button" class="btn btn-outline-danger"
-                                    hx-get="{% url 'schools:person-delete' person.pk %}"
-                                    hx-target="#modal-container"
-                                    title="Slet">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
+                        <a href="{% url 'schools:person-update' person.pk %}" class="btn btn-outline-secondary btn-sm" title="Rediger">
+                            <i class="bi bi-pencil"></i>
+                        </a>
                     </div>
                 </li>
                 {% empty %}
@@ -242,17 +234,9 @@
                                 </span>
                             </div>
                         </div>
-                        <div class="btn-group btn-group-sm">
-                            <a href="{% url 'schools:signup-update' school.pk signup.pk %}" class="btn btn-outline-secondary" title="Rediger">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <button type="button" class="btn btn-outline-danger"
-                                    hx-get="{% url 'schools:signup-delete' school.pk signup.pk %}"
-                                    hx-target="#modal-container"
-                                    title="Slet">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
+                        <a href="{% url 'schools:signup-update' school.pk signup.pk %}" class="btn btn-outline-secondary btn-sm" title="Rediger">
+                            <i class="bi bi-pencil"></i>
+                        </a>
                     </div>
                 </li>
                 {% empty %}

@@ -164,17 +164,9 @@
                                     {% if person.phone %}<i class="bi bi-telephone me-1"></i>{{ person.phone }}{% endif %}
                                 </div>
                             </div>
-                            <div class="btn-group btn-group-sm">
-                                <a href="{% url 'school-public-person-update' school.signup_token person.pk %}" class="btn btn-outline-secondary" title="Rediger">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <button type="button" class="btn btn-outline-danger"
-                                        hx-get="{% url 'school-public-person-delete' school.signup_token person.pk %}"
-                                        hx-target="#modal-container"
-                                        title="Slet">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
+                            <a href="{% url 'school-public-person-update' school.signup_token person.pk %}" class="btn btn-outline-secondary btn-sm" title="Rediger">
+                                <i class="bi bi-pencil"></i>
+                            </a>
                         </div>
                     </li>
                     {% empty %}
