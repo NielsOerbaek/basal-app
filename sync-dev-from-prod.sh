@@ -71,56 +71,38 @@ if [ "$SYNC_CODE" = true ]; then
   echo "==> Getting prod's current git commit..."
   PROD_COMMIT=$(ssh "$PROD_SERVER" "cd $REMOTE_PATH && git rev-parse HEAD 2>/dev/null || echo 'none'")
 
-  if [ "$PROD_COMMIT" = "none" ]; then
-    echo "    Prod is not a git repo, syncing code via rsync instead..."
-    # Rsync prod code to dev
-    ssh "$PROD_SERVER" "rsync -avz --delete \
-      --exclude='.env' \
-      --exclude='media' \
-      --exclude='staticfiles' \
-      --exclude='__pycache__' \
-      --exclude='*.pyc' \
-      $REMOTE_PATH/ $DEV_SERVER:$REMOTE_PATH/"
-  else
+  if [ "$PROD_COMMIT" != "none" ]; then
     echo "    Prod is at commit: $PROD_COMMIT"
-
-    # Check if we have this commit locally
-    if git cat-file -e "$PROD_COMMIT" 2>/dev/null; then
-      echo "    Checking out $PROD_COMMIT locally..."
-      git checkout "$PROD_COMMIT"
-    else
-      echo "    Warning: Commit $PROD_COMMIT not found locally. Fetching..."
-      git fetch origin
-      if git cat-file -e "$PROD_COMMIT" 2>/dev/null; then
-        git checkout "$PROD_COMMIT"
-      else
-        echo "    Error: Cannot find commit $PROD_COMMIT. Skipping code sync."
-        SYNC_CODE=false
-      fi
-    fi
-
-    if [ "$SYNC_CODE" = true ]; then
-      echo "==> Syncing code to dev..."
-      rsync -avz --delete \
-        --exclude='.venv' \
-        --exclude='__pycache__' \
-        --exclude='*.pyc' \
-        --exclude='.git' \
-        --exclude='db.sqlite3' \
-        --exclude='.env' \
-        --exclude='.env2' \
-        --exclude='staticfiles' \
-        --exclude='media' \
-        --exclude='*.egg-info' \
-        --exclude='build' \
-        --exclude='venv' \
-        --exclude='todo.md' \
-        ./ "$DEV_SERVER:$REMOTE_PATH/"
-
-      echo "==> Rebuilding dev containers..."
-      ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose build && docker compose up -d"
-    fi
   fi
+
+  # Always sync via rsync (prod → local temp → dev) to avoid touching local code
+  echo "==> Syncing code (prod → local → dev)..."
+  TEMP_CODE="/tmp/basal-code-sync"
+  rm -rf "$TEMP_CODE"
+  mkdir -p "$TEMP_CODE"
+  rsync -avz \
+    --exclude='.env' \
+    --exclude='.env2' \
+    --exclude='media' \
+    --exclude='staticfiles' \
+    --exclude='__pycache__' \
+    --exclude='*.pyc' \
+    --exclude='.git' \
+    --exclude='*.egg-info' \
+    --exclude='build' \
+    --exclude='venv' \
+    --exclude='.venv' \
+    "$PROD_SERVER:$REMOTE_PATH/" "$TEMP_CODE/"
+  rsync -avz --delete \
+    --exclude='.env' \
+    --exclude='.env2' \
+    --exclude='media' \
+    --exclude='staticfiles' \
+    "$TEMP_CODE/" "$DEV_SERVER:$REMOTE_PATH/"
+  rm -rf "$TEMP_CODE"
+
+  echo "==> Rebuilding dev containers..."
+  ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose build && docker compose up -d"
 fi
 
 # Database sync
@@ -149,15 +131,15 @@ echo ""
 echo "==> Starting dev app..."
 ssh "$DEV_SERVER" "cd $REMOTE_PATH && docker compose start app"
 
-# Media files sync
+# Media files sync (via local machine)
 echo ""
-echo "==> Syncing media files (prod → dev)..."
-ssh "$PROD_SERVER" "rsync -avz $REMOTE_PATH/media/ $DEV_SERVER:$REMOTE_PATH/media/" || {
-  echo "    Direct sync failed, trying via local..."
-  rsync -avz "$PROD_SERVER:$REMOTE_PATH/media/" "/tmp/basal-media/"
-  rsync -avz "/tmp/basal-media/" "$DEV_SERVER:$REMOTE_PATH/media/"
-  rm -rf "/tmp/basal-media/"
-}
+echo "==> Syncing media files (prod → local → dev)..."
+TEMP_MEDIA="/tmp/basal-media-sync"
+rm -rf "$TEMP_MEDIA"
+mkdir -p "$TEMP_MEDIA"
+rsync -avz "$PROD_SERVER:$REMOTE_PATH/media/" "$TEMP_MEDIA/"
+rsync -avz "$TEMP_MEDIA/" "$DEV_SERVER:$REMOTE_PATH/media/"
+rm -rf "$TEMP_MEDIA"
 
 # Run migrations (in case dev code is ahead)
 if [ "$SYNC_CODE" = false ]; then
@@ -181,7 +163,5 @@ echo "========================================"
 echo ""
 echo "Dev is now a copy of prod."
 if [ "$SYNC_CODE" = true ]; then
-  echo "Code synced to: $PROD_COMMIT"
-  echo ""
-  echo "To return to your branch: git checkout -"
+  echo "Code synced from prod."
 fi
