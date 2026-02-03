@@ -85,7 +85,16 @@ class SchoolForm(forms.ModelForm):
 class PersonForm(forms.ModelForm):
     class Meta:
         model = Person
-        fields = ["name", "titel", "titel_other", "role", "role_other", "phone", "email", "comment", "is_primary"]
+        fields = [
+            "name",
+            "titel",
+            "titel_other",
+            "phone",
+            "email",
+            "comment",
+            "is_koordinator",
+            "is_oekonomisk_ansvarlig",
+        ]
         widgets = {
             "comment": forms.Textarea(attrs={"rows": 2}),
         }
@@ -100,15 +109,14 @@ class PersonForm(forms.ModelForm):
                 Column("titel_other", css_class="col-md-3"),
             ),
             Row(
-                Column("role", css_class="col-md-6"),
-                Column("role_other", css_class="col-md-6"),
-            ),
-            Row(
                 Column("phone", css_class="col-md-6"),
                 Column("email", css_class="col-md-6"),
             ),
             "comment",
-            "is_primary",
+            Row(
+                Column("is_koordinator", css_class="col-md-6"),
+                Column("is_oekonomisk_ansvarlig", css_class="col-md-6"),
+            ),
             Submit("submit", "Gem person", css_class="btn btn-primary"),
         )
 
