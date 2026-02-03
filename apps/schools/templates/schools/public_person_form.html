@@ -24,6 +24,7 @@
                     <form method="post">
                         {% csrf_token %}
                         {% crispy form %}
+                        <a href="{% url 'school-public' school.signup_token %}" class="btn btn-outline-secondary ms-2">Annuller</a>
                     </form>
                 </div>
                 {% if person %}
