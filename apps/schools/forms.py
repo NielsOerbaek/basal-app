@@ -37,6 +37,7 @@ class SchoolForm(forms.ModelForm):
         self.fields["by"].required = False
         self.fields["ean_nummer"].required = False
         self.helper = FormHelper()
+        self.helper.form_tag = False
         self.helper.layout = Layout(
             "name",
             Row(
