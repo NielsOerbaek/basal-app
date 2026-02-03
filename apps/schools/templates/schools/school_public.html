@@ -140,62 +140,84 @@
         </div>
 
         <div class="col-lg-6">
-            {% if people_with_courses %}
             <div class="card mb-4">
-                <div class="card-header"><i class="bi bi-people me-2"></i>Kontaktpersoner</div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-people me-2"></i>Kontaktpersoner</span>
+                    <a href="{% url 'school-public-person-create' school.signup_token %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus-lg me-1"></i>Tilføj person
+                    </a>
+                </div>
                 <ul class="list-group list-group-flush">
-                    {% for item in people_with_courses %}
+                    {% for person in kontaktpersoner %}
                     <li class="list-group-item">
-                        <div class="mb-1">
-                            <strong>{{ item.person.name }}</strong>
-                            {% for role in item.person.roles %}
-                            <span class="badge {% if role == 'Koordinator' %}bg-primary{% else %}bg-secondary{% endif %} ms-1">{{ role }}</span>
-                            {% endfor %}
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="mb-1">
+                                    <strong>{{ person.name }}</strong>{% if person.display_titel %}, {{ person.display_titel|lower }}{% endif %}
+                                    {% for role in person.roles %}
+                                    <span class="badge {% if role == 'Koordinator' %}bg-primary{% else %}bg-secondary{% endif %} ms-1">{{ role }}</span>
+                                    {% endfor %}
+                                </div>
+                                <div class="small text-muted">
+                                    {% if person.email %}<i class="bi bi-envelope me-1"></i>{{ person.email }}{% endif %}
+                                    {% if person.email and person.phone %}<span class="mx-2">|</span>{% endif %}
+                                    {% if person.phone %}<i class="bi bi-telephone me-1"></i>{{ person.phone }}{% endif %}
+                                </div>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'school-public-person-update' school.signup_token person.pk %}" class="btn btn-outline-secondary" title="Rediger">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-danger"
+                                        hx-get="{% url 'school-public-person-delete' school.signup_token person.pk %}"
+                                        hx-target="#modal-container"
+                                        title="Slet">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div class="small text-muted">
-                            {% if item.person.email %}<i class="bi bi-envelope me-1"></i>{{ item.person.email }}{% endif %}
-                            {% if item.person.email and item.person.phone %}<span class="mx-2">|</span>{% endif %}
-                            {% if item.person.phone %}<i class="bi bi-telephone me-1"></i>{{ item.person.phone }}{% endif %}
-                        </div>
-                        {% for signup in item.signups %}
-                        <div class="small mt-1 ms-3 text-muted">
-                            <i class="bi bi-arrow-return-right me-1"></i>
-                            {% if signup.attendance == 'present' %}Uddannet på{% elif signup.attendance == 'absent' %}Mødte ikke op til{% else %}Tilmeldt{% endif %}
-                            {{ signup.course.display_name }}
-                        </div>
-                        {% endfor %}
                     </li>
+                    {% empty %}
+                    <li class="list-group-item text-muted">Ingen kontaktpersoner tilføjet.</li>
                     {% endfor %}
                 </ul>
             </div>
-            {% endif %}
 
-            {% if other_participants %}
             <div class="card mb-4">
-                <div class="card-header"><i class="bi bi-person-check me-2"></i>Kursusdeltagere</div>
+                <div class="card-header">
+                    <i class="bi bi-person-check me-2"></i>Kursusdeltagere
+                </div>
                 <ul class="list-group list-group-flush">
-                    {% for participant in other_participants %}
+                    {% for signup in kursusdeltagere %}
                     <li class="list-group-item">
-                        <div class="mb-1">
-                            <strong>{{ participant.name }}</strong>
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="mb-1">
+                                    <strong>{{ signup.participant_name }}</strong>
+                                    {% if signup.participant_title %}<span class="text-muted">, {{ signup.participant_title|lower }}</span>{% endif %}
+                                </div>
+                                <div class="small text-muted">
+                                    {% if signup.participant_email %}<i class="bi bi-envelope me-1"></i>{{ signup.participant_email }}{% endif %}
+                                    {% if signup.participant_email and signup.participant_phone %}<span class="mx-2">|</span>{% endif %}
+                                    {% if signup.participant_phone %}<i class="bi bi-telephone me-1"></i>{{ signup.participant_phone }}{% endif %}
+                                </div>
+                                <div class="small">
+                                    {{ signup.course.display_name }}
+                                    <span class="badge bg-{% if signup.attendance == 'present' %}success{% elif signup.attendance == 'absent' %}danger{% else %}secondary{% endif %} ms-1">
+                                        {{ signup.get_attendance_display }}
+                                    </span>
+                                </div>
+                            </div>
+                            <a href="{% url 'school-public-signup-update' school.signup_token signup.pk %}" class="btn btn-sm btn-outline-secondary" title="Rediger">
+                                <i class="bi bi-pencil"></i>
+                            </a>
                         </div>
-                        {% if participant.email %}
-                        <div class="small text-muted">
-                            <i class="bi bi-envelope me-1"></i>{{ participant.email }}
-                        </div>
-                        {% endif %}
-                        {% for signup in participant.signups %}
-                        <div class="small mt-1 ms-3 text-muted">
-                            <i class="bi bi-arrow-return-right me-1"></i>
-                            {% if signup.attendance == 'present' %}Uddannet på{% elif signup.attendance == 'absent' %}Mødte ikke op til{% else %}Tilmeldt{% endif %}
-                            {{ signup.course.display_name }}
-                        </div>
-                        {% endfor %}
                     </li>
+                    {% empty %}
+                    <li class="list-group-item text-muted">Ingen kursusdeltagere.</li>
                     {% endfor %}
                 </ul>
             </div>
-            {% endif %}
         </div>
     </div>
 </div>

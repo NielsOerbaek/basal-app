@@ -880,52 +880,21 @@ class SchoolPublicView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         school = self.object
-        people = school.people.all()
-        all_signups = school.course_signups.select_related("course", "course__location").order_by("course__start_date")
 
-        # Build set of person emails for matching
-        person_emails = {p.email.lower() for p in people if p.email}
+        # Kontaktpersoner - simple list, no email matching
+        context["kontaktpersoner"] = school.people.all()
 
-        # For each person, find their course signups
-        people_with_courses = []
-        for person in people:
-            person_signups = []
-            if person.email:
-                person_signups = [
-                    s
-                    for s in all_signups
-                    if s.participant_email and s.participant_email.lower() == person.email.lower()
-                ]
-            people_with_courses.append(
-                {
-                    "person": person,
-                    "signups": person_signups,
-                }
-            )
+        # Kursusdeltagere - all signups, one per row
+        context["kursusdeltagere"] = school.course_signups.select_related("course", "course__location").order_by(
+            "participant_name", "-course__start_date"
+        )
 
-        # Course participants not matching any Person
-        other_participants = {}
-        for signup in all_signups:
-            # Include signups that either have no email or have email not matching any person
-            if not signup.participant_email or signup.participant_email.lower() not in person_emails:
-                # Use email as key if available, otherwise use a unique key based on name + signup id
-                email_key = signup.participant_email.lower() if signup.participant_email else f"no_email_{signup.pk}"
-                if email_key not in other_participants:
-                    other_participants[email_key] = {
-                        "name": signup.participant_name,
-                        "email": signup.participant_email or "",
-                        "signups": [],
-                    }
-                other_participants[email_key]["signups"].append(signup)
-
-        context["people_with_courses"] = people_with_courses
-        context["other_participants"] = list(other_participants.values())
         context["enrollment_history"] = school.get_enrollment_history()
 
         # Courses with materials (newest first)
         from apps.courses.models import Course
 
-        course_ids = all_signups.values_list("course_id", flat=True).distinct()
+        course_ids = context["kursusdeltagere"].values_list("course_id", flat=True).distinct()
         courses_with_materials = (
             Course.objects.filter(pk__in=course_ids, course_materials__isnull=False)
             .prefetch_related("course_materials")

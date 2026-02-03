@@ -966,12 +966,11 @@ class SchoolPublicViewTest(TestCase):
         response = self.client.get(f"/school/{self.school.signup_token}/")
         self.assertContains(response, "Jane Smith")
 
-    def test_public_view_no_edit_buttons(self):
-        """Public view does not show edit buttons."""
+    def test_public_view_has_edit_buttons(self):
+        """Public view shows edit buttons for kontaktpersoner."""
         Person.objects.create(school=self.school, name="John", is_koordinator=True)
         response = self.client.get(f"/school/{self.school.signup_token}/")
-        self.assertNotContains(response, "Rediger")
-        self.assertNotContains(response, "bi-pencil")
+        self.assertContains(response, "bi-pencil")
 
 
 class SchoolDetailMergedPeopleTest(TestCase):
