@@ -2301,3 +2301,89 @@ class CourseSignUpDeleteViewTest(TestCase):
         )
         self.assertEqual(response.status_code, 200)  # JSON response
         self.assertFalse(CourseSignUp.objects.filter(pk=self.signup.pk).exists())
+
+
+class PublicPersonCreateViewTest(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(name="Test School", kommune="København")
+        self.school.generate_credentials()
+
+    def test_get_form(self):
+        """Anyone with token can access add person form."""
+        response = self.client.get(reverse("school-public-person-create", kwargs={"token": self.school.signup_token}))
+        self.assertEqual(response.status_code, 200)
+
+    def test_post_creates_person(self):
+        """Anyone with token can add a person."""
+        self.client.post(
+            reverse("school-public-person-create", kwargs={"token": self.school.signup_token}),
+            {
+                "name": "New Person",
+                "titel": "",
+                "titel_other": "",
+                "phone": "12345678",
+                "email": "new@example.com",
+                "comment": "",
+                "is_koordinator": True,
+                "is_oekonomisk_ansvarlig": False,
+            },
+        )
+        self.assertEqual(Person.objects.filter(school=self.school).count(), 1)
+        person = Person.objects.get(school=self.school)
+        self.assertEqual(person.name, "New Person")
+
+
+class PublicPersonUpdateViewTest(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(name="Test School", kommune="København")
+        self.school.generate_credentials()
+        self.person = Person.objects.create(school=self.school, name="Test Person")
+
+    def test_get_form(self):
+        """Anyone with token can access edit form."""
+        response = self.client.get(
+            reverse(
+                "school-public-person-update",
+                kwargs={"token": self.school.signup_token, "pk": self.person.pk},
+            )
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Test Person")
+
+    def test_post_updates_person(self):
+        """Anyone with token can update a person."""
+        self.client.post(
+            reverse(
+                "school-public-person-update",
+                kwargs={"token": self.school.signup_token, "pk": self.person.pk},
+            ),
+            {
+                "name": "Updated Name",
+                "titel": "",
+                "titel_other": "",
+                "phone": "",
+                "email": "",
+                "comment": "",
+                "is_koordinator": False,
+                "is_oekonomisk_ansvarlig": False,
+            },
+        )
+        self.person.refresh_from_db()
+        self.assertEqual(self.person.name, "Updated Name")
+
+
+class PublicPersonDeleteViewTest(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(name="Test School", kommune="København")
+        self.school.generate_credentials()
+        self.person = Person.objects.create(school=self.school, name="Test Person")
+
+    def test_post_deletes_person(self):
+        """Anyone with token can delete a person."""
+        self.client.post(
+            reverse(
+                "school-public-person-delete",
+                kwargs={"token": self.school.signup_token, "pk": self.person.pk},
+            )
+        )
+        self.assertFalse(Person.objects.filter(pk=self.person.pk).exists())

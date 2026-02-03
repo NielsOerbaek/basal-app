@@ -936,3 +936,103 @@ class SchoolPublicView(DetailView):
         context["courses_with_materials"] = courses_with_materials
 
         return context
+
+
+class PublicPersonCreateView(View):
+    """Public view for adding a person to a school via token."""
+
+    def get_school(self, token):
+        return get_object_or_404(
+            School.objects.filter(signup_token__isnull=False).exclude(signup_token=""),
+            signup_token=token,
+        )
+
+    def get(self, request, token):
+        school = self.get_school(token)
+        form = PersonForm()
+        return render(
+            request,
+            "schools/public_person_form.html",
+            {"school": school, "form": form},
+        )
+
+    def post(self, request, token):
+        school = self.get_school(token)
+        form = PersonForm(request.POST)
+        if form.is_valid():
+            person = form.save(commit=False)
+            person.school = school
+            person.save()
+            messages.success(request, f'Person "{person.name}" tilføjet.')
+            return redirect("school-public", token=token)
+        return render(
+            request,
+            "schools/public_person_form.html",
+            {"school": school, "form": form},
+        )
+
+
+class PublicPersonUpdateView(View):
+    """Public view for editing a person via token."""
+
+    def get_school_and_person(self, token, pk):
+        school = get_object_or_404(
+            School.objects.filter(signup_token__isnull=False).exclude(signup_token=""),
+            signup_token=token,
+        )
+        person = get_object_or_404(Person, pk=pk, school=school)
+        return school, person
+
+    def get(self, request, token, pk):
+        school, person = self.get_school_and_person(token, pk)
+        form = PersonForm(instance=person)
+        return render(
+            request,
+            "schools/public_person_form.html",
+            {"school": school, "form": form, "person": person},
+        )
+
+    def post(self, request, token, pk):
+        school, person = self.get_school_and_person(token, pk)
+        form = PersonForm(request.POST, instance=person)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Person "{person.name}" opdateret.')
+            return redirect("school-public", token=token)
+        return render(
+            request,
+            "schools/public_person_form.html",
+            {"school": school, "form": form, "person": person},
+        )
+
+
+class PublicPersonDeleteView(View):
+    """Public view for deleting a person via token."""
+
+    def get_school_and_person(self, token, pk):
+        school = get_object_or_404(
+            School.objects.filter(signup_token__isnull=False).exclude(signup_token=""),
+            signup_token=token,
+        )
+        person = get_object_or_404(Person, pk=pk, school=school)
+        return school, person
+
+    def get(self, request, token, pk):
+        school, person = self.get_school_and_person(token, pk)
+        return render(
+            request,
+            "core/components/confirm_delete_modal.html",
+            {
+                "title": "Slet person",
+                "message": format_html("Er du sikker på, at du vil slette <strong>{}</strong>?", person.name),
+                "delete_url": reverse_lazy("school-public-person-delete", kwargs={"token": token, "pk": pk}),
+                "button_text": "Slet",
+            },
+        )
+
+    def post(self, request, token, pk):
+        school, person = self.get_school_and_person(token, pk)
+        person_name = person.name
+        person.delete()
+        messages.success(request, f'Person "{person_name}" er blevet slettet.')
+        return JsonResponse({"success": True, "redirect": str(reverse_lazy("school-public", kwargs={"token": token}))})
