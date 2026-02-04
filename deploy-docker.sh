@@ -79,6 +79,40 @@ if [ "$DEPLOY_ENV" = "prod" ]; then
     echo "Deployment cancelled."
     exit 0
   fi
+
+  # Trigger backup before production deployment
+  echo "==> Triggering database backup before deployment..."
+  APP_URL=$(grep -E '^APP_URL=' "$SCRIPT_DIR/.env" | cut -d'=' -f2)
+  CRON_SECRET=$(grep -E '^CRON_SECRET=' "$SCRIPT_DIR/.env" | cut -d'=' -f2)
+
+  if [ -n "$APP_URL" ] && [ -n "$CRON_SECRET" ]; then
+    backup_response=$(curl -s -w "\n%{http_code}" \
+      -H "Authorization: Bearer $CRON_SECRET" \
+      "$APP_URL/cron/backup/")
+
+    http_code=$(echo "$backup_response" | tail -n1)
+    body=$(echo "$backup_response" | sed '$d')
+
+    if [ "$http_code" = "200" ]; then
+      echo "✅ Backup completed successfully"
+    else
+      echo "❌ Backup failed (HTTP $http_code): $body"
+      read -p "Continue deployment without backup? [y/N] " -n 1 -r
+      echo
+      if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Deployment cancelled."
+        exit 0
+      fi
+    fi
+  else
+    echo "⚠️  Warning: APP_URL or CRON_SECRET not found in .env, skipping backup"
+    read -p "Continue deployment without backup? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+      echo "Deployment cancelled."
+      exit 0
+    fi
+  fi
 fi
 
 # Sync code to server (excluding local dev files)
