@@ -307,6 +307,8 @@ class ToggleEnrollmentView(View):
     def post(self, request, pk):
         from datetime import datetime
 
+        from apps.schools.models import get_default_active_from
+
         school = get_object_or_404(School, pk=pk)
         date_str = request.POST.get("date")
 
@@ -325,7 +327,9 @@ class ToggleEnrollmentView(View):
             # Enroll
             school.enrolled_at = enrollment_date
             school.opted_out_at = None  # Clear any previous opt-out
-            school.save(update_fields=["enrolled_at", "opted_out_at"])
+            # Set active_from using default logic
+            school.active_from = get_default_active_from()
+            school.save(update_fields=["enrolled_at", "opted_out_at", "active_from"])
             # Generate credentials if not already set
             if not school.signup_password:
                 school.generate_credentials()
