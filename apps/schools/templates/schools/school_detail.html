@@ -82,9 +82,15 @@
                     </dd>
                     {% if school.is_enrolled %}
                     <dt class="col-sm-4">Tilmeldt d.</dt>
-                    <dd class="col-sm-8">{{ school.enrolled_at|date:"d. M Y"|default:"-" }}</dd>
+                    <dd class="col-sm-8">
+                        {{ school.enrolled_at|date:"d. M Y"|default:"-" }}
+                        {% if enrolled_at_school_year %}<span class="badge bg-secondary ms-1">{{ enrolled_at_school_year.name }}</span>{% endif %}
+                    </dd>
                     <dt class="col-sm-4">Aktiv fra</dt>
-                    <dd class="col-sm-8">{{ school.active_from|date:"d. M Y"|default:"-" }}</dd>
+                    <dd class="col-sm-8">
+                        {{ school.active_from|date:"d. M Y"|default:"-" }}
+                        {% if active_from_school_year %}<span class="badge bg-secondary ms-1">{{ active_from_school_year.name }}</span>{% endif %}
+                    </dd>
                     {% endif %}
                 </dl>
                 {% if enrollment_history %}
