@@ -16,7 +16,7 @@ from apps.core.mixins import SortableMixin
 from apps.courses.forms import CourseSignUpParticipantForm
 from apps.courses.models import CourseSignUp
 
-from .forms import InvoiceForm, PersonForm, SchoolCommentForm, SchoolFileForm, SchoolForm
+from .forms import EnrollmentDatesForm, InvoiceForm, PersonForm, SchoolCommentForm, SchoolFileForm, SchoolForm
 from .models import Invoice, Person, School, SchoolComment, SchoolFile, SchoolYear
 
 
@@ -813,6 +813,33 @@ class RegenerateCredentialsView(View):
                 "password": school.signup_password,
                 "token": school.signup_token,
             }
+        )
+
+
+@method_decorator(staff_required, name="dispatch")
+class EditEnrollmentDatesView(View):
+    """Edit enrollment dates (enrolled_at and active_from) for a school."""
+
+    def get(self, request, pk):
+        school = get_object_or_404(School, pk=pk)
+        form = EnrollmentDatesForm(instance=school)
+        return render(
+            request,
+            "schools/enrollment_dates_form.html",
+            {"school": school, "form": form},
+        )
+
+    def post(self, request, pk):
+        school = get_object_or_404(School, pk=pk)
+        form = EnrollmentDatesForm(request.POST, instance=school)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Tilmeldingsdatoer opdateret.")
+            return redirect("schools:detail", pk=school.pk)
+        return render(
+            request,
+            "schools/enrollment_dates_form.html",
+            {"school": school, "form": form},
         )
 
 
