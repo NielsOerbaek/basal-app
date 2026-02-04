@@ -225,8 +225,8 @@ class EnrollmentDatesForm(forms.ModelForm):
         model = School
         fields = ["enrolled_at", "active_from"]
         widgets = {
-            "enrolled_at": forms.DateInput(attrs={"type": "date"}),
-            "active_from": forms.DateInput(attrs={"type": "date"}),
+            "enrolled_at": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "active_from": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
         }
         labels = {
             "enrolled_at": "Tilmeldt d.",
