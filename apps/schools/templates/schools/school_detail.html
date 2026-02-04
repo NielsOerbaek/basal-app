@@ -80,6 +80,12 @@
                         <span class="badge bg-secondary">Ikke tilmeldt</span>
                         {% endif %}
                     </dd>
+                    {% if school.is_enrolled %}
+                    <dt class="col-sm-4">Tilmeldt d.</dt>
+                    <dd class="col-sm-8">{{ school.enrolled_at|date:"d. M Y"|default:"-" }}</dd>
+                    <dt class="col-sm-4">Aktiv fra</dt>
+                    <dd class="col-sm-8">{{ school.active_from|date:"d. M Y"|default:"-" }}</dd>
+                    {% endif %}
                 </dl>
                 {% if enrollment_history %}
                 <div class="mt-3">
