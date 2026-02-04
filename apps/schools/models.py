@@ -94,6 +94,12 @@ class School(models.Model):
     enrolled_at = models.DateField(
         null=True, blank=True, verbose_name="Tilmeldt dato", help_text="Dato for skolens tilmelding til Basal"
     )
+    active_from = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Aktiv fra",
+        help_text="Dato hvor tilmeldingen træder i kraft (påvirker pladser og forankring)",
+    )
     is_active = models.BooleanField(default=True)
     opted_out_at = models.DateField(
         null=True, blank=True, verbose_name="Frameldt dato", help_text="Dato for framelding fra Basal (permanent)"

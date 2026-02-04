@@ -46,6 +46,28 @@ class SchoolExtendedFieldsTest(TestCase):
         self.assertEqual(school.ean_nummer, "5790001234567")
 
 
+class ActiveFromFieldTest(TestCase):
+    def test_school_has_active_from_field(self):
+        """School model has active_from field."""
+        school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+            enrolled_at=date.today(),
+            active_from=date.today(),
+        )
+        self.assertEqual(school.active_from, date.today())
+
+    def test_active_from_can_be_null(self):
+        """active_from can be null for non-enrolled schools."""
+        school = School.objects.create(
+            name="Test School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+        )
+        self.assertIsNone(school.active_from)
+
+
 class SchoolModelTest(TestCase):
     def test_create_school(self):
         """School model can be created and saved."""
