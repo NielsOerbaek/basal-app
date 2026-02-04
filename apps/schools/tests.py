@@ -68,6 +68,59 @@ class ActiveFromFieldTest(TestCase):
         self.assertIsNone(school.active_from)
 
 
+class ActiveFromSeatsTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        # Create school year spanning current date
+        today = date.today()
+        # Determine if we're in first half (Aug-Dec) or second half (Jan-Jul) of school year
+        if today.month >= 8:
+            start_year = today.year
+        else:
+            start_year = today.year - 1
+        cls.current_year, _ = SchoolYear.objects.get_or_create(
+            name=f"{start_year}/{str(start_year + 1)[-2:]}",
+            defaults={
+                "start_date": date(start_year, 8, 1),
+                "end_date": date(start_year + 1, 7, 31),
+            },
+        )
+
+    def test_base_seats_zero_when_active_from_in_future(self):
+        """School with active_from in future has 0 base seats."""
+        school = School.objects.create(
+            name="Test",
+            adresse="Test",
+            kommune="Test",
+            enrolled_at=date.today(),
+            active_from=date.today() + timedelta(days=30),
+        )
+        self.assertEqual(school.base_seats, 0)
+
+    def test_base_seats_positive_when_active_from_today_or_past(self):
+        """School with active_from today or in past has BASE_SEATS."""
+        school = School.objects.create(
+            name="Test",
+            adresse="Test",
+            kommune="Test",
+            enrolled_at=date.today(),
+            active_from=date.today(),
+        )
+        self.assertEqual(school.base_seats, School.BASE_SEATS)
+
+    def test_forankring_uses_active_from_not_enrolled_at(self):
+        """Forankring status uses active_from, not enrolled_at."""
+        # School enrolled recently but with active_from backdated
+        school = School.objects.create(
+            name="Test",
+            adresse="Test",
+            kommune="Test",
+            enrolled_at=date.today(),
+            active_from=self.current_year.start_date - timedelta(days=1),
+        )
+        self.assertTrue(school.has_forankringsplads)
+
+
 class SchoolModelTest(TestCase):
     def test_create_school(self):
         """School model can be created and saved."""
@@ -112,17 +165,27 @@ class SchoolModelTest(TestCase):
         self.assertEqual(school.base_seats, School.BASE_SEATS)
 
     def test_forankringsplads_before_one_year(self):
-        """School enrolled less than 1 year ago has no forankringsplads."""
+        """School active less than 1 year ago has no forankringsplads."""
+        active_from_date = date.today() - timedelta(days=100)
         school = School.objects.create(
-            name="Test", adresse="Test", kommune="Test", enrolled_at=date.today() - timedelta(days=100)
+            name="Test",
+            adresse="Test",
+            kommune="Test",
+            enrolled_at=active_from_date,
+            active_from=active_from_date,
         )
         self.assertFalse(school.has_forankringsplads)
         self.assertEqual(school.forankring_seats, 0)
 
     def test_forankringsplads_after_one_year(self):
-        """School enrolled more than 1 year ago has forankringsplads."""
+        """School active more than 1 year ago has forankringsplads."""
+        active_from_date = date.today() - timedelta(days=400)
         school = School.objects.create(
-            name="Test", adresse="Test", kommune="Test", enrolled_at=date.today() - timedelta(days=400)
+            name="Test",
+            adresse="Test",
+            kommune="Test",
+            enrolled_at=active_from_date,
+            active_from=active_from_date,
         )
         self.assertTrue(school.has_forankringsplads)
         self.assertEqual(school.forankring_seats, School.FORANKRING_SEATS)

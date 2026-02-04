@@ -255,18 +255,23 @@ class School(models.Model):
     @property
     def base_seats(self):
         """Base seats included with enrollment."""
-        return self.BASE_SEATS if self.is_enrolled else 0
+        if not self.is_enrolled:
+            return 0
+        # Check if active_from is set and not in the future
+        if self.active_from and self.active_from > date.today():
+            return 0
+        return self.BASE_SEATS
 
     @property
     def has_forankringsplads(self):
-        """School gets forankringsplads if enrolled before the current school year."""
-        if not self.enrolled_at:
+        """School gets forankringsplads if active_from is before current school year."""
+        if not self.active_from:
             return False
         from apps.schools.school_years import get_current_school_year
 
         try:
             current_year = get_current_school_year()
-            return self.enrolled_at < current_year.start_date
+            return self.active_from < current_year.start_date
         except SchoolYear.DoesNotExist:
             return False
 
