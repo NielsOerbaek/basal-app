@@ -51,12 +51,12 @@ class SchoolYear(models.Model):
 
     def get_enrolled_schools(self):
         """Hent alle skoler der var tilmeldt i dette skoleår."""
-        # Tilmeldt hvis: enrolled_at <= end_date OG (ikke frameldt ELLER frameldt efter start_date)
+        # Tilmeldt hvis: active_from <= end_date OG (ikke frameldt ELLER frameldt efter start_date)
         from django.db.models import Q
 
         return (
             School.objects.active()
-            .filter(enrolled_at__isnull=False, enrolled_at__lte=self.end_date)
+            .filter(active_from__isnull=False, active_from__lte=self.end_date)
             .filter(Q(opted_out_at__isnull=True) | Q(opted_out_at__gt=self.start_date))
         )
 

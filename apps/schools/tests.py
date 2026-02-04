@@ -121,6 +121,26 @@ class ActiveFromSeatsTest(TestCase):
         self.assertTrue(school.has_forankringsplads)
 
 
+class SchoolYearEnrolledSchoolsTest(TestCase):
+    def test_get_enrolled_schools_uses_active_from(self):
+        """get_enrolled_schools uses active_from, not enrolled_at."""
+        school_year = SchoolYear.objects.create(
+            name="Test Year 2025/26",
+            start_date=date(2025, 8, 1),
+            end_date=date(2026, 7, 31),
+        )
+        # School enrolled in 2025/26 but active from 2026/27
+        school = School.objects.create(
+            name="Test",
+            adresse="Test",
+            kommune="Test",
+            enrolled_at=date(2025, 6, 1),
+            active_from=date(2026, 8, 1),  # Next school year
+        )
+        enrolled = school_year.get_enrolled_schools()
+        self.assertNotIn(school, enrolled)
+
+
 class SchoolModelTest(TestCase):
     def test_create_school(self):
         """School model can be created and saved."""
@@ -1621,6 +1641,7 @@ class MissingInvoicesViewTest(TestCase):
             adresse="Test Address",
             kommune="København",
             enrolled_at=date(2023, 9, 1),  # Enrolled before 2024/25 = forankring
+            active_from=date(2023, 9, 1),
         )
 
         url = reverse("schools:missing-invoices")
@@ -1637,6 +1658,7 @@ class MissingInvoicesViewTest(TestCase):
             adresse="Test Address",
             kommune="København",
             enrolled_at=date(2024, 9, 1),  # Enrolled during 2024/25 = new
+            active_from=date(2024, 9, 1),
         )
 
         url = reverse("schools:missing-invoices")
@@ -1654,6 +1676,7 @@ class MissingInvoicesViewTest(TestCase):
             adresse="Test Address",
             kommune="København",
             enrolled_at=date(2023, 9, 1),  # Forankring
+            active_from=date(2023, 9, 1),
         )
         Invoice.objects.create(
             school=school,
@@ -1677,6 +1700,7 @@ class MissingInvoicesViewTest(TestCase):
             adresse="Test Address",
             kommune="København",
             enrolled_at=date(2023, 9, 1),
+            active_from=date(2023, 9, 1),
             opted_out_at=date(2024, 6, 1),  # Opted out before 2024/25 started
         )
 
@@ -1701,6 +1725,7 @@ class MissingInvoicesViewTest(TestCase):
             adresse="Test Address",
             kommune="København",
             enrolled_at=date(2024, 9, 1),
+            active_from=date(2024, 9, 1),
         )
         # Add invoice for 2024/25 only
         Invoice.objects.create(
