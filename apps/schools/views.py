@@ -267,6 +267,9 @@ class SchoolDetailView(DetailView):
     context_object_name = "school"
 
     def get_context_data(self, **kwargs):
+        from apps.schools.models import get_default_active_from, get_enrollment_cutoff_date
+        from apps.schools.school_years import get_current_school_year
+
         context = super().get_context_data(**kwargs)
         context["contact_history"] = self.object.contact_history.select_related("created_by")[:10]
         context["kursusdeltagere"] = self.object.course_signups.select_related("course").order_by(
@@ -282,6 +285,21 @@ class SchoolDetailView(DetailView):
         context["recent_activities"] = self.object.activity_logs.select_related("user", "content_type")[:5]
         context["today"] = date.today()
         context["school_files"] = self.object.files.select_related("uploaded_by").all()
+
+        # Enrollment cutoff info for modal
+        try:
+            current_sy = get_current_school_year()
+            cutoff = get_enrollment_cutoff_date(current_sy)
+            default_active_from = get_default_active_from()
+            context["enrollment_cutoff"] = cutoff
+            context["default_active_from"] = default_active_from
+            context["is_past_cutoff"] = cutoff and date.today() > cutoff
+            if context["is_past_cutoff"]:
+                next_sy = SchoolYear.objects.filter(start_date__gt=current_sy.start_date).order_by("start_date").first()
+                context["next_school_year"] = next_sy
+        except Exception:
+            context["is_past_cutoff"] = False
+
         return context
 
 

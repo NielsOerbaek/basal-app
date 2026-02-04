@@ -483,6 +483,15 @@
                         Du er ved at tilmelde <strong>{{ school.name }}</strong> til Basal.
                         {% endif %}
                     </p>
+                    {% if not school.is_enrolled and is_past_cutoff %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Tilmeldingsfristen for dette skoleårs kurser er overskredet.
+                        Tilmeldingen træder i kraft fra <strong>{{ default_active_from|date:"d. M Y" }}</strong>
+                        {% if next_school_year %}(skoleåret {{ next_school_year.name }}){% endif %}.
+                        <br><small class="text-muted mt-1 d-block">Du kan ændre dette efterfølgende via "Rediger tilmeldingsdatoer".</small>
+                    </div>
+                    {% endif %}
                     <div class="mb-3">
                         <label for="enrollment-date" class="form-label">
                             {% if school.is_enrolled %}Frameldingsdato{% else %}Tilmeldingsdato{% endif %}
