@@ -171,6 +171,15 @@ class CourseSignUp(models.Model):
         """Returns the school name or other organization name."""
         return self.school.name if self.school else self.other_organization or ""
 
+    @property
+    def school_active_from_year(self):
+        """Returns the school year when the school became active (e.g., '2024/25')."""
+        from apps.schools.school_years import calculate_school_year_for_date
+
+        if self.school and self.school.active_from:
+            return calculate_school_year_for_date(self.school.active_from)
+        return ""
+
 
 class CourseMaterial(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="course_materials")

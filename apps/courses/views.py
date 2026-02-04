@@ -235,7 +235,10 @@ class SignUpExportView(View):
         fields = [
             ("course", "Kursus"),
             ("school", "Skole"),
+            ("school_active_from_year", "Skoleår aktiv fra"),
             ("participant_name", "Deltager"),
+            ("participant_email", "E-mail"),
+            ("participant_phone", "Telefon"),
             ("participant_title", "Titel"),
             ("attendance", "Fremmøde"),
             ("created_at", "Tilmeldt"),
