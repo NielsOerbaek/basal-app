@@ -5,6 +5,8 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 
+from apps.courses.models import Course
+
 from .models import Invoice, Person, School, SchoolComment, SchoolYear, SeatPurchase, TitelChoice
 
 
@@ -2648,3 +2650,70 @@ class StatusForYearTest(TestCase):
             active_from=date(2026, 8, 1),  # After 2025/26
         )
         self.assertFalse(school.was_enrolled_in_year(school_year))
+
+
+class EnrollmentCutoffTest(TestCase):
+    def test_get_enrollment_cutoff_date_returns_last_course_deadline(self):
+        """Cutoff is the signup deadline of the last course."""
+        from apps.schools.models import get_enrollment_cutoff_date
+
+        school_year, _ = SchoolYear.objects.get_or_create(
+            name="2025/26",
+            defaults={
+                "start_date": date(2025, 8, 1),
+                "end_date": date(2026, 7, 31),
+            },
+        )
+        # Create courses with different deadlines
+        Course.objects.create(
+            start_date=date(2025, 10, 1),
+            end_date=date(2025, 10, 2),
+            registration_deadline=date(2025, 9, 15),
+        )
+        Course.objects.create(
+            start_date=date(2026, 5, 1),
+            end_date=date(2026, 5, 2),
+            registration_deadline=date(2026, 4, 15),  # Latest deadline
+        )
+        cutoff = get_enrollment_cutoff_date(school_year)
+        self.assertEqual(cutoff, date(2026, 4, 15))
+
+    def test_get_enrollment_cutoff_date_returns_none_if_no_courses(self):
+        """Cutoff is None if no courses exist."""
+        from apps.schools.models import get_enrollment_cutoff_date
+
+        school_year, _ = SchoolYear.objects.get_or_create(
+            name="2025/26",
+            defaults={
+                "start_date": date(2025, 8, 1),
+                "end_date": date(2026, 7, 31),
+            },
+        )
+        cutoff = get_enrollment_cutoff_date(school_year)
+        self.assertIsNone(cutoff)
+
+    def test_get_default_active_from_returns_today_before_cutoff(self):
+        """Default active_from is today when before cutoff."""
+        from apps.schools.models import get_default_active_from
+
+        # Create school year containing today
+        today = date.today()
+        if today.month >= 8:
+            start_year = today.year
+        else:
+            start_year = today.year - 1
+        SchoolYear.objects.get_or_create(
+            name=f"{start_year}/{str(start_year + 1)[-2:]}",
+            defaults={
+                "start_date": date(start_year, 8, 1),
+                "end_date": date(start_year + 1, 7, 31),
+            },
+        )
+        # Create course with deadline in the future
+        Course.objects.create(
+            start_date=today + timedelta(days=60),
+            end_date=today + timedelta(days=61),
+            registration_deadline=today + timedelta(days=30),
+        )
+        result = get_default_active_from()
+        self.assertEqual(result, today)

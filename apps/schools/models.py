@@ -478,3 +478,44 @@ class SchoolFile(models.Model):
         if not self.file:
             return ""
         return self.file.name.split("/")[-1]
+
+
+def get_enrollment_cutoff_date(school_year):
+    """
+    Returns the signup deadline of the last course in the school year, or None.
+    This determines the cutoff after which new enrollments are for next year.
+    """
+    from apps.courses.models import Course
+
+    last_course = (
+        Course.objects.filter(
+            start_date__gte=school_year.start_date,
+            start_date__lte=school_year.end_date,
+            registration_deadline__isnull=False,
+        )
+        .order_by("-registration_deadline")
+        .first()
+    )
+    return last_course.registration_deadline if last_course else None
+
+
+def get_default_active_from():
+    """
+    Returns the default active_from date for new enrollments.
+    Returns today unless we're past the cutoff, then returns next school year start.
+    """
+    today = date.today()
+    current_sy = SchoolYear.objects.get_current()
+
+    if not current_sy:
+        return today
+
+    cutoff = get_enrollment_cutoff_date(current_sy)
+
+    if cutoff and today > cutoff:
+        # Past cutoff - find next school year
+        next_sy = SchoolYear.objects.filter(start_date__gt=current_sy.start_date).order_by("start_date").first()
+        if next_sy:
+            return next_sy.start_date
+
+    return today
