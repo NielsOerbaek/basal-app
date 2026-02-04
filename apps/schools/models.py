@@ -155,10 +155,10 @@ class School(models.Model):
 
     def was_enrolled_in_year(self, school_year):
         """Tjek om skolen var tilmeldt i et givent skoleår."""
-        if not self.enrolled_at:
+        if not self.active_from:
             return False
-        # Tilmeldt hvis enrolled_at <= year.end_date OG (ikke frameldt ELLER frameldt efter year.start_date)
-        if self.enrolled_at > school_year.end_date:
+        # Tilmeldt hvis active_from <= year.end_date OG (ikke frameldt ELLER frameldt efter year.start_date)
+        if self.active_from > school_year.end_date:
             return False
         if self.opted_out_at and self.opted_out_at <= school_year.start_date:
             return False
@@ -297,16 +297,16 @@ class School(models.Model):
             # Opted out during the year - still count as enrolled for that year
             pass
 
-        # Not enrolled at all, or enrolled after this year
-        if not self.enrolled_at or self.enrolled_at > end_date:
+        # Not enrolled at all, or active after this year
+        if not self.active_from or self.active_from > end_date:
             return ("ikke_tilmeldt", "Ikke tilmeldt", "bg-warning text-dark")
 
         # Enrolled - check if new or anchoring for this year
-        if self.enrolled_at >= start_date:
-            # Enrolled during this school year = new
+        if self.active_from >= start_date:
+            # Active during this school year = new
             return ("tilmeldt_ny", "Tilmeldt (ny)", "bg-success")
         else:
-            # Enrolled before this school year = anchoring
+            # Active before this school year = anchoring
             return ("tilmeldt_forankring", "Tilmeldt (forankring)", "bg-primary")
 
     @property

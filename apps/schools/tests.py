@@ -2608,3 +2608,43 @@ class KontaktpersonerKursusdeltagereIntegrationTest(TestCase):
         # Both should appear - kontaktperson in first box, signup in second box
         self.assertContains(response, "Contact Person")
         self.assertContains(response, "Same Email Person")
+
+
+class StatusForYearTest(TestCase):
+    def test_get_status_uses_active_from(self):
+        """get_status_for_year uses active_from for forankring check."""
+        school_year, _ = SchoolYear.objects.get_or_create(
+            name="2025/26",
+            defaults={
+                "start_date": date(2025, 8, 1),
+                "end_date": date(2026, 7, 31),
+            },
+        )
+        # Enrolled recently but active_from before year start
+        school = School.objects.create(
+            name="Test Status",
+            adresse="Test",
+            kommune="Test",
+            enrolled_at=date(2025, 9, 1),
+            active_from=date(2024, 8, 1),
+        )
+        status_code, _, _ = school.get_status_for_year("2025/26")
+        self.assertEqual(status_code, "tilmeldt_forankring")
+
+    def test_was_enrolled_in_year_uses_active_from(self):
+        """was_enrolled_in_year uses active_from."""
+        school_year, _ = SchoolYear.objects.get_or_create(
+            name="2025/26",
+            defaults={
+                "start_date": date(2025, 8, 1),
+                "end_date": date(2026, 7, 31),
+            },
+        )
+        school = School.objects.create(
+            name="Test Enrolled",
+            adresse="Test",
+            kommune="Test",
+            enrolled_at=date(2025, 6, 1),
+            active_from=date(2026, 8, 1),  # After 2025/26
+        )
+        self.assertFalse(school.was_enrolled_in_year(school_year))
