@@ -218,3 +218,44 @@ class SchoolFileForm(forms.ModelForm):
             "description",
             Submit("submit", "Upload fil", css_class="btn btn-primary"),
         )
+
+
+class EnrollmentDatesForm(forms.ModelForm):
+    class Meta:
+        model = School
+        fields = ["enrolled_at", "active_from"]
+        widgets = {
+            "enrolled_at": forms.DateInput(attrs={"type": "date"}),
+            "active_from": forms.DateInput(attrs={"type": "date"}),
+        }
+        labels = {
+            "enrolled_at": "Tilmeldt d.",
+            "active_from": "Aktiv fra",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.layout = Layout(
+            Row(
+                Column("enrolled_at", css_class="col-md-6"),
+                Column("active_from", css_class="col-md-6"),
+            ),
+            HTML(
+                '<p class="form-text text-muted small">'
+                "<strong>Tilmeldt d.</strong> er datoen skolen tilmeldte sig. "
+                "<strong>Aktiv fra</strong> er datoen tilmeldingen træder i kraft og bestemmer pladser og forankringsstatus."
+                "</p>"
+            ),
+        )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        enrolled_at = cleaned_data.get("enrolled_at")
+        active_from = cleaned_data.get("active_from")
+
+        if enrolled_at and active_from and active_from < enrolled_at:
+            raise forms.ValidationError("'Aktiv fra' kan ikke være før 'Tilmeldt d.'")
+
+        return cleaned_data
