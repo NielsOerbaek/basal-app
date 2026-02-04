@@ -101,6 +101,11 @@
                 </div>
                 {% endif %}
                 {% if school.is_enrolled %}
+                <div class="mt-2">
+                    <a href="{% url 'schools:edit-enrollment-dates' school.pk %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-calendar3 me-1"></i>Rediger tilmeldingsdatoer
+                    </a>
+                </div>
                 <div class="mt-3">
                     <a class="text-decoration-none small" data-bs-toggle="collapse" href="#credentialsSection" role="button" aria-expanded="false" aria-controls="credentialsSection">
                         <i class="bi bi-chevron-down me-1"></i>Kodeord og links
