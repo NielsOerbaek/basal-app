@@ -266,9 +266,31 @@ class SchoolSignupViewTest(TestCase):
         self.assertRedirects(response, reverse("signup:school-success"))
         new_school = School.objects.get(name="Brand New School")
         self.assertIsNotNone(new_school.enrolled_at)
+        self.assertIsNotNone(new_school.active_from)
         self.assertEqual(new_school.kommune, "Test Kommune")
         self.assertEqual(new_school.adresse, "New Address 123")
         self.assertEqual(len(new_school.signup_password), 19)
+
+    def test_school_signup_sets_active_from_on_existing_school(self):
+        """School signup with existing school sets active_from."""
+        self.client.post(
+            reverse("signup:school"),
+            {
+                "municipality": "Test Kommune",
+                "school": self.school.pk,
+                "ean_nummer": "5790001234567",
+                "koordinator_name": "Test Koordinator",
+                "koordinator_titel": "skoleleder",
+                "koordinator_phone": "12345678",
+                "koordinator_email": "koordinator@school.dk",
+                "oeko_name": "Test Oeko",
+                "oeko_titel": "skoleleder",
+                "oeko_phone": "87654321",
+                "oeko_email": "oeko@school.dk",
+            },
+        )
+        self.school.refresh_from_db()
+        self.assertIsNotNone(self.school.active_from)
 
     def test_school_signup_success_loads(self):
         """School signup success page should load."""
@@ -537,7 +559,7 @@ class SchoolSignupExtendedFieldsTest(TestCase):
 
     def test_signup_creates_two_persons(self):
         """School signup creates both Koordinator and Økonomisk ansvarlig persons."""
-        from apps.schools.models import Person, PersonRole
+        from apps.schools.models import Person
 
         response = self.client.post(
             reverse("signup:school"),
@@ -562,11 +584,11 @@ class SchoolSignupExtendedFieldsTest(TestCase):
         self.assertEqual(persons.count(), 2)
 
         # Check Koordinator
-        koordinator = persons.get(role=PersonRole.KOORDINATOR)
+        koordinator = persons.get(is_koordinator=True)
         self.assertEqual(koordinator.name, "Koordinator Person")
 
         # Check Økonomisk ansvarlig
-        oeko = persons.get(role=PersonRole.OEKONOMISK_ANSVARLIG)
+        oeko = persons.get(is_oekonomisk_ansvarlig=True)
         self.assertEqual(oeko.name, "Øko Person")
 
     def test_signup_saves_ean_to_existing_school(self):

@@ -329,7 +329,7 @@ class SchoolSignupView(View):
         from datetime import date
 
         from apps.emails.services import send_school_enrollment_confirmation
-        from apps.schools.models import Person, PersonRole
+        from apps.schools.models import Person, get_default_active_from
 
         page = self.get_signup_page()
         if page and not page.is_active:
@@ -345,6 +345,8 @@ class SchoolSignupView(View):
             # Billing fields
             kommunen_betaler = form.cleaned_data.get("kommunen_betaler", False)
 
+            default_active_from = get_default_active_from()
+
             if form.cleaned_data.get("school_not_listed"):
                 # Create new school with all fields
                 school = School.objects.create(
@@ -355,6 +357,7 @@ class SchoolSignupView(View):
                     kommune=municipality,
                     ean_nummer=ean_nummer,
                     enrolled_at=date.today(),
+                    active_from=default_active_from,
                     # Billing fields
                     kommunen_betaler=kommunen_betaler,
                     fakturering_adresse=form.cleaned_data.get("fakturering_adresse", "") if kommunen_betaler else "",
@@ -386,6 +389,7 @@ class SchoolSignupView(View):
                     school.fakturering_kontakt_email = form.cleaned_data.get("fakturering_kontakt_email", "")
                 if not school.enrolled_at:
                     school.enrolled_at = date.today()
+                    school.active_from = default_active_from
                 school.save()
 
             # Generate credentials
@@ -406,8 +410,7 @@ class SchoolSignupView(View):
                 titel_other=koordinator_titel_other,
                 email=koordinator_email,
                 phone=form.cleaned_data.get("koordinator_phone", ""),
-                role=PersonRole.KOORDINATOR,
-                is_primary=True,
+                is_koordinator=True,
             )
 
             # Create Økonomisk ansvarlig
@@ -419,7 +422,7 @@ class SchoolSignupView(View):
                 titel_other=oeko_titel_other,
                 email=form.cleaned_data["oeko_email"],
                 phone=form.cleaned_data.get("oeko_phone", ""),
-                role=PersonRole.OEKONOMISK_ANSVARLIG,
+                is_oekonomisk_ansvarlig=True,
             )
 
             # Send confirmation email
