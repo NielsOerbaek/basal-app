@@ -100,20 +100,26 @@ class SchoolListView(SortableMixin, ListView):
             # All enrolled (both new and anchoring)
             queryset = queryset.filter(enrolled_at__isnull=False, opted_out_at__isnull=True)
         elif status_filter == "tilmeldt_ny":
-            # Enrolled in the current school year (on or after Aug 1 of current school year)
+            # Active in the current school year (on or after start of current school year)
             from apps.schools.school_years import get_current_school_year
 
             current_sy = get_current_school_year()
             queryset = queryset.filter(
-                enrolled_at__isnull=False, enrolled_at__gte=current_sy.start_date, opted_out_at__isnull=True
+                enrolled_at__isnull=False,
+                active_from__isnull=False,
+                active_from__gte=current_sy.start_date,
+                opted_out_at__isnull=True,
             )
         elif status_filter == "tilmeldt_forankring":
-            # Enrolled before the current school year (forankring = anchoring)
+            # Active before the current school year (forankring = anchoring)
             from apps.schools.school_years import get_current_school_year
 
             current_sy = get_current_school_year()
             queryset = queryset.filter(
-                enrolled_at__isnull=False, enrolled_at__lt=current_sy.start_date, opted_out_at__isnull=True
+                enrolled_at__isnull=False,
+                active_from__isnull=False,
+                active_from__lt=current_sy.start_date,
+                opted_out_at__isnull=True,
             )
         elif status_filter == "ikke_tilmeldt":
             # Never enrolled
