@@ -6,6 +6,14 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ## 4. februar 2026
 
+### Forbedret håndtering af tilmeldingsdatoer
+Ny funktion til at styre hvornår en skoles tilmelding træder i kraft:
+
+- **Aktiv fra-dato:** Ny dato der bestemmer hvornår tilmeldingen får effekt på pladser og forankring
+- **Automatisk beregning:** Hvis en skole tilmelder sig efter sidste kursustilmeldingsfrist, sættes "aktiv fra" automatisk til næste skoleårs start
+- **Redigering:** Medarbejdere kan redigere både tilmeldingsdato og aktiv fra-dato via "Rediger tilmeldingsdatoer" på skoledetaljesiden
+- **Offentlig tilmelding:** Ved tilmelding efter fristen informeres skolen om at deres tilmelding træder i kraft fra næste skoleår
+
 ### Forbedret bekræftelsesmail ved skoletilmelding
 Bekræftelsesmailen til skoler ved tilmelding bruger nu en redigerbar e-mail skabelon:
 
