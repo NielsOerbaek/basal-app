@@ -428,6 +428,10 @@ class SchoolSignupView(View):
             # Send confirmation email
             send_school_enrollment_confirmation(school, koordinator_email, koordinator_name)
 
+            # Store enrollment info in session for success page
+            request.session["school_signup_active_from"] = default_active_from.isoformat()
+            request.session["school_signup_enrolled_at"] = date.today().isoformat()
+
             return redirect("signup:school-success")
 
         return render(request, self.template_name, {"form": form, "page": page})
@@ -439,11 +443,24 @@ class SchoolSignupSuccessView(TemplateView):
     template_name = "signups/school_signup_success.html"
 
     def get_context_data(self, **kwargs):
+        from datetime import date
+
         context = super().get_context_data(**kwargs)
         try:
             context["page"] = SignupPage.objects.get(page_type=SignupPageType.SCHOOL_SIGNUP)
         except SignupPage.DoesNotExist:
             context["page"] = None
+
+        # Get enrollment info from session
+        active_from_str = self.request.session.pop("school_signup_active_from", None)
+        enrolled_at_str = self.request.session.pop("school_signup_enrolled_at", None)
+
+        if active_from_str and enrolled_at_str:
+            active_from = date.fromisoformat(active_from_str)
+            enrolled_at = date.fromisoformat(enrolled_at_str)
+            context["active_from"] = active_from
+            context["is_next_year_enrollment"] = active_from > enrolled_at
+
         return context
 
 

@@ -13,6 +13,14 @@
             <p>Vi har modtaget jeres tilmelding.<br>I vil modtage en e-mail med information om hvordan I tilmelder jer kurser.</p>
         {% endif %}
     </div>
+    {% if is_next_year_enrollment %}
+    <div class="alert alert-info text-start">
+        <i class="bi bi-info-circle me-2"></i>
+        <strong>Bemærk:</strong> Tilmeldingsfristen for dette skoleårs kurser er overskredet.
+        Jeres tilmelding træder i kraft fra <strong>{{ active_from|date:"d. M Y" }}</strong>,
+        og I vil have tre pladser til kurser i det kommende skoleår.
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
 
