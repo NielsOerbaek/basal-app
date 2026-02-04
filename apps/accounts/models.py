@@ -5,14 +5,9 @@ from django.dispatch import receiver
 
 
 class UserProfile(models.Model):
-    """Extended user profile for notification preferences."""
+    """Extended user profile."""
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
-    notify_on_school_signup = models.BooleanField(
-        default=False,
-        verbose_name="Modtag email ved ny skoletilmelding",
-        help_text="Få besked når en ny skole tilmelder sig Basal",
-    )
 
     class Meta:
         verbose_name = "Brugerprofil"

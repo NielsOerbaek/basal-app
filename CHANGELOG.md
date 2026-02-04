@@ -4,6 +4,20 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 4. februar 2026
+
+### Forbedret bekræftelsesmail ved skoletilmelding
+Bekræftelsesmailen til skoler ved tilmelding bruger nu en redigerbar e-mail skabelon:
+
+- **Skabelonstyring:** Teksten kan nu redigeres i admin under E-mail skabeloner
+- **BCC-kopi:** Alle bekræftelsesmails sendes nu med BCC til basal@sundkom.dk (kan ændres via miljøvariabel)
+- **Tilgængelige variabler:** `{{ contact_name }}`, `{{ school_name }}`, `{{ school_page_url }}`, `{{ signup_url }}`, `{{ signup_password }}`, `{{ site_url }}`
+
+### Fjernet notifikationsabonnement
+Den tidligere funktion hvor brugere kunne abonnere på notifikationer ved nye skoletilmeldinger er fjernet. I stedet modtages alle bekræftelsesmails nu automatisk på basal@sundkom.dk.
+
+---
+
 ## 3. februar 2026
 
 ### Opdelt personvisning på skolens offentlige side

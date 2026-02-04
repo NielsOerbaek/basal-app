@@ -107,6 +107,7 @@ LOGOUT_REDIRECT_URL = "/login/"
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Basal <noreply@basal.dk>")
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+SCHOOL_SIGNUP_BCC_EMAIL = os.environ.get("SCHOOL_SIGNUP_BCC_EMAIL", "basal@sundkom.dk")
 
 # Cron job authentication
 CRON_SECRET = os.environ.get("CRON_SECRET", "")

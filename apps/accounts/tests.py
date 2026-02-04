@@ -82,51 +82,10 @@ class UserProfileTest(TestCase):
         self.assertTrue(hasattr(user, "profile"))
         self.assertIsInstance(user.profile, UserProfile)
 
-    def test_userprofile_default_notify_false(self):
-        """UserProfile.notify_on_school_signup defaults to False."""
-        user = User.objects.create_user(username="newuser", password="testpass")
-        self.assertFalse(user.profile.notify_on_school_signup)
-
     def test_userprofile_str(self):
         """UserProfile __str__ returns username."""
         user = User.objects.create_user(username="testuser", password="testpass")
         self.assertEqual(str(user.profile), "testuser")
-
-
-class UserFormNotificationTest(TestCase):
-    def setUp(self):
-        self.client = Client()
-        self.superuser = User.objects.create_superuser(
-            username="notifyadmin", password="adminpass", email="notifyadmin@example.com"
-        )
-        self.target_user = User.objects.create_user(
-            username="notifytarget", password="targetpass", email="notifytarget@example.com"
-        )
-
-    def test_update_form_has_notification_field(self):
-        """UserUpdateForm includes notify_on_school_signup field."""
-        from apps.accounts.forms import UserUpdateForm
-
-        form = UserUpdateForm(instance=self.target_user)
-        self.assertIn("notify_on_school_signup", form.fields)
-
-    def test_update_form_saves_notification_preference(self):
-        """UserUpdateForm saves notify_on_school_signup to profile."""
-        self.client.login(username="notifyadmin", password="adminpass")
-        response = self.client.post(
-            reverse("accounts:user-update", kwargs={"pk": self.target_user.pk}),
-            {
-                "username": "notifytarget",
-                "first_name": "Target",
-                "last_name": "User",
-                "email": "notifytarget@example.com",
-                "is_active": True,
-                "notify_on_school_signup": True,
-            },
-        )
-        self.assertEqual(response.status_code, 302)
-        self.target_user.refresh_from_db()
-        self.assertTrue(self.target_user.profile.notify_on_school_signup)
 
 
 class AccountSettingsViewTest(TestCase):

@@ -133,9 +133,21 @@ def send_course_reminder(signup, attachments=None):
     return send_email(EmailType.COURSE_REMINDER, signup, attachments=attachments)
 
 
+def get_school_enrollment_context(school, contact_name):
+    """Build template context for school enrollment confirmation."""
+    return {
+        "contact_name": contact_name,
+        "school_name": school.name,
+        "school_page_url": f"{settings.SITE_URL}/school/{school.signup_token}/",
+        "signup_url": f"{settings.SITE_URL}/signup/course/?token={school.signup_token}",
+        "signup_password": school.signup_password,
+        "site_url": settings.SITE_URL,
+    }
+
+
 def send_school_enrollment_confirmation(school, contact_email, contact_name):
     """
-    Send enrollment confirmation email to school contact.
+    Send enrollment confirmation email to school contact using EmailTemplate.
 
     Args:
         school: School instance with credentials
@@ -145,37 +157,21 @@ def send_school_enrollment_confirmation(school, contact_email, contact_name):
     Returns:
         True if successful, False otherwise
     """
-    subject = f"Velkommen til Basal - {school.name}"
+    try:
+        template = EmailTemplate.objects.get(email_type=EmailType.SCHOOL_ENROLLMENT_CONFIRMATION, is_active=True)
+    except EmailTemplate.DoesNotExist:
+        logger.warning("No active template found for school enrollment confirmation")
+        return False
 
-    signup_url = f"{settings.SITE_URL}/signup/course/?token={school.signup_token}"
-    school_page_url = f"{settings.SITE_URL}/school/{school.signup_token}/"
+    context = get_school_enrollment_context(school, contact_name)
+    subject = render_template(template.subject, context)
+    body_html = add_email_footer(render_template(template.body_html, context))
 
-    body_html = add_email_footer(
-        f"""
-    <p>Hej {contact_name},</p>
-
-    <p>Tak for jeres tilmelding til Basal! {school.name} er nu tilmeldt.</p>
-
-    <h3>Jeres skoleside</h3>
-    <p>I har nu en side hvor I kan se jeres tilmeldinger og pladser:</p>
-    <p><a href="{school_page_url}">{school_page_url}</a></p>
-
-    <h3>Tilmelding til kurser</h3>
-    <p>I kan tilmelde jer kurser på to måder:</p>
-
-    <ol>
-        <li><strong>Via direkte link:</strong><br>
-            <a href="{signup_url}">{signup_url}</a></li>
-        <li><strong>Via kode:</strong><br>
-            Gå til {settings.SITE_URL}/signup/course/ og indtast koden: <strong>{school.signup_password}</strong></li>
-    </ol>
-
-    <p>Med venlig hilsen,<br>Basal</p>
-    """
-    )
+    bcc_email = getattr(settings, "SCHOOL_SIGNUP_BCC_EMAIL", "basal@sundkom.dk")
 
     if not getattr(settings, "RESEND_API_KEY", None):
         logger.info(f"[EMAIL] To: {contact_email}")
+        logger.info(f"[EMAIL] BCC: {bcc_email}")
         logger.info(f"[EMAIL] Subject: {subject}")
         logger.info(f"[EMAIL] Body: {body_html[:200]}...")
         return True
@@ -186,6 +182,7 @@ def send_school_enrollment_confirmation(school, contact_email, contact_name):
             {
                 "from": settings.DEFAULT_FROM_EMAIL,
                 "to": [contact_email],
+                "bcc": [bcc_email],
                 "subject": subject,
                 "html": body_html,
             }
@@ -194,69 +191,3 @@ def send_school_enrollment_confirmation(school, contact_email, contact_name):
     except Exception as e:
         logger.error(f"Failed to send enrollment confirmation: {e}")
         return False
-
-
-def send_school_signup_notifications(school, contact_name, contact_email):
-    """
-    Send notification emails to staff users who opted in.
-
-    Args:
-        school: School instance that signed up
-        contact_name: Name of school contact person
-        contact_email: Email of school contact person
-
-    Returns:
-        Number of notifications sent
-    """
-    from apps.accounts.models import UserProfile
-
-    # Get users with notification enabled
-    subscribed_profiles = (
-        UserProfile.objects.filter(notify_on_school_signup=True, user__email__isnull=False)
-        .exclude(user__email="")
-        .select_related("user")
-    )
-
-    if not subscribed_profiles:
-        return 0
-
-    subject = f"Ny skoletilmelding: {school.name}"
-    school_url = f"{settings.SITE_URL}/schools/{school.pk}/"
-
-    body_html = add_email_footer(
-        f"""
-    <p>En ny skole har tilmeldt sig Basal:</p>
-
-    <ul>
-        <li><strong>Skole:</strong> {school.name}</li>
-        <li><strong>Kommune:</strong> {school.kommune}</li>
-        <li><strong>Kontaktperson:</strong> {contact_name} ({contact_email})</li>
-    </ul>
-
-    <p><a href="{school_url}">Se skolen i Basal</a></p>
-    """
-    )
-
-    count = 0
-    for profile in subscribed_profiles:
-        if not getattr(settings, "RESEND_API_KEY", None):
-            logger.info(f"[EMAIL] Notification to: {profile.user.email}")
-            logger.info(f"[EMAIL] Subject: {subject}")
-            count += 1
-            continue
-
-        try:
-            resend.api_key = settings.RESEND_API_KEY
-            resend.Emails.send(
-                {
-                    "from": settings.DEFAULT_FROM_EMAIL,
-                    "to": [profile.user.email],
-                    "subject": subject,
-                    "html": body_html,
-                }
-            )
-            count += 1
-        except Exception as e:
-            logger.error(f"Failed to send notification to {profile.user.email}: {e}")
-
-    return count

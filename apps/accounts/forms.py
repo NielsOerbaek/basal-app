@@ -125,11 +125,6 @@ class UserUpdateForm(UserPermissionMixin, forms.ModelForm):
         required=False,
         help_text="Har adgang til alt, inklusiv Django admin og systemindstillinger.",
     )
-    notify_on_school_signup = forms.BooleanField(
-        label="Modtag email ved ny skoletilmelding",
-        required=False,
-        help_text="Få besked når en ny skole tilmelder sig Basal",
-    )
 
     class Meta:
         model = User
@@ -143,9 +138,6 @@ class UserUpdateForm(UserPermissionMixin, forms.ModelForm):
             self.fields["is_user_admin"].initial = perms["is_user_admin"]
             self.fields["is_signup_admin"].initial = perms["is_signup_admin"]
             self.fields["is_full_admin"].initial = perms["is_full_admin"]
-            # Set notification preference from profile
-            if hasattr(self.instance, "profile"):
-                self.fields["notify_on_school_signup"].initial = self.instance.profile.notify_on_school_signup
 
         self.helper = FormHelper()
         self.helper.layout = Layout(
@@ -160,8 +152,6 @@ class UserUpdateForm(UserPermissionMixin, forms.ModelForm):
             "is_user_admin",
             "is_signup_admin",
             "is_full_admin",
-            HTML("<hr><h5>Notifikationer</h5>"),
-            "notify_on_school_signup",
             Submit("submit", "Gem ændringer", css_class="btn btn-primary mt-3"),
         )
 
@@ -174,10 +164,6 @@ class UserUpdateForm(UserPermissionMixin, forms.ModelForm):
                 self.cleaned_data.get("is_signup_admin", False),
                 self.cleaned_data.get("is_full_admin", False),
             )
-            # Save notification preference to profile
-            if hasattr(user, "profile"):
-                user.profile.notify_on_school_signup = self.cleaned_data.get("notify_on_school_signup", False)
-                user.profile.save()
         return user
 
 

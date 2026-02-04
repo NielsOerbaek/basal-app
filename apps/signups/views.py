@@ -328,7 +328,7 @@ class SchoolSignupView(View):
     def post(self, request):
         from datetime import date
 
-        from apps.emails.services import send_school_enrollment_confirmation, send_school_signup_notifications
+        from apps.emails.services import send_school_enrollment_confirmation
         from apps.schools.models import Person, PersonRole
 
         page = self.get_signup_page()
@@ -424,9 +424,6 @@ class SchoolSignupView(View):
 
             # Send confirmation email
             send_school_enrollment_confirmation(school, koordinator_email, koordinator_name)
-
-            # Notify subscribed users
-            send_school_signup_notifications(school, koordinator_name, koordinator_email)
 
             return redirect("signup:school-success")
 
