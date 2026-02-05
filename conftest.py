@@ -4,22 +4,18 @@ Root-level pytest fixtures for the Basal application.
 from datetime import date, timedelta
 
 import pytest
+from django.conf import settings as _django_settings
 from django.contrib.auth.models import User
 from django.test import Client
 
 from apps.courses.models import Course
 from apps.schools.models import School
 
-
-@pytest.fixture(autouse=True)
-def _disable_resend_emails(monkeypatch):
-    """Prevent tests from sending real emails via Resend.
-
-    The .env file contains a real RESEND_API_KEY which load_dotenv() loads
-    into the environment. Patching resend.Emails.send directly is more
-    robust than overriding settings, which doesn't apply to TestCase tests.
-    """
-    monkeypatch.setattr("resend.Emails.send", lambda params: {"id": "test_mock"})
+# Prevent tests from sending real emails via Resend.
+# .env contains a real RESEND_API_KEY which load_dotenv() picks up.
+# Setting this at module level is the only approach that reliably works
+# for both pytest-native tests and django.test.TestCase subclasses.
+_django_settings.RESEND_API_KEY = None
 
 
 @pytest.fixture
