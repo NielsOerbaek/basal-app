@@ -383,9 +383,13 @@ class School(models.Model):
             # Opted out during the year - still count as enrolled for that year
             pass
 
-        # Not enrolled at all, or active after this year
-        if not self.active_from or self.active_from > end_date:
+        # Not enrolled at all
+        if not self.active_from:
             return ("ikke_tilmeldt", "Ikke tilmeldt", "bg-warning text-dark")
+
+        # Enrolled but not active until after this year
+        if self.active_from > end_date:
+            return ("tilmeldt_venter", "Tilmeldt fra næste år", "bg-info text-dark")
 
         # Enrolled - check if new or anchoring for this year
         if self.active_from >= start_date:
