@@ -3,7 +3,7 @@ from django.db import models
 
 class EmailType(models.TextChoices):
     SIGNUP_CONFIRMATION = "signup_confirmation", "Tilmeldingsbekræftelse"
-    COURSE_REMINDER = "course_reminder", "Kursuspåmindelse (2 dage før)"
+    COURSE_REMINDER = "course_reminder", "Kursuspåmindelse (14 dage før)"
     SCHOOL_ENROLLMENT_CONFIRMATION = "school_enrollment_confirmation", "Skoletilmeldingsbekræftelse"
 
 

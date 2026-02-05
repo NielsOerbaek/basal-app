@@ -8,7 +8,7 @@ from apps.emails.services import send_course_reminder
 
 
 class Command(BaseCommand):
-    help = "Send kursuspåmindelser til deltagere 2 dage før kursusstart"
+    help = "Send kursuspåmindelser til deltagere 14 dage før kursusstart"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -19,8 +19,8 @@ class Command(BaseCommand):
         parser.add_argument(
             "--days-before",
             type=int,
-            default=2,
-            help="Antal dage før kursusstart (standard: 2)",
+            default=14,
+            help="Antal dage før kursusstart (standard: 14)",
         )
 
     def handle(self, *args, **options):
