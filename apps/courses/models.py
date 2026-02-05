@@ -140,6 +140,7 @@ class CourseSignUp(models.Model):
         related_name="course_signups",
         null=True,
         blank=True,
+        verbose_name="Skole",
         help_text="Skole - kan være tom hvis deltageren er fra en anden organisation",
     )
     other_organization = models.CharField(
@@ -148,11 +149,13 @@ class CourseSignUp(models.Model):
         verbose_name="Anden organisation",
         help_text="Udfyldes hvis deltageren ikke er fra en skole (f.eks. kommune, forvaltning)",
     )
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="signups")
-    participant_name = models.CharField(max_length=255)
-    participant_email = models.EmailField(blank=True, help_text="E-mail til kontakt")
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="signups", verbose_name="Kursus")
+    participant_name = models.CharField(max_length=255, verbose_name="Navn")
+    participant_email = models.EmailField(blank=True, verbose_name="E-mail", help_text="E-mail til kontakt")
     participant_phone = models.CharField(max_length=50, blank=True, verbose_name="Telefon")
-    participant_title = models.CharField(max_length=255, blank=True, help_text="Jobtitel eller rolle")
+    participant_title = models.CharField(
+        max_length=255, blank=True, verbose_name="Titel", help_text="Jobtitel eller rolle"
+    )
     attendance = models.CharField(max_length=10, choices=AttendanceStatus.choices, default=AttendanceStatus.UNMARKED)
     is_underviser = models.BooleanField(
         default=True, verbose_name="Er underviser", help_text="Afkryds hvis deltageren er underviser (ikke leder/andet)"

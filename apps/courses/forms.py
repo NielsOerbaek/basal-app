@@ -262,10 +262,14 @@ class CourseSignUpForm(forms.ModelForm):
         ]
 
     def __init__(self, *args, **kwargs):
+        fixed_course = kwargs.pop("course", None)
         super().__init__(*args, **kwargs)
         self.fields["school"].queryset = School.objects.active()
         self.fields["school"].required = False
         self.fields["other_organization"].widget.attrs["placeholder"] = "Udfyldes hvis deltageren ikke er fra en skole"
+        if fixed_course:
+            self.fields["course"].initial = fixed_course.pk
+            self.fields["course"].widget = forms.HiddenInput()
         self.helper = FormHelper()
         self.helper.layout = Layout(
             "course",

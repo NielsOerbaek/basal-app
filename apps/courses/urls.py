@@ -16,6 +16,7 @@ urlpatterns = [
     path("<int:pk>/bulk-mark-attendance/", views.BulkMarkAttendanceView.as_view(), name="bulk-mark-attendance"),
     path("<int:pk>/bulk-delete-signups/", views.BulkDeleteSignupsView.as_view(), name="bulk-delete-signups"),
     path("export/", views.CourseExportView.as_view(), name="export"),
+    path("<int:course_pk>/signup/add/", views.SignUpCreateView.as_view(), name="signup-create"),
     path("signups/", views.SignUpListView.as_view(), name="signup-list"),
     path("signups/<int:pk>/edit/", views.SignUpUpdateView.as_view(), name="signup-update"),
     path("signups/<int:pk>/attendance/", views.MarkAttendanceView.as_view(), name="mark-attendance"),

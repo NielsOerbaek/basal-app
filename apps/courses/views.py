@@ -275,6 +275,35 @@ class MarkAttendanceView(View):
 
 
 @method_decorator(staff_required, name="dispatch")
+class SignUpCreateView(CreateView):
+    model = CourseSignUp
+    form_class = CourseSignUpForm
+    template_name = "courses/signup_form.html"
+
+    def get_course(self):
+        return get_object_or_404(Course, pk=self.kwargs["course_pk"])
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["course"] = self.get_course()
+        return kwargs
+
+    def get_success_url(self):
+        return reverse("courses:detail", kwargs={"pk": self.object.course.pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["course"] = self.get_course()
+        context["is_create"] = True
+        return context
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f"Tilmelding for {self.object.participant_name} blev oprettet.")
+        return response
+
+
+@method_decorator(staff_required, name="dispatch")
 class SignUpUpdateView(UpdateView):
     model = CourseSignUp
     form_class = CourseSignUpForm
