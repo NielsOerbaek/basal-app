@@ -129,7 +129,7 @@
                             <th>Navn</th>
                             <th>Kommune</th>
                             <th>Kontaktperson</th>
-                            <th>Ubrugte pladser</th>
+                            <th>Tilmeldingsdato</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -138,7 +138,7 @@
                             <td><a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a></td>
                             <td>{{ school.kommune }}</td>
                             <td>{% with contact=school.people.first %}{% if contact %}{{ contact.name }}{% if contact.email %} ({{ contact.email }}){% endif %}{% else %}-{% endif %}{% endwith %}</td>
-                            <td>{{ school.remaining_seats }} <small class="text-muted">ud af {{ school.total_seats }}</small></td>
+                            <td>{{ school.enrolled_at|date:"d. M Y" }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
