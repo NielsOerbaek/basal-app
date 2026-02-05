@@ -342,6 +342,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const participantCount = getParticipantCount();
+        const used = seatData.used_seats;
+        const free = seatData.free_seats;
         const remaining = seatData.remaining_seats;
         const afterSignup = remaining - participantCount;
         let scenario = null;
@@ -365,32 +367,40 @@ document.addEventListener('DOMContentLoaded', function() {
         if (scenario && seatContent[scenario]) {
             const content = seatContent[scenario];
             seatInfoTitle.textContent = content.title;
-            seatInfoContent.innerHTML = content.content;
+
+            // Build seat status line
+            const seatStatus = '<p class="mb-2"><strong>Pladsstatus:</strong> ' +
+                used + ' brugt ud af ' + free +
+                (remaining > 0 ? ' — ' + remaining + ' ledig' + (remaining === 1 ? '' : 'e') : '') +
+                '</p>';
+
+            // Build extra seats warning if applicable
+            let extraWarning = '';
+            if (afterSignup < 0) {
+                const extra = Math.abs(afterSignup);
+                extraWarning = '<p class="mb-2"><strong>Bemærk:</strong> I tilmelder ' +
+                    extra + ' person' + (extra === 1 ? '' : 'er') +
+                    ' ud over jeres pladser. Ekstra pladser faktureres efter tilmelding.</p>';
+            }
+
+            seatInfoContent.innerHTML = seatStatus + extraWarning + content.content;
 
             // Set alert style based on scenario
             seatInfoBox.className = 'alert';
-            if (scenario === 'first_year_unused') {
-                seatInfoBox.classList.add('alert-warning');
-            } else if (scenario === 'first_year_all_used' || scenario === 'forankring_available') {
-                seatInfoBox.classList.add('alert-success');
-            } else {
+            if (scenario === 'first_year_extra' || scenario === 'forankring_none' || afterSignup < 0) {
                 seatInfoBox.classList.add('alert-info');
+            } else if (scenario === 'first_year_unused') {
+                seatInfoBox.classList.add('alert-warning');
+            } else {
+                seatInfoBox.classList.add('alert-success');
             }
             seatInfoBox.style.display = 'block';
         } else {
             seatInfoBox.style.display = 'none';
         }
 
-        // Show extra warning if going over free seats
-        if (afterSignup < 0) {
-            const extra = Math.abs(afterSignup);
-            seatsWarningText.textContent = 'I tilmelder ' + extra + ' person' +
-                (extra === 1 ? '' : 'er') + ' ud over jeres gratis pladser. ' +
-                'Ekstra pladser faktureres efter tilmelding.';
-            seatsWarning.style.display = 'block';
-        } else {
-            seatsWarning.style.display = 'none';
-        }
+        // Hide separate warning — info is now shown inside the info box
+        seatsWarning.style.display = 'none';
     }
 
     // Event listeners
