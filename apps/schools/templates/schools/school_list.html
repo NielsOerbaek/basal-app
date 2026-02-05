@@ -99,7 +99,7 @@
                     <th>{% sort_header 'name' 'Navn' %}</th>
                     <th>{% sort_header 'kommune' 'Kommune' %}</th>
                     <th>Status</th>
-                    <th>{% sort_header 'contact' 'Seneste henvendelse' %}</th>
+                    <th>Tilmeldt skoleår</th>
                     <th>{% sort_header 'seats' 'Ubrugte pladser' %}</th>
                     <th class="table-actions">Handlinger</th>
                 </tr>
@@ -115,8 +115,8 @@
                         {% endwith %}
                     </td>
                     <td>
-                        {% if school.last_contact_date %}
-                        {{ school.last_contact_date|date:"d. M Y" }}
+                        {% if school.active_from %}
+                        {{ school.get_first_school_year }}
                         {% else %}
                         <span class="text-muted">-</span>
                         {% endif %}
