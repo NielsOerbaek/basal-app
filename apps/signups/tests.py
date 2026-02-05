@@ -324,16 +324,48 @@ class SchoolsByKommuneViewTest(TestCase):
 class CheckSchoolSeatsViewTest(TestCase):
     def setUp(self):
         self.client = Client()
+        from apps.schools.models import SchoolYear
+
+        self.sy, _ = SchoolYear.objects.get_or_create(
+            name="2025/26",
+            defaults={"start_date": date(2025, 8, 1), "end_date": date(2026, 7, 31)},
+        )
         self.school = School.objects.create(
             name="Test School",
             adresse="Test Address",
             kommune="Test Kommune",
-            enrolled_at=date.today(),
+            enrolled_at=date(2025, 9, 1),
+            active_from=date(2025, 9, 1),
+        )
+        from apps.courses.models import Course
+
+        self.course = Course.objects.create(
+            start_date=date(2026, 3, 15),
+            end_date=date(2026, 3, 16),
+            capacity=30,
         )
 
-    def test_check_seats_returns_data(self):
-        """Check seats endpoint returns seat availability."""
-        response = self.client.get(reverse("signup:check-school-seats"), {"school_id": self.school.pk})
+    def test_check_seats_with_course_returns_year_data(self):
+        """Check seats endpoint with course_id returns per-year seat info."""
+        response = self.client.get(
+            reverse("signup:check-school-seats"),
+            {"school_id": self.school.pk, "course_id": self.course.pk},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["free_seats"], 3)
+        self.assertEqual(data["used_seats"], 0)
+        self.assertEqual(data["remaining_seats"], 3)
+        self.assertTrue(data["is_first_year"])
+        self.assertEqual(data["school_year"], "2025/26")
+        self.assertIn("seat_content", data)
+
+    def test_check_seats_without_course_returns_basic_data(self):
+        """Check seats endpoint without course_id returns overall seat info."""
+        response = self.client.get(
+            reverse("signup:check-school-seats"),
+            {"school_id": self.school.pk},
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("has_available_seats", data)
@@ -343,6 +375,14 @@ class CheckSchoolSeatsViewTest(TestCase):
         """Check seats returns error for missing school_id."""
         response = self.client.get(reverse("signup:check-school-seats"))
         self.assertEqual(response.status_code, 400)
+
+    def test_check_seats_invalid_course(self):
+        """Check seats returns 404 for invalid course_id."""
+        response = self.client.get(
+            reverse("signup:check-school-seats"),
+            {"school_id": self.school.pk, "course_id": 99999},
+        )
+        self.assertEqual(response.status_code, 404)
 
 
 class ValidateSchoolPasswordViewTest(TestCase):

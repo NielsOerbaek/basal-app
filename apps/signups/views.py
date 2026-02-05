@@ -249,7 +249,11 @@ class CourseSignupSuccessView(TemplateView):
 
 
 class CheckSchoolSeatsView(View):
-    """AJAX endpoint to check if a school has available seats."""
+    """AJAX endpoint to check if a school has available seats.
+
+    If course_id is provided, returns seat info scoped to that course's
+    school year (first-year vs forankring bucket).
+    """
 
     def get(self, request):
         school_id = request.GET.get("school_id")
@@ -257,14 +261,49 @@ class CheckSchoolSeatsView(View):
             return JsonResponse({"error": "Missing school_id"}, status=400)
         try:
             school = School.objects.get(pk=school_id)
-            return JsonResponse(
-                {
-                    "has_available_seats": school.has_available_seats,
-                    "remaining_seats": school.remaining_seats,
-                }
-            )
         except School.DoesNotExist:
             return JsonResponse({"error": "School not found"}, status=404)
+
+        course_id = request.GET.get("course_id")
+        if course_id:
+            from apps.courses.models import Course
+
+            try:
+                course = Course.objects.get(pk=course_id)
+            except Course.DoesNotExist:
+                return JsonResponse({"error": "Course not found"}, status=404)
+
+            info = school.seats_for_course(course)
+
+            # Load seat info content for all scenarios
+            from apps.signups.models import SeatInfoContent
+
+            seat_content = {}
+            for sc in SeatInfoContent.objects.all():
+                seat_content[sc.scenario] = {
+                    "title": sc.title,
+                    "content": sc.content,
+                }
+
+            return JsonResponse(
+                {
+                    "free_seats": info["free"],
+                    "used_seats": info["used"],
+                    "remaining_seats": info["remaining"],
+                    "is_first_year": info["is_first_year"],
+                    "school_year": info["school_year"],
+                    "has_available_seats": info["remaining"] > 0,
+                    "seat_content": seat_content,
+                }
+            )
+
+        # Fallback: no course_id, return basic seat info
+        return JsonResponse(
+            {
+                "has_available_seats": school.has_available_seats,
+                "remaining_seats": school.remaining_seats,
+            }
+        )
 
 
 class CheckCourseSeatsView(View):
