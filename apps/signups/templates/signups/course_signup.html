@@ -65,14 +65,6 @@
 {% endif %}
 
 <div id="signup-form-container" {% if show_password_form %}style="display: none;"{% endif %}>
-<div id="seat-info-box" class="alert" style="display: none;">
-    <h6 id="seat-info-title" class="alert-heading"></h6>
-    <div id="seat-info-content"></div>
-</div>
-<div id="seats-warning" class="alert alert-warning" style="display: none;">
-    <strong><i class="bi bi-exclamation-triangle me-2"></i>Bemærk:</strong>
-    <span id="seats-warning-text"></span>
-</div>
 
 <form method="post" enctype="multipart/form-data" id="signup-form">
     {% csrf_token %}
@@ -126,6 +118,15 @@
     <button type="button" class="btn btn-outline-primary mb-4" id="add-participant">
         <i class="bi bi-plus-lg me-1"></i>Tilføj deltager
     </button>
+
+    <div id="seat-info-box" class="alert" style="display: none;">
+        <h6 id="seat-info-title" class="alert-heading"></h6>
+        <div id="seat-info-content"></div>
+    </div>
+    <div id="seats-warning" class="alert alert-warning" style="display: none;">
+        <strong><i class="bi bi-exclamation-triangle me-2"></i>Bemærk:</strong>
+        <span id="seats-warning-text"></span>
+    </div>
 
     <div>
         <button type="submit" class="btn btn-primary btn-lg">
