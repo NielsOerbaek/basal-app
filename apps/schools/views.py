@@ -243,6 +243,12 @@ class SchoolListView(SortableMixin, ListView):
             School.objects.active().exclude(kommune="").values_list("kommune", flat=True).distinct().order_by("kommune")
         )
 
+        # Metrics
+        paginator = context.get("paginator")
+        context["filtered_count"] = paginator.count if paginator else len(context.get("schools", []))
+        context["enrolled_count"] = School.objects.filter(enrolled_at__isnull=False, opted_out_at__isnull=True).count()
+        context["ever_enrolled_count"] = School.objects.filter(enrolled_at__isnull=False).count()
+
         # Build filter explanation for project goals drill-down
         status = self.request.GET.get("status")
         school_year = self.request.GET.get("school_year")

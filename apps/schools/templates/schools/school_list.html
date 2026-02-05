@@ -16,6 +16,33 @@
     </div>
 </div>
 
+<div class="row mb-4 text-center">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body py-3">
+                <div class="fs-2 fw-bold text-primary">{{ filtered_count }}</div>
+                <small class="text-muted">Vises med nuværende filtre</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body py-3">
+                <div class="fs-2 fw-bold text-success">{{ enrolled_count }}</div>
+                <small class="text-muted">Tilmeldt nu</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body py-3">
+                <div class="fs-2 fw-bold text-secondary">{{ ever_enrolled_count }}</div>
+                <small class="text-muted">Nogensinde tilmeldt</small>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card mb-4">
     <div class="card-body">
         <form method="get" class="row g-3" id="school-search-form">
