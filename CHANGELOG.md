@@ -4,6 +4,36 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 5. februar 2026
+
+### Ny pladsberegning: Første år og Forankring
+Pladsberegningen er redesignet fra en samlet tæller til to separate grupper:
+
+- **Første år (3 pladser):** Skoler får 3 gratis pladser i deres første skoleår. Ubrugte pladser overføres ikke til næste år
+- **Forankring (1 plads):** Efter første år får skolen 1 gratis plads til at forankre projektet. Denne plads gælder for hele perioden efter første år
+- **Ekstra pladser:** Skoler kan altid tilmelde flere end de gratis pladser — de vil blive faktureret for ekstra pladser
+
+### Dynamiske infobokse på kursustilmeldingssiden
+Når en skole vælger kursus på tilmeldingssiden, vises nu en infoboks der tilpasser sig automatisk:
+
+- Viser om skolen har ledige pladser eller skal betale for ekstra pladser
+- Inkluderer priser for ekstra pladser og info om hvad en plads inkluderer
+- Teksten kan redigeres i admin under "Pladsinformation"
+- Opdateres dynamisk når deltagere tilføjes eller fjernes
+
+### Forbedret pladsvisning på skolesider
+Både medarbejder- og offentlige skolesider viser nu pladser i to grupper:
+
+- **Første år:** Viser skoleår, antal pladser, brugte og ledige
+- **Forankring:** Viser antal pladser brugt efter første år
+- Den aktuelle periode fremhæves, den anden vises nedtonet
+- Medarbejdersiden viser advarsel hvis skolen bruger ekstra pladser ud over de gratis
+
+### Fjernet ekstra-pladser-køb
+`SeatPurchase`-modellen er fjernet. Ekstra pladser håndteres nu implicit via fakturering.
+
+---
+
 ## 4. februar 2026
 
 ### Forbedret håndtering af tilmeldingsdatoer
