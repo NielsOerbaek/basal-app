@@ -285,6 +285,19 @@ class SchoolDetailView(DetailView):
         context["today"] = date.today()
         context["school_files"] = self.object.files.select_related("uploaded_by").all()
 
+        # Seat calculation context
+        context["first_year_seats"] = self.object.get_first_year_seats()
+        context["forankring_seats"] = self.object.get_forankring_seats()
+
+        # Determine which bucket is "current"
+        if self.object.active_from:
+            try:
+                current_year = get_current_school_year()
+                first_year_name = self.object.get_first_school_year()
+                context["is_in_first_year"] = current_year.name == first_year_name
+            except SchoolYear.DoesNotExist:
+                context["is_in_first_year"] = False
+
         # School year for enrollment dates
         if self.object.enrolled_at:
             try:
