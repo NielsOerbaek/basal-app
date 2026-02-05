@@ -312,18 +312,21 @@ class GoalsDrillDownIntegrationTests(TestCase):
             adresse="Address",
             kommune="Kommune A",
             enrolled_at=date(2024, 9, 15),  # Mid-September 2024
+            active_from=date(2024, 9, 15),
         )
         School.objects.create(
             name="Jan 2025 School",
             adresse="Address",
             kommune="Kommune B",
             enrolled_at=date(2025, 1, 10),  # January 2025 (still 2024/25 school year)
+            active_from=date(2025, 1, 10),
         )
         School.objects.create(
             name="Jul 2025 School",
             adresse="Address",
             kommune="Kommune C",
             enrolled_at=date(2025, 7, 31),  # Last day of 2024/25
+            active_from=date(2025, 7, 31),
         )
 
         # Schools NOT in 2024/25
@@ -332,12 +335,14 @@ class GoalsDrillDownIntegrationTests(TestCase):
             adresse="Address",
             kommune="Kommune D",
             enrolled_at=date(2024, 7, 31),  # Last day of 2023/24
+            active_from=date(2024, 7, 31),
         )
         School.objects.create(
             name="Post-2024/25 School",
             adresse="Address",
             kommune="Kommune E",
             enrolled_at=date(2025, 8, 1),  # First day of 2025/26
+            active_from=date(2025, 8, 1),
         )
 
         # Get metrics from goals calculation
@@ -367,12 +372,14 @@ class GoalsDrillDownIntegrationTests(TestCase):
             adresse="Address",
             kommune="Kommune A",
             enrolled_at=date(2023, 9, 1),  # Enrolled in 2023/24
+            active_from=date(2023, 9, 1),
         )
         School.objects.create(
             name="Late 2024 Anchor School",
             adresse="Address",
             kommune="Kommune B",
             enrolled_at=date(2025, 7, 31),  # Last day of 2024/25 - anchoring in 2025/26
+            active_from=date(2025, 7, 31),
         )
 
         # Schools NOT anchoring in 2025/26
@@ -381,6 +388,7 @@ class GoalsDrillDownIntegrationTests(TestCase):
             adresse="Address",
             kommune="Kommune C",
             enrolled_at=date(2025, 8, 1),  # First day of 2025/26 - this is NEW, not anchoring
+            active_from=date(2025, 8, 1),
         )
         School.objects.create(
             name="Opted Out School",
@@ -388,6 +396,7 @@ class GoalsDrillDownIntegrationTests(TestCase):
             kommune="Kommune D",
             enrolled_at=date(2024, 9, 1),
             opted_out_at=date(2025, 6, 1),  # Opted out before 2025/26
+            active_from=date(2024, 9, 1),
         )
 
         # Get metrics from goals calculation
@@ -417,6 +426,7 @@ class GoalsDrillDownIntegrationTests(TestCase):
             adresse="Address",
             kommune="Kommune A",
             enrolled_at=date(2025, 7, 31),
+            active_from=date(2025, 7, 31),
         )
         # School enrolled on Aug 1, 2025 - first day of 2025/26
         School.objects.create(
@@ -424,6 +434,7 @@ class GoalsDrillDownIntegrationTests(TestCase):
             adresse="Address",
             kommune="Kommune B",
             enrolled_at=date(2025, 8, 1),
+            active_from=date(2025, 8, 1),
         )
 
         # For 2025/26:
@@ -454,6 +465,7 @@ class GoalsDrillDownIntegrationTests(TestCase):
             adresse="Address",
             kommune="Kommune",
             enrolled_at=date(2024, 10, 1),
+            active_from=date(2024, 10, 1),
         )
 
         # All these URL formats should return the same school
@@ -481,6 +493,7 @@ class GoalsDrillDownIntegrationTests(TestCase):
             kommune="Kommune A",
             enrolled_at=date(2023, 10, 1),
             opted_out_at=date(2025, 6, 15),  # Opted out before 2025/26 starts
+            active_from=date(2023, 10, 1),
         )
         # School enrolled in 2023/24, still active
         School.objects.create(
@@ -488,6 +501,7 @@ class GoalsDrillDownIntegrationTests(TestCase):
             adresse="Address",
             kommune="Kommune B",
             enrolled_at=date(2023, 10, 1),
+            active_from=date(2023, 10, 1),
         )
 
         metrics = get_metrics_for_year("2025/26")
