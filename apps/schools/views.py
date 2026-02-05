@@ -313,8 +313,10 @@ class SchoolDetailView(DetailView):
                 current_year = get_current_school_year()
                 first_year_name = self.object.get_first_school_year()
                 context["is_in_first_year"] = current_year.name == first_year_name
+                context["is_waiting_for_first_year"] = self.object.active_from > current_year.end_date
             except SchoolYear.DoesNotExist:
                 context["is_in_first_year"] = False
+                context["is_waiting_for_first_year"] = False
 
         # School year for enrollment dates
         if self.object.enrolled_at:
@@ -1001,8 +1003,10 @@ class SchoolPublicView(DetailView):
                 current_year = get_current_school_year()
                 first_year_name = school.get_first_school_year()
                 context["is_in_first_year"] = current_year.name == first_year_name
+                context["is_waiting_for_first_year"] = school.active_from > current_year.end_date
             except SchoolYear.DoesNotExist:
                 context["is_in_first_year"] = False
+                context["is_waiting_for_first_year"] = False
 
         # Courses with materials (newest first)
         from apps.courses.models import Course

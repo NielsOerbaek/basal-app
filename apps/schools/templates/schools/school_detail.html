@@ -315,6 +315,17 @@
             <div class="card-body">
                 {% if school.is_enrolled %}
 
+                {% if is_waiting_for_first_year %}
+                <div class="text-center py-3">
+                    <div class="mb-2">
+                        <i class="bi bi-clock text-info fs-3"></i>
+                    </div>
+                    <p class="mb-1">Skolen er tilmeldt fra <strong>{{ first_year_seats.year }}</strong></p>
+                    <p class="text-muted mb-0">3 kursuspladser bliver tilgængelige når skoleåret starter.</p>
+                </div>
+
+                {% else %}
+
                 {% if school.exceeds_seat_allocation %}
                 <div class="alert alert-warning mb-3">
                     <i class="bi bi-exclamation-triangle me-2"></i>
@@ -385,6 +396,8 @@
                     </small>
                     {% endif %}
                 </div>
+
+                {% endif %}
 
                 {% else %}
                 <p class="text-muted mb-0">Skolen er ikke tilmeldt. <a href="{% url 'schools:update' school.pk %}">Rediger skolen</a> og sæt en tilmeldingsdato for at aktivere pladser.</p>
