@@ -275,7 +275,6 @@ class SchoolDetailView(DetailView):
         context["kursusdeltagere"] = self.object.course_signups.select_related("course").order_by(
             "participant_name", "-course__start_date"
         )
-        context["seat_purchases"] = self.object.seat_purchases.all()
         context["kontaktpersoner"] = self.object.people.all()
         context["school_comments"] = self.object.school_comments.select_related("created_by").all()
         context["invoices"] = self.object.invoices.all()

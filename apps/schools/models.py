@@ -317,14 +317,9 @@ class School(models.Model):
         return self.FORANKRING_SEATS if self.has_forankringsplads else 0
 
     @property
-    def purchased_seats(self):
-        """Total additional seats purchased."""
-        return self.seat_purchases.aggregate(total=models.Sum("seats"))["total"] or 0
-
-    @property
     def total_seats(self):
         """Total seats available to the school."""
-        return self.base_seats + self.forankring_seats + self.purchased_seats
+        return self.base_seats + self.forankring_seats
 
     @property
     def used_seats(self):
@@ -353,20 +348,6 @@ class School(models.Model):
         self.signup_password = generate_pronounceable_password()
         self.signup_token = generate_signup_token()
         self.save(update_fields=["signup_password", "signup_token"])
-
-
-class SeatPurchase(models.Model):
-    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="seat_purchases")
-    seats = models.PositiveIntegerField(verbose_name="Antal pladser")
-    purchased_at = models.DateField(default=date.today, verbose_name="Købsdato")
-    notes = models.TextField(blank=True, verbose_name="Noter")
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-purchased_at"]
-
-    def __str__(self):
-        return f"{self.school.name} - {self.seats} pladser ({self.purchased_at})"
 
 
 class Person(models.Model):

@@ -344,24 +344,7 @@
                     <dd class="col-4 text-end">{{ school.base_seats }}</dd>
                     <dt class="col-8">Forankringsplads</dt>
                     <dd class="col-4 text-end">{{ school.forankring_seats }}</dd>
-                    {% if school.purchased_seats > 0 %}
-                    <dt class="col-8">Ekstra købte pladser</dt>
-                    <dd class="col-4 text-end">{{ school.purchased_seats }}</dd>
-                    {% endif %}
                 </dl>
-
-                {% if seat_purchases %}
-                <hr>
-                <small class="text-muted d-block mb-2">Købshistorik:</small>
-                <ul class="list-unstyled small mb-0">
-                    {% for purchase in seat_purchases %}
-                    <li class="d-flex justify-content-between">
-                        <span>{{ purchase.purchased_at|date:"d. M Y" }} - {{ purchase.seats }} plads{% if purchase.seats != 1 %}er{% endif %}</span>
-                        {% if purchase.notes %}<span class="text-muted">{{ purchase.notes|truncatewords:5 }}</span>{% endif %}
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% endif %}
                 {% else %}
                 <p class="text-muted mb-0">Skolen er ikke tilmeldt. <a href="{% url 'schools:update' school.pk %}">Rediger skolen</a> og sæt en tilmeldingsdato for at aktivere pladser.</p>
                 {% endif %}

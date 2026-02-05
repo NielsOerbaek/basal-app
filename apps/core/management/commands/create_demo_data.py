@@ -8,7 +8,7 @@ from django.utils import timezone
 from apps.audit.models import ActivityLog
 from apps.contacts.models import ContactTime
 from apps.courses.models import AttendanceStatus, Course, CourseSignUp
-from apps.schools.models import Person, PersonRole, School, SchoolComment, SeatPurchase
+from apps.schools.models import Person, PersonRole, School, SchoolComment
 
 
 class Command(BaseCommand):
@@ -31,7 +31,6 @@ class Command(BaseCommand):
             Course.objects.all().delete()
             SchoolComment.objects.all().delete()
             Person.objects.all().delete()
-            SeatPurchase.objects.all().delete()
             from apps.schools.models import Invoice
 
             Invoice.objects.all().delete()
@@ -248,16 +247,6 @@ class Command(BaseCommand):
                         role=random.choice([PersonRole.SKOLELEDER, PersonRole.UDSKOLINGSLEDER]),
                         is_primary=False,
                     )
-
-        # Add some seat purchases for a few schools
-        enrolled_schools = [s for s in schools if s.enrolled_at]
-        for school in random.sample(enrolled_schools, min(3, len(enrolled_schools))):
-            SeatPurchase.objects.create(
-                school=school,
-                seats=random.choice([2, 3, 5]),
-                purchased_at=date.today() - timedelta(days=random.randint(10, 100)),
-                notes="Ekstra pladser købt",
-            )
 
         return schools
 

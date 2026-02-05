@@ -17,7 +17,6 @@ Basal handles:
 
 ### Schools (`apps/schools`)
 - `School` - Schools enrolled in the program (name, address, kommune, enrollment date, active status)
-- `SeatPurchase` - Additional seats purchased by schools
 - `Person` - Contact persons at schools (roles: Koordinator, Skoleleder, Udskolingsleder)
 - `SchoolComment` - Comments about schools
 - `Invoice` - Invoices for schools (status: planned, sent, paid)

@@ -1,12 +1,6 @@
 from django.contrib import admin
 
-from .models import Invoice, Person, School, SchoolComment, SeatPurchase
-
-
-class SeatPurchaseInline(admin.TabularInline):
-    model = SeatPurchase
-    extra = 0
-    fields = ["seats", "purchased_at", "notes"]
+from .models import Invoice, Person, School, SchoolComment
 
 
 class PersonInline(admin.TabularInline):
@@ -34,7 +28,7 @@ class SchoolAdmin(admin.ModelAdmin):
     list_filter = ["is_active", "enrolled_at", "created_at", "kommune"]
     search_fields = ["name", "adresse", "kommune"]
     readonly_fields = ["created_at", "updated_at", "total_seats", "remaining_seats"]
-    inlines = [PersonInline, SchoolCommentInline, SeatPurchaseInline, InvoiceInline]
+    inlines = [PersonInline, SchoolCommentInline, InvoiceInline]
 
     def total_seats(self, obj):
         return obj.total_seats
@@ -45,14 +39,6 @@ class SchoolAdmin(admin.ModelAdmin):
         return obj.remaining_seats
 
     remaining_seats.short_description = "Ubrugte pladser"
-
-
-@admin.register(SeatPurchase)
-class SeatPurchaseAdmin(admin.ModelAdmin):
-    list_display = ["school", "seats", "purchased_at", "created_at"]
-    list_filter = ["purchased_at"]
-    search_fields = ["school__name", "notes"]
-    raw_id_fields = ["school"]
 
 
 @admin.register(Person)

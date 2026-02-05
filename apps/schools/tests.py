@@ -7,7 +7,7 @@ from django.urls import reverse
 
 from apps.courses.models import Course
 
-from .models import Invoice, Person, School, SchoolComment, SchoolYear, SeatPurchase, TitelChoice
+from .models import Invoice, Person, School, SchoolComment, SchoolYear, TitelChoice
 
 
 class SchoolExtendedFieldsTest(TestCase):
@@ -543,53 +543,6 @@ class SchoolCommentViewTest(TestCase):
         response = self.client.post(reverse("schools:comment-delete", kwargs={"pk": comment_pk}))
         self.assertEqual(response.status_code, 200)  # JSON response
         self.assertFalse(SchoolComment.objects.filter(pk=comment_pk).exists())
-
-
-class SeatPurchaseModelTest(TestCase):
-    def setUp(self):
-        self.school = School.objects.create(
-            name="Test School", adresse="Test Address", kommune="Test Kommune", enrolled_at=date.today()
-        )
-
-    def test_create_seat_purchase(self):
-        """SeatPurchase model can be created and saved."""
-        purchase = SeatPurchase.objects.create(
-            school=self.school, seats=5, purchased_at=date.today(), notes="Test purchase"
-        )
-        self.assertEqual(purchase.seats, 5)
-        self.assertEqual(purchase.school, self.school)
-
-    def test_purchased_seats_aggregation(self):
-        """School.purchased_seats aggregates all seat purchases."""
-        SeatPurchase.objects.create(school=self.school, seats=3)
-        SeatPurchase.objects.create(school=self.school, seats=2)
-        self.assertEqual(self.school.purchased_seats, 5)
-
-    def test_total_seats_calculation(self):
-        """School.total_seats includes base + forankring + purchased."""
-        SeatPurchase.objects.create(school=self.school, seats=5)
-        expected = School.BASE_SEATS + 0 + 5  # No forankring (not 1 year old)
-        self.assertEqual(self.school.total_seats, expected)
-
-    def test_remaining_seats_calculation(self):
-        """School.remaining_seats is total minus used."""
-        SeatPurchase.objects.create(school=self.school, seats=5)
-        # No signups, so remaining = total
-        self.assertEqual(self.school.remaining_seats, self.school.total_seats)
-
-    def test_has_available_seats(self):
-        """School.has_available_seats returns True when seats available."""
-        self.assertTrue(self.school.has_available_seats)
-
-    def test_seat_purchase_ordering(self):
-        """SeatPurchases are ordered by purchased_at descending."""
-        purchase1 = SeatPurchase.objects.create(
-            school=self.school, seats=1, purchased_at=date.today() - timedelta(days=10)
-        )
-        purchase2 = SeatPurchase.objects.create(school=self.school, seats=2, purchased_at=date.today())
-        purchases = list(self.school.seat_purchases.all())
-        self.assertEqual(purchases[0], purchase2)  # Most recent first
-        self.assertEqual(purchases[1], purchase1)
 
 
 class SchoolDeleteViewTest(TestCase):
