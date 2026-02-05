@@ -77,11 +77,16 @@
                         <br>
                         <small class="text-muted">Tilføjet {{ material.uploaded_at|date:"d. M Y" }}</small>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-danger" title="Slet"
-                            hx-get="{% url 'courses:material-delete' material.pk %}"
-                            hx-target="#modal-container">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
+                    <div class="d-flex gap-1">
+                        <a href="{% url 'courses:material-edit' material.pk %}" class="btn btn-sm btn-outline-secondary" title="Rediger">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-danger" title="Slet"
+                                hx-get="{% url 'courses:material-delete' material.pk %}"
+                                hx-target="#modal-container">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
                 </li>
                 {% empty %}
                 <li class="list-group-item text-muted">Ingen kursusmaterialer. <a href="{% url 'courses:material-create' course.pk %}">Tilføj et materiale</a>.</li>

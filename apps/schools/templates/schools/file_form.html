@@ -1,10 +1,10 @@
 {% extends 'core/base.html' %}
 {% load crispy_forms_tags %}
 
-{% block title %}Upload fil - {{ school.name }}{% endblock %}
+{% block title %}{% if editing %}Rediger fil{% else %}Upload fil{% endif %} - {{ school.name }}{% endblock %}
 
 {% block content %}
-<h1 class="mb-4"><i class="bi bi-file-earmark-plus me-2"></i>Upload fil</h1>
+<h1 class="mb-4"><i class="bi bi-file-earmark-{% if editing %}text{% else %}plus{% endif %} me-2"></i>{% if editing %}Rediger fil{% else %}Upload fil{% endif %}</h1>
 <p class="text-muted">Skole: <strong>{{ school.name }}</strong></p>
 
 <div class="card">

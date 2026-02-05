@@ -670,6 +670,31 @@ class CourseMaterialCreateView(View):
 
 
 @method_decorator(staff_required, name="dispatch")
+class CourseMaterialEditView(View):
+    def get(self, request, pk):
+        material = get_object_or_404(CourseMaterial, pk=pk)
+        form = CourseMaterialForm(instance=material)
+        return render(
+            request,
+            "courses/material_form.html",
+            {"course": material.course, "form": form, "editing": True},
+        )
+
+    def post(self, request, pk):
+        material = get_object_or_404(CourseMaterial, pk=pk)
+        form = CourseMaterialForm(request.POST, request.FILES, instance=material)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Kursusmaterialet "{material.display_name}" blev opdateret.')
+            return redirect("courses:detail", pk=material.course.pk)
+        return render(
+            request,
+            "courses/material_form.html",
+            {"course": material.course, "form": form, "editing": True},
+        )
+
+
+@method_decorator(staff_required, name="dispatch")
 class CourseMaterialDeleteView(View):
     def get(self, request, pk):
         material = get_object_or_404(CourseMaterial, pk=pk)

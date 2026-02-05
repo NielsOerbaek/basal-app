@@ -1,39 +1,43 @@
 {% extends 'core/base.html' %}
 {% load crispy_forms_tags %}
 
-{% block title %}Tilføj kursusmateriale - {{ course.display_name }} - Basal{% endblock %}
+{% block title %}{% if editing %}Rediger kursusmateriale{% else %}Tilføj kursusmateriale{% endif %} - {{ course.display_name }} - Basal{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="bi bi-file-earmark-plus me-2"></i>Tilføj kursusmateriale</h1>
+    <h1><i class="bi bi-file-earmark-{% if editing %}text{% else %}plus{% endif %} me-2"></i>{% if editing %}Rediger kursusmateriale{% else %}Tilføj kursusmateriale{% endif %}</h1>
 </div>
 
 <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{% url 'courses:list' %}">Kurser</a></li>
         <li class="breadcrumb-item"><a href="{% url 'courses:detail' course.pk %}">{{ course.display_name }}</a></li>
-        <li class="breadcrumb-item active">Tilføj materiale</li>
+        <li class="breadcrumb-item active">{% if editing %}Rediger materiale{% else %}Tilføj materiale{% endif %}</li>
     </ol>
 </nav>
 
 <div class="row">
     <div class="col-lg-6">
         <div class="card">
-            <div class="card-header">Tilføj materiale til {{ course.display_name }}</div>
+            <div class="card-header">{% if editing %}Rediger materiale{% else %}Tilføj materiale til {{ course.display_name }}{% endif %}</div>
             <div class="card-body">
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="mb-3">
                         <label for="id_file" class="form-label">Fil</label>
-                        <input type="file" name="file" class="form-control" id="id_file" required>
+                        <input type="file" name="file" class="form-control" id="id_file" {% if not editing %}required{% endif %}>
+                        {% if editing %}
+                        <div class="form-text">Nuværende fil: {{ form.instance.display_name }}. Upload en ny fil for at erstatte den, eller lad feltet være tomt.</div>
+                        {% else %}
                         <div class="form-text">Upload en fil (f.eks. PDF, Word, PowerPoint)</div>
+                        {% endif %}
                     </div>
                     <div class="mb-3">
                         <label for="id_name" class="form-label">Navn (valgfrit)</label>
-                        <input type="text" name="name" class="form-control" id="id_name" maxlength="255">
+                        <input type="text" name="name" class="form-control" id="id_name" maxlength="255" value="{{ form.instance.name|default:'' }}">
                         <div class="form-text">Valgfrit navn til filen. Hvis tomt bruges filnavnet.</div>
                     </div>
-                    <button type="submit" class="btn btn-primary">Tilføj materiale</button>
+                    <button type="submit" class="btn btn-primary">{% if editing %}Gem ændringer{% else %}Tilføj materiale{% endif %}</button>
                     <a href="{% url 'courses:detail' course.pk %}" class="btn btn-outline-secondary">Annuller</a>
                 </form>
             </div>

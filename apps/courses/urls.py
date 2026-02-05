@@ -23,5 +23,6 @@ urlpatterns = [
     path("signups/export/", views.SignUpExportView.as_view(), name="signup-export"),
     # Course Material URLs
     path("<int:course_pk>/material/add/", views.CourseMaterialCreateView.as_view(), name="material-create"),
+    path("material/<int:pk>/edit/", views.CourseMaterialEditView.as_view(), name="material-edit"),
     path("material/<int:pk>/delete/", views.CourseMaterialDeleteView.as_view(), name="material-delete"),
 ]

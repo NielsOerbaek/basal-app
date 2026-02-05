@@ -212,11 +212,14 @@ class SchoolFileForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        editing = self.instance and self.instance.pk
+        if editing:
+            self.fields["file"].required = False
         self.helper = FormHelper()
         self.helper.layout = Layout(
             "file",
             "description",
-            Submit("submit", "Upload fil", css_class="btn btn-primary"),
+            Submit("submit", "Gem ændringer" if editing else "Upload fil", css_class="btn btn-primary"),
         )
 
 

@@ -461,11 +461,16 @@
                                 {% if file.uploaded_by %} - {{ file.uploaded_by.get_full_name|default:file.uploaded_by.username }}{% endif %}
                             </div>
                         </div>
-                        <button type="button" class="btn btn-sm btn-outline-danger ms-2" title="Slet"
-                                hx-get="{% url 'schools:file-delete' file.pk %}"
-                                hx-target="#modal-container">
-                            <i class="bi bi-x-lg"></i>
-                        </button>
+                        <div class="d-flex gap-1 ms-2">
+                            <a href="{% url 'schools:file-edit' file.pk %}" class="btn btn-sm btn-outline-secondary" title="Rediger">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger" title="Slet"
+                                    hx-get="{% url 'schools:file-delete' file.pk %}"
+                                    hx-target="#modal-container">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
                     </div>
                 </li>
                 {% empty %}

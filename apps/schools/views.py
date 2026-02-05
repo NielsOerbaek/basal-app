@@ -939,6 +939,31 @@ class SchoolFileCreateView(View):
 
 
 @method_decorator(staff_required, name="dispatch")
+class SchoolFileEditView(View):
+    def get(self, request, pk):
+        school_file = get_object_or_404(SchoolFile, pk=pk)
+        form = SchoolFileForm(instance=school_file)
+        return render(
+            request,
+            "schools/file_form.html",
+            {"school": school_file.school, "form": form, "editing": True},
+        )
+
+    def post(self, request, pk):
+        school_file = get_object_or_404(SchoolFile, pk=pk)
+        form = SchoolFileForm(request.POST, request.FILES, instance=school_file)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Filen "{school_file.filename}" blev opdateret.')
+            return redirect("schools:detail", pk=school_file.school.pk)
+        return render(
+            request,
+            "schools/file_form.html",
+            {"school": school_file.school, "form": form, "editing": True},
+        )
+
+
+@method_decorator(staff_required, name="dispatch")
 class SchoolFileDeleteView(View):
     def get(self, request, pk):
         school_file = get_object_or_404(SchoolFile, pk=pk)

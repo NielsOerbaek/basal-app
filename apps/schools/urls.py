@@ -35,5 +35,6 @@ urlpatterns = [
     path("fakturaer/manglende/", views.MissingInvoicesView.as_view(), name="missing-invoices"),
     # File URLs
     path("<int:school_pk>/file/add/", views.SchoolFileCreateView.as_view(), name="file-create"),
+    path("file/<int:pk>/edit/", views.SchoolFileEditView.as_view(), name="file-edit"),
     path("file/<int:pk>/delete/", views.SchoolFileDeleteView.as_view(), name="file-delete"),
 ]
