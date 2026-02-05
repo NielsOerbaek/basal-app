@@ -65,15 +65,13 @@
 {% endif %}
 
 <div id="signup-form-container" {% if show_password_form %}style="display: none;"{% endif %}>
+<div id="seat-info-box" class="alert" style="display: none;">
+    <h6 id="seat-info-title" class="alert-heading"></h6>
+    <div id="seat-info-content"></div>
+</div>
 <div id="seats-warning" class="alert alert-warning" style="display: none;">
     <strong><i class="bi bi-exclamation-triangle me-2"></i>Bemærk:</strong>
-    <span id="seats-warning-text">
-        Din skole har ikke flere ledige pladser i jeres abonnement.
-    </span>
-    <br>
-    I kan stadig tilmelde jer, og Basal vil kontakte jer angående udvidelse af jeres abonnement.
-    <br><br>
-    En ekstra plads koster ca. 8.000 kr.
+    <span id="seats-warning-text"></span>
 </div>
 
 <form method="post" enctype="multipart/form-data" id="signup-form">
@@ -161,6 +159,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let participantIndex = 1;
     let schoolAvailableSeats = null;
     let courseAvailableSeatsCount = null;
+    let seatContent = null;
+    let seatData = null;
 
     function getParticipantCount() {
         return participantsContainer.querySelectorAll('.participant-entry').length;
@@ -178,9 +178,8 @@ document.addEventListener('DOMContentLoaded', function() {
             removeBtn.style.display = entries.length > 1 ? 'block' : 'none';
         });
 
-        // Re-check all seats when participant count changes
-        checkSchoolSeats();
         updateCourseSeatsDisplay();
+        updateSeatInfoDisplay();
     }
 
     function formatSeatsText(available) {
@@ -304,34 +303,94 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function checkSchoolSeats() {
-        if (!schoolSelect || !schoolSelect.value) {
+        const seatInfoBox = document.getElementById('seat-info-box');
+        const seatInfoTitle = document.getElementById('seat-info-title');
+        const seatInfoContent = document.getElementById('seat-info-content');
+
+        if (!schoolSelect || !schoolSelect.value || !courseSelect || !courseSelect.value) {
+            seatInfoBox.style.display = 'none';
             seatsWarning.style.display = 'none';
-            schoolAvailableSeats = null;
+            seatData = null;
+            seatContent = null;
             return;
         }
 
-        fetch('{% url "signup:check-school-seats" %}?school_id=' + schoolSelect.value)
+        fetch('{% url "signup:check-school-seats" %}?school_id=' + schoolSelect.value + '&course_id=' + courseSelect.value)
             .then(response => response.json())
             .then(data => {
-                schoolAvailableSeats = data.remaining_seats;
-                const participantCount = getParticipantCount();
-
-                if (schoolAvailableSeats < participantCount) {
-                    if (schoolAvailableSeats <= 0) {
-                        seatsWarningText.textContent = 'Din skole har ikke flere ledige pladser i jeres abonnement.';
-                    } else {
-                        seatsWarningText.textContent = 'Din skole har kun ' + schoolAvailableSeats + ' ledige plads' +
-                            (schoolAvailableSeats === 1 ? '' : 'er') + ', men du tilmelder ' + participantCount + ' personer.';
-                    }
-                    seatsWarning.style.display = 'block';
-                } else {
-                    seatsWarning.style.display = 'none';
-                }
+                seatData = data;
+                seatContent = data.seat_content || {};
+                updateSeatInfoDisplay();
             })
             .catch(() => {
+                seatInfoBox.style.display = 'none';
                 seatsWarning.style.display = 'none';
-                schoolAvailableSeats = null;
+                seatData = null;
+                seatContent = null;
             });
+    }
+
+    function updateSeatInfoDisplay() {
+        const seatInfoBox = document.getElementById('seat-info-box');
+        const seatInfoTitle = document.getElementById('seat-info-title');
+        const seatInfoContent = document.getElementById('seat-info-content');
+
+        if (!seatData || !seatContent) {
+            seatInfoBox.style.display = 'none';
+            seatsWarning.style.display = 'none';
+            return;
+        }
+
+        const participantCount = getParticipantCount();
+        const remaining = seatData.remaining_seats;
+        const afterSignup = remaining - participantCount;
+        let scenario = null;
+
+        if (seatData.is_first_year) {
+            if (afterSignup > 0) {
+                scenario = 'first_year_unused';
+            } else if (afterSignup === 0) {
+                scenario = 'first_year_all_used';
+            } else {
+                scenario = 'first_year_extra';
+            }
+        } else {
+            if (remaining > 0 && afterSignup >= 0) {
+                scenario = 'forankring_available';
+            } else {
+                scenario = 'forankring_none';
+            }
+        }
+
+        if (scenario && seatContent[scenario]) {
+            const content = seatContent[scenario];
+            seatInfoTitle.textContent = content.title;
+            seatInfoContent.innerHTML = content.content;
+
+            // Set alert style based on scenario
+            seatInfoBox.className = 'alert';
+            if (scenario === 'first_year_unused') {
+                seatInfoBox.classList.add('alert-warning');
+            } else if (scenario === 'first_year_all_used' || scenario === 'forankring_available') {
+                seatInfoBox.classList.add('alert-success');
+            } else {
+                seatInfoBox.classList.add('alert-info');
+            }
+            seatInfoBox.style.display = 'block';
+        } else {
+            seatInfoBox.style.display = 'none';
+        }
+
+        // Show extra warning if going over free seats
+        if (afterSignup < 0) {
+            const extra = Math.abs(afterSignup);
+            seatsWarningText.textContent = 'I tilmelder ' + extra + ' person' +
+                (extra === 1 ? '' : 'er') + ' ud over jeres gratis pladser. ' +
+                'Ekstra pladser faktureres efter tilmelding.';
+            seatsWarning.style.display = 'block';
+        } else {
+            seatsWarning.style.display = 'none';
+        }
     }
 
     // Event listeners
@@ -340,8 +399,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (courseSelect) {
-        courseSelect.addEventListener('change', checkCourseSeats);
-        // Check seats on page load if course is already selected
+        courseSelect.addEventListener('change', function() {
+            checkCourseSeats();
+            checkSchoolSeats();
+        });
         if (courseSelect.value) {
             checkCourseSeats();
         }
