@@ -368,10 +368,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const content = seatContent[scenario];
             seatInfoTitle.textContent = content.title;
 
-            // Build seat status line
-            const seatStatus = '<p class="mb-2"><strong>Pladsstatus:</strong> ' +
-                used + ' brugt ud af ' + free +
-                (remaining > 0 ? ' — ' + remaining + ' ledig' + (remaining === 1 ? '' : 'e') : '') +
+            // Build seat status line (reflecting state after this signup)
+            const usedAfter = used + participantCount;
+            const remainingAfter = Math.max(0, free - usedAfter);
+            const seatStatus = '<p class="mb-2"><strong>Pladsstatus efter denne tilmelding:</strong> ' +
+                usedAfter + ' brugt ud af ' + free +
+                (remainingAfter > 0 ? ' — ' + remainingAfter + ' ledig' + (remainingAfter === 1 ? '' : 'e') : '') +
                 '</p>';
 
             // Build extra seats warning if applicable
