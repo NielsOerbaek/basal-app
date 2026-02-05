@@ -82,13 +82,13 @@ if [ "$DEPLOY_ENV" = "prod" ]; then
 
   # Trigger backup before production deployment
   echo "==> Triggering database backup before deployment..."
-  APP_URL=$(grep -E '^APP_URL=' "$SCRIPT_DIR/.env" | cut -d'=' -f2)
+  PRODUCTION_HOST=$(grep -E '^PRODUCTION_HOST=' "$SCRIPT_DIR/.env" | cut -d'=' -f2)
   CRON_SECRET=$(grep -E '^CRON_SECRET=' "$SCRIPT_DIR/.env" | cut -d'=' -f2)
 
-  if [ -n "$APP_URL" ] && [ -n "$CRON_SECRET" ]; then
+  if [ -n "$PRODUCTION_HOST" ] && [ -n "$CRON_SECRET" ]; then
     backup_response=$(curl -s -w "\n%{http_code}" \
       -H "Authorization: Bearer $CRON_SECRET" \
-      "$APP_URL/cron/backup/")
+      "https://$PRODUCTION_HOST/cron/backup/")
 
     http_code=$(echo "$backup_response" | tail -n1)
     body=$(echo "$backup_response" | sed '$d')
@@ -105,7 +105,7 @@ if [ "$DEPLOY_ENV" = "prod" ]; then
       fi
     fi
   else
-    echo "⚠️  Warning: APP_URL or CRON_SECRET not found in .env, skipping backup"
+    echo "⚠️  Warning: PRODUCTION_HOST or CRON_SECRET not found in .env, skipping backup"
     read -p "Continue deployment without backup? [y/N] " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
