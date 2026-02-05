@@ -11,6 +11,17 @@ from apps.courses.models import Course
 from apps.schools.models import School
 
 
+@pytest.fixture(autouse=True)
+def _disable_resend_emails(settings):
+    """Prevent tests from sending real emails via Resend.
+
+    The .env file contains a real RESEND_API_KEY which load_dotenv() loads
+    into the environment. Without this fixture, any test that triggers email
+    sending will dispatch real emails through the Resend API.
+    """
+    settings.RESEND_API_KEY = None
+
+
 @pytest.fixture
 def staff_user(db):
     """Create a staff user."""

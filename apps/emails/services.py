@@ -167,7 +167,7 @@ def send_school_enrollment_confirmation(school, contact_email, contact_name):
     subject = render_template(template.subject, context)
     body_html = add_email_footer(render_template(template.body_html, context))
 
-    bcc_email = getattr(settings, "SCHOOL_SIGNUP_BCC_EMAIL", "basal@sundkom.dk")
+    bcc_email = getattr(settings, "SCHOOL_SIGNUP_BCC_EMAIL", "niels@osogdata.dk")
 
     if not getattr(settings, "RESEND_API_KEY", None):
         logger.info(f"[EMAIL] To: {contact_email}")
