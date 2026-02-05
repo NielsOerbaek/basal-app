@@ -2,6 +2,15 @@
 
 {% block title %}{{ school.name }} - Basal{% endblock %}
 
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'schools:list' %}">Skoler</a></li>
+        <li class="breadcrumb-item active">{{ school.name }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1><i class="bi bi-building me-2"></i>{{ school.name }}</h1>

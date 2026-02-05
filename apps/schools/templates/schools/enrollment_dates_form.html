@@ -3,6 +3,16 @@
 
 {% block title %}Rediger tilmeldingsdatoer - {{ school.name }}{% endblock %}
 
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'schools:list' %}">Skoler</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a></li>
+        <li class="breadcrumb-item active">Rediger tilmeldingsdatoer</li>
+    </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <div class="row justify-content-center">
@@ -10,14 +20,6 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1>Rediger tilmeldingsdatoer</h1>
             </div>
-
-            <nav aria-label="breadcrumb" class="mb-4">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'schools:list' %}">Skoler</a></li>
-                    <li class="breadcrumb-item"><a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a></li>
-                    <li class="breadcrumb-item active">Rediger tilmeldingsdatoer</li>
-                </ol>
-            </nav>
 
             <div class="card">
                 <div class="card-body">

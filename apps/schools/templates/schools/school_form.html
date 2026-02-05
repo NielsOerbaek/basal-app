@@ -3,6 +3,20 @@
 
 {% block title %}{% if object %}Rediger{% else %}Tilføj{% endif %} skole - Basal{% endblock %}
 
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'schools:list' %}">Skoler</a></li>
+        {% if object %}
+        <li class="breadcrumb-item"><a href="{% url 'schools:detail' object.pk %}">{{ object.name }}</a></li>
+        <li class="breadcrumb-item active">Rediger</li>
+        {% else %}
+        <li class="breadcrumb-item active">Tilføj skole</li>
+        {% endif %}
+    </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1><i class="bi bi-building me-2"></i>{% if object %}Rediger skole{% else %}Tilføj skole{% endif %}</h1>

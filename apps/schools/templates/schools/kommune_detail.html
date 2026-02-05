@@ -2,14 +2,16 @@
 
 {% block title %}{{ kommune }} - Kommuner - Basal{% endblock %}
 
-{% block content %}
+{% block breadcrumbs %}
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{% url 'schools:kommune-list' %}">Kommuner</a></li>
         <li class="breadcrumb-item active">{{ kommune }}</li>
     </ol>
 </nav>
+{% endblock %}
 
+{% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1><i class="bi bi-geo-alt me-2"></i>{{ kommune }}</h1>
 </div>
