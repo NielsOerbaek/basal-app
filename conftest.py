@@ -12,14 +12,14 @@ from apps.schools.models import School
 
 
 @pytest.fixture(autouse=True)
-def _disable_resend_emails(settings):
+def _disable_resend_emails(monkeypatch):
     """Prevent tests from sending real emails via Resend.
 
     The .env file contains a real RESEND_API_KEY which load_dotenv() loads
-    into the environment. Without this fixture, any test that triggers email
-    sending will dispatch real emails through the Resend API.
+    into the environment. Patching resend.Emails.send directly is more
+    robust than overriding settings, which doesn't apply to TestCase tests.
     """
-    settings.RESEND_API_KEY = None
+    monkeypatch.setattr("resend.Emails.send", lambda params: {"id": "test_mock"})
 
 
 @pytest.fixture
