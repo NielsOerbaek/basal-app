@@ -206,7 +206,7 @@ class SchoolListView(SortableMixin, ListView):
         if isinstance(queryset, list):
             reverse = order == "desc"
             if sort == "seats":
-                queryset.sort(key=lambda s: s.remaining_seats, reverse=reverse)
+                queryset.sort(key=lambda s: s.used_seats, reverse=reverse)
             elif sort == "contact":
 
                 def contact_key(s):
@@ -224,7 +224,7 @@ class SchoolListView(SortableMixin, ListView):
             queryset = list(queryset)
             reverse = order == "desc"
             if sort == "seats":
-                queryset.sort(key=lambda s: s.remaining_seats, reverse=reverse)
+                queryset.sort(key=lambda s: s.used_seats, reverse=reverse)
             elif sort == "contact":
 
                 def contact_key(s):

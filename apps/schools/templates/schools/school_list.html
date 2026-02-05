@@ -100,7 +100,7 @@
                     <th>{% sort_header 'kommune' 'Kommune' %}</th>
                     <th>Status</th>
                     <th>Tilmeldt skoleår</th>
-                    <th>{% sort_header 'seats' 'Ubrugte pladser' %}</th>
+                    <th>{% sort_header 'seats' 'Brugte pladser' %}</th>
                     <th class="table-actions">Handlinger</th>
                 </tr>
             </thead>
@@ -123,7 +123,7 @@
                     </td>
                     <td>
                         {% if school.enrolled_at and not school.opted_out_at %}
-                        {{ school.remaining_seats }} <small class="text-muted">/ {{ school.total_seats }}</small>
+                        {{ school.used_seats }} <small class="text-muted">/ {{ school.total_seats }}</small>
                         <br><small class="text-muted">{{ school.current_seats.label }}</small>
                         {% else %}
                         <span class="text-muted">-</span>
