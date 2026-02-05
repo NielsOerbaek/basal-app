@@ -32,6 +32,46 @@ Både medarbejder- og offentlige skolesider viser nu pladser i to grupper:
 ### Fjernet ekstra-pladser-køb
 `SeatPurchase`-modellen er fjernet. Ekstra pladser håndteres nu implicit via fakturering.
 
+### Pladsvisning på skolelisten viser nu kun aktuel periode
+Kolonnen "Ubrugte pladser" er omdøbt til "Brugte pladser" og viser nu kun den aktuelle periodes pladser (første år eller forankring) i stedet for summen af begge perioder. Kolonnens label (fx "Første år" eller "Forankring") vises under tallet.
+
+### Ny status: "Tilmeldt fra næste år"
+Skoler der er tilmeldt men først aktive fra næste skoleår vises nu med en særskilt status:
+
+- **Statusbadge:** "Tilmeldt fra næste år" (blå) i skolelisten
+- **Filtrering:** Ny filtermulighed i skolelisten
+- **Pladswidget:** Viser ventebesked med info om hvornår pladserne bliver tilgængelige
+- **Aktiv fra-dato:** Sættes nu korrekt til tilmeldingsdatoen når den ligger i fremtiden
+
+### Nøgletal på skolelisten
+Tre kort vises øverst på skolelisten:
+
+- **Skoler med nuværende filtre** — antal skoler der matcher aktive filtre
+- **Skoler tilmeldt nu** — antal aktuelt tilmeldte skoler
+- **Skoler nogensinde tilmeldt** — antal skoler der har været tilmeldt på et tidspunkt
+
+### Dashboard: Tilmeldingsdato i stedet for ubrugte pladser
+"Seneste tilmeldinger til Basal" på forsiden viser nu tilmeldingsdato i stedet for ubrugte pladser.
+
+### Skolelisten: Tilmeldt skoleår
+Kolonnen "Seneste henvendelse" er erstattet med "Tilmeldt skoleår" der viser i hvilket skoleår skolen blev tilmeldt Basal.
+
+### Kursuspåmindelser sendes nu 14 dage før
+Den automatiske påmindelsesmail til kursusdeltagere sendes nu 14 dage før kursusstart i stedet for 2 dage.
+
+### Redigering af filer og kursusmaterialer
+Det er nu muligt at redigere eksisterende skolefiler og kursusmaterialer:
+
+- **Skolefiler:** Rediger beskrivelse eller erstat filen fra skoledetaljesiden
+- **Kursusmaterialer:** Rediger navn eller erstat filen fra kursusdetaljesiden
+- Filen kan erstattes uden at ændre andre felter, eller man kan opdatere kun navn/beskrivelse
+
+### Forbedret infoboks på kursustilmeldingssiden
+- Viser nu pladsstatus efter tilmeldingen (fx "2 brugt ud af 3 — 1 ledig")
+- Kun én infoboks i stedet for to separate bokse
+- Infoboksen er flyttet til lige over tilmeld-knappen
+- Fjernet udråbstegn og "Godt gået!" fra teksterne
+
 ---
 
 ## 4. februar 2026
