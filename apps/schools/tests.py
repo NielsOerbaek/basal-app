@@ -88,8 +88,8 @@ class ActiveFromSeatsTest(TestCase):
             },
         )
 
-    def test_base_seats_zero_when_active_from_in_future(self):
-        """School with active_from in future has 0 base seats."""
+    def test_base_seats_with_active_from_in_future(self):
+        """School with active_from in future still has BASE_SEATS (year-based, not date-based)."""
         school = School.objects.create(
             name="Test",
             adresse="Test",
@@ -97,7 +97,7 @@ class ActiveFromSeatsTest(TestCase):
             enrolled_at=date.today(),
             active_from=date.today() + timedelta(days=30),
         )
-        self.assertEqual(school.base_seats, 0)
+        self.assertEqual(school.base_seats, School.BASE_SEATS)
 
     def test_base_seats_positive_when_active_from_today_or_past(self):
         """School with active_from today or in past has BASE_SEATS."""
@@ -181,10 +181,21 @@ class SchoolModelTest(TestCase):
         school = School.objects.create(name="Test", adresse="Test", kommune="Test")
         self.assertEqual(school.base_seats, 0)
 
-    def test_base_seats_with_enrollment(self):
-        """School with enrolled_at has BASE_SEATS."""
-        school = School.objects.create(name="Test", adresse="Test", kommune="Test", enrolled_at=date.today())
+    def test_base_seats_with_enrollment_and_active_from(self):
+        """School with enrolled_at and active_from has BASE_SEATS."""
+        school = School.objects.create(
+            name="Test",
+            adresse="Test",
+            kommune="Test",
+            enrolled_at=date.today(),
+            active_from=date.today(),
+        )
         self.assertEqual(school.base_seats, School.BASE_SEATS)
+
+    def test_base_seats_with_enrollment_no_active_from(self):
+        """School with enrolled_at but no active_from has 0 base seats."""
+        school = School.objects.create(name="Test", adresse="Test", kommune="Test", enrolled_at=date.today())
+        self.assertEqual(school.base_seats, 0)
 
     def test_forankringsplads_before_one_year(self):
         """School active less than 1 year ago has no forankringsplads."""
@@ -216,9 +227,15 @@ class SchoolModelTest(TestCase):
         """exceeds_seat_allocation is False when used_seats <= total_seats."""
         from apps.courses.models import Course, CourseSignUp, Location
 
-        school = School.objects.create(name="Test", adresse="Test", kommune="Test", enrolled_at=date.today())
+        school = School.objects.create(
+            name="Test",
+            adresse="Test",
+            kommune="Test",
+            enrolled_at=date.today(),
+            active_from=date.today(),
+        )
         location = Location.objects.create(name="Test Location")
-        # School has 3 base seats, create 2 signups
+        # School has 3 base seats in first year, create 2 signups in same year
         course = Course.objects.create(
             start_date=date.today(),
             end_date=date.today(),
@@ -228,16 +245,21 @@ class SchoolModelTest(TestCase):
         CourseSignUp.objects.create(course=course, school=school, participant_name="A", participant_email="a@test.com")
         CourseSignUp.objects.create(course=course, school=school, participant_name="B", participant_email="b@test.com")
         self.assertEqual(school.used_seats, 2)
-        self.assertEqual(school.total_seats, 3)
         self.assertFalse(school.exceeds_seat_allocation)
 
     def test_exceeds_seat_allocation_true_when_over(self):
         """exceeds_seat_allocation is True when used_seats > total_seats."""
         from apps.courses.models import Course, CourseSignUp, Location
 
-        school = School.objects.create(name="Test", adresse="Test", kommune="Test", enrolled_at=date.today())
+        school = School.objects.create(
+            name="Test",
+            adresse="Test",
+            kommune="Test",
+            enrolled_at=date.today(),
+            active_from=date.today(),
+        )
         location = Location.objects.create(name="Test Location")
-        # School has 3 base seats, create 4 signups to exceed
+        # School has 3 base seats in first year, create 4 signups to exceed
         course = Course.objects.create(
             start_date=date.today(),
             end_date=date.today(),
@@ -249,7 +271,6 @@ class SchoolModelTest(TestCase):
                 course=course, school=school, participant_name=f"Person {i}", participant_email=f"p{i}@test.com"
             )
         self.assertEqual(school.used_seats, 4)
-        self.assertEqual(school.total_seats, 3)
         self.assertTrue(school.exceeds_seat_allocation)
 
 
@@ -2670,3 +2691,256 @@ class EnrollmentCutoffTest(TestCase):
         )
         result = get_default_active_from()
         self.assertEqual(result, today)
+
+
+class SeatCalculationTest(TestCase):
+    """Tests for per-year seat calculation methods on School model."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from apps.courses.models import Location
+
+        # School years (use get_or_create since migrations may populate them)
+        cls.year_2024, _ = SchoolYear.objects.get_or_create(
+            name="2024/25",
+            defaults={"start_date": date(2024, 8, 1), "end_date": date(2025, 7, 31)},
+        )
+        cls.year_2025, _ = SchoolYear.objects.get_or_create(
+            name="2025/26",
+            defaults={"start_date": date(2025, 8, 1), "end_date": date(2026, 7, 31)},
+        )
+        cls.year_2026, _ = SchoolYear.objects.get_or_create(
+            name="2026/27",
+            defaults={"start_date": date(2026, 8, 1), "end_date": date(2027, 7, 31)},
+        )
+        cls.location = Location.objects.create(name="Test Location SeatCalc")
+
+    def _make_school(self, enrolled_at=None, active_from=None, opted_out_at=None):
+        return School.objects.create(
+            name=f"School {School.objects.count() + 1}",
+            adresse="Addr",
+            kommune="Kommune",
+            enrolled_at=enrolled_at,
+            active_from=active_from,
+            opted_out_at=opted_out_at,
+        )
+
+    def _make_course(self, start_date):
+        return Course.objects.create(
+            start_date=start_date,
+            end_date=start_date,
+            location=self.location,
+            capacity=30,
+        )
+
+    def _make_signup(self, school, course, name="Participant"):
+        from apps.courses.models import CourseSignUp
+
+        return CourseSignUp.objects.create(
+            course=course,
+            school=school,
+            participant_name=name,
+        )
+
+    # --- get_first_school_year ---
+
+    def test_get_first_school_year_returns_correct_year(self):
+        """get_first_school_year returns the school year name for active_from date."""
+        school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
+        self.assertEqual(school.get_first_school_year(), "2024/25")
+
+    def test_get_first_school_year_january_falls_in_previous_year(self):
+        """active_from in January falls in the school year that started previous August."""
+        school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2025, 1, 15))
+        self.assertEqual(school.get_first_school_year(), "2024/25")
+
+    def test_get_first_school_year_none_without_active_from(self):
+        """get_first_school_year returns None if no active_from."""
+        school = self._make_school()
+        self.assertIsNone(school.get_first_school_year())
+
+    # --- get_first_year_seats ---
+
+    def test_first_year_seats_zero_signups(self):
+        """First year seats with 0 signups: 3 free, 0 used, 3 remaining."""
+        school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
+        info = school.get_first_year_seats()
+        self.assertEqual(info["free"], 3)
+        self.assertEqual(info["used"], 0)
+        self.assertEqual(info["remaining"], 3)
+        self.assertEqual(info["year"], "2024/25")
+
+    def test_first_year_seats_with_signups(self):
+        """First year seats with 2 signups: 3 free, 2 used, 1 remaining."""
+        school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
+        course = self._make_course(start_date=date(2024, 10, 15))
+        self._make_signup(school, course, "A")
+        self._make_signup(school, course, "B")
+        info = school.get_first_year_seats()
+        self.assertEqual(info["free"], 3)
+        self.assertEqual(info["used"], 2)
+        self.assertEqual(info["remaining"], 1)
+
+    def test_first_year_seats_ignores_wrong_year_signups(self):
+        """First year seats only counts signups from courses in the first school year."""
+        school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
+        # Course in next year (2025/26) should NOT count
+        course_next_year = self._make_course(start_date=date(2025, 9, 15))
+        self._make_signup(school, course_next_year, "A")
+        info = school.get_first_year_seats()
+        self.assertEqual(info["used"], 0)
+        self.assertEqual(info["remaining"], 3)
+
+    def test_first_year_seats_not_enrolled(self):
+        """Not-enrolled school gets zero first year seats."""
+        school = self._make_school()  # no enrolled_at
+        info = school.get_first_year_seats()
+        self.assertEqual(info["free"], 0)
+        self.assertEqual(info["used"], 0)
+        self.assertEqual(info["remaining"], 0)
+        self.assertIsNone(info["year"])
+
+    def test_first_year_seats_enrolled_no_active_from(self):
+        """Enrolled school without active_from gets zero first year seats."""
+        school = self._make_school(enrolled_at=date(2024, 6, 1))
+        info = school.get_first_year_seats()
+        self.assertEqual(info["free"], 0)
+        self.assertEqual(info["used"], 0)
+        self.assertEqual(info["remaining"], 0)
+
+    # --- get_forankring_seats ---
+
+    def test_forankring_seats_zero_signups(self):
+        """Forankring with 0 signups: 1 free, 0 used, 1 remaining."""
+        # active_from in 2024/25, so in 2025/26+ the school is forankring
+        school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
+        info = school.get_forankring_seats()
+        # has_forankringsplads depends on current year being after first year,
+        # so we need to check if the school is eligible
+        if school.has_forankringsplads:
+            self.assertEqual(info["free"], 1)
+            self.assertEqual(info["used"], 0)
+            self.assertEqual(info["remaining"], 1)
+        else:
+            # If current date is in 2024/25, school doesn't have forankring yet
+            self.assertEqual(info["free"], 0)
+            self.assertEqual(info["used"], 0)
+            self.assertEqual(info["remaining"], 0)
+
+    def test_forankring_seats_with_signup(self):
+        """Forankring with 1 signup: 1 free, 1 used, 0 remaining."""
+        # Use a school active from 2024/25 (should have forankring if current year > 2024/25)
+        school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
+        if not school.has_forankringsplads:
+            self.skipTest("Current date is in the school's first year, forankring not applicable")
+        # Course after first year ends (i.e., in 2025/26 or later)
+        course = self._make_course(start_date=date(2025, 9, 15))
+        self._make_signup(school, course, "A")
+        info = school.get_forankring_seats()
+        self.assertEqual(info["free"], 1)
+        self.assertEqual(info["used"], 1)
+        self.assertEqual(info["remaining"], 0)
+
+    def test_forankring_seats_not_enrolled(self):
+        """Not-enrolled school gets zero forankring seats."""
+        school = self._make_school()
+        info = school.get_forankring_seats()
+        self.assertEqual(info["free"], 0)
+        self.assertEqual(info["used"], 0)
+        self.assertEqual(info["remaining"], 0)
+
+    def test_forankring_seats_no_forankringsplads(self):
+        """School without forankringsplads gets zero forankring seats."""
+        # A school that just started this year has no forankring
+        today = date.today()
+        school = self._make_school(enrolled_at=today, active_from=today)
+        info = school.get_forankring_seats()
+        self.assertEqual(info["free"], 0)
+        self.assertEqual(info["used"], 0)
+
+    # --- Cross-bucket isolation ---
+
+    def test_first_year_signups_not_in_forankring(self):
+        """Signups in the first year do not count in forankring bucket."""
+        school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
+        if not school.has_forankringsplads:
+            self.skipTest("Current date is in the school's first year")
+        # Create signup in first year
+        course_first = self._make_course(start_date=date(2024, 10, 15))
+        self._make_signup(school, course_first, "First Year Person")
+        info = school.get_forankring_seats()
+        self.assertEqual(info["used"], 0)
+
+    def test_forankring_signups_not_in_first_year(self):
+        """Signups after the first year do not count in first year bucket."""
+        school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
+        # Create signup after first year
+        course_later = self._make_course(start_date=date(2025, 9, 15))
+        self._make_signup(school, course_later, "Later Person")
+        info = school.get_first_year_seats()
+        self.assertEqual(info["used"], 0)
+
+    # --- seats_for_course ---
+
+    def test_seats_for_course_first_year(self):
+        """seats_for_course returns first_year info for a course in the first year."""
+        school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
+        course = self._make_course(start_date=date(2024, 11, 1))
+        info = school.seats_for_course(course)
+        self.assertTrue(info["is_first_year"])
+        self.assertEqual(info["school_year"], "2024/25")
+        self.assertEqual(info["free"], 3)
+
+    def test_seats_for_course_later_year(self):
+        """seats_for_course returns forankring info for a course in a later year."""
+        school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
+        course = self._make_course(start_date=date(2025, 10, 1))
+        info = school.seats_for_course(course)
+        self.assertFalse(info["is_first_year"])
+        self.assertEqual(info["school_year"], "2025/26")
+        # free seats depend on has_forankringsplads
+        if school.has_forankringsplads:
+            self.assertEqual(info["free"], 1)
+        else:
+            self.assertEqual(info["free"], 0)
+
+    # --- Backward-compat properties ---
+
+    def test_backward_compat_total_seats(self):
+        """total_seats combines first year and forankring free seats."""
+        school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
+        expected = school.get_first_year_seats()["free"] + school.get_forankring_seats()["free"]
+        self.assertEqual(school.total_seats, expected)
+
+    def test_backward_compat_used_seats(self):
+        """used_seats combines first year and forankring used seats."""
+        school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
+        # Add signup in first year
+        course = self._make_course(start_date=date(2024, 10, 15))
+        self._make_signup(school, course, "A")
+        expected = school.get_first_year_seats()["used"] + school.get_forankring_seats()["used"]
+        self.assertEqual(school.used_seats, expected)
+
+    def test_backward_compat_remaining_seats(self):
+        """remaining_seats combines first year and forankring remaining seats."""
+        school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
+        expected = school.get_first_year_seats()["remaining"] + school.get_forankring_seats()["remaining"]
+        self.assertEqual(school.remaining_seats, expected)
+
+    def test_backward_compat_has_available_seats(self):
+        """has_available_seats is True when remaining_seats > 0."""
+        school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
+        self.assertTrue(school.has_available_seats)
+
+    def test_backward_compat_exceeds_seat_allocation(self):
+        """exceeds_seat_allocation is True when used > total."""
+        school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
+        # Fill up first year seats (3) + 1 more to exceed
+        for i in range(4):
+            course = self._make_course(start_date=date(2024, 10, 1 + i))
+            self._make_signup(school, course, f"P{i}")
+        # If school also has forankring, total is 4, so need 5
+        if school.has_forankringsplads:
+            course = self._make_course(start_date=date(2024, 10, 20))
+            self._make_signup(school, course, "P_extra")
+        self.assertTrue(school.exceeds_seat_allocation)

@@ -253,16 +253,6 @@ class School(models.Model):
         return history
 
     @property
-    def base_seats(self):
-        """Base seats included with enrollment."""
-        if not self.is_enrolled:
-            return 0
-        # Check if active_from is set and not in the future
-        if self.active_from and self.active_from > date.today():
-            return 0
-        return self.BASE_SEATS
-
-    @property
     def has_forankringsplads(self):
         """School gets forankringsplads if active_from is before current school year."""
         if not self.active_from:
@@ -274,6 +264,102 @@ class School(models.Model):
             return self.active_from < current_year.start_date
         except SchoolYear.DoesNotExist:
             return False
+
+    def get_first_school_year(self):
+        """Returns the school year name when the school first became active."""
+        if not self.active_from:
+            return None
+        from apps.schools.school_years import calculate_school_year_for_date
+
+        return calculate_school_year_for_date(self.active_from)
+
+    def get_first_year_seats(self):
+        """Seat info for the first-year bucket (3 free seats)."""
+        if not self.is_enrolled or not self.active_from:
+            return {"free": 0, "used": 0, "remaining": 0, "year": None}
+        from apps.schools.school_years import get_school_year_dates
+
+        first_year = self.get_first_school_year()
+        start, end = get_school_year_dates(first_year)
+        used = self.course_signups.filter(
+            course__start_date__gte=start,
+            course__start_date__lte=end,
+        ).count()
+        return {
+            "free": self.BASE_SEATS,
+            "used": used,
+            "remaining": max(0, self.BASE_SEATS - used),
+            "year": first_year,
+        }
+
+    def get_forankring_seats(self):
+        """Seat info for the forankring bucket (1 free seat, all years after first)."""
+        if not self.is_enrolled or not self.has_forankringsplads:
+            return {"free": 0, "used": 0, "remaining": 0}
+        from apps.schools.school_years import get_school_year_dates
+
+        first_year = self.get_first_school_year()
+        _, first_year_end = get_school_year_dates(first_year)
+        used = self.course_signups.filter(
+            course__start_date__gt=first_year_end,
+        ).count()
+        return {
+            "free": self.FORANKRING_SEATS,
+            "used": used,
+            "remaining": max(0, self.FORANKRING_SEATS - used),
+        }
+
+    def seats_for_course(self, course):
+        """Get seat info relevant to a specific course's school year."""
+        from apps.schools.school_years import calculate_school_year_for_date
+
+        course_year = calculate_school_year_for_date(course.start_date)
+        first_year = self.get_first_school_year()
+        is_first_year = course_year == first_year
+
+        if is_first_year:
+            info = self.get_first_year_seats()
+        else:
+            info = self.get_forankring_seats()
+
+        info["is_first_year"] = is_first_year
+        info["school_year"] = course_year
+        return info
+
+    @property
+    def base_seats(self):
+        """Base seats included with enrollment (for backward compat)."""
+        return self.get_first_year_seats()["free"]
+
+    @property
+    def forankring_seats(self):
+        """Forankringsplads seats (for backward compat)."""
+        return self.get_forankring_seats()["free"]
+
+    @property
+    def total_seats(self):
+        """Total free seats across both buckets."""
+        return self.get_first_year_seats()["free"] + self.get_forankring_seats()["free"]
+
+    @property
+    def used_seats(self):
+        """Number of seats used across both buckets."""
+        return self.get_first_year_seats()["used"] + self.get_forankring_seats()["used"]
+
+    @property
+    def remaining_seats(self):
+        """Number of free seats remaining across both buckets."""
+        return self.get_first_year_seats()["remaining"] + self.get_forankring_seats()["remaining"]
+
+    @property
+    def has_available_seats(self):
+        """Check if school has available free seats in either bucket."""
+        return self.remaining_seats > 0
+
+    @property
+    def exceeds_seat_allocation(self):
+        """Check if school is using more seats than their free allocation."""
+        return self.used_seats > self.total_seats
 
     def get_status_for_year(self, year_str: str) -> tuple[str, str, str]:
         """
@@ -308,38 +394,6 @@ class School(models.Model):
         else:
             # Active before this school year = anchoring
             return ("tilmeldt_forankring", "Tilmeldt (forankring)", "bg-primary")
-
-    @property
-    def forankring_seats(self):
-        """Forankringsplads seats (1 if enrolled > 1 year and currently enrolled)."""
-        if not self.is_enrolled:
-            return 0
-        return self.FORANKRING_SEATS if self.has_forankringsplads else 0
-
-    @property
-    def total_seats(self):
-        """Total seats available to the school."""
-        return self.base_seats + self.forankring_seats
-
-    @property
-    def used_seats(self):
-        """Number of seats used (all course signups)."""
-        return self.course_signups.count()
-
-    @property
-    def remaining_seats(self):
-        """Number of seats remaining."""
-        return max(0, self.total_seats - self.used_seats)
-
-    @property
-    def has_available_seats(self):
-        """Check if school has available seats for signup."""
-        return self.remaining_seats > 0
-
-    @property
-    def exceeds_seat_allocation(self):
-        """Check if school is using more seats than allocated (needs additional invoice)."""
-        return self.used_seats > self.total_seats
 
     def generate_credentials(self):
         """Generate signup password and token for this school."""
