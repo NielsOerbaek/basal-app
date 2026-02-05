@@ -12,7 +12,7 @@ class AuditConfig(AppConfig):
         from apps.schools.models import School, Person, SchoolComment, Invoice, SchoolYear, SchoolFile
         from apps.courses.models import Course, CourseSignUp, CourseMaterial
         from apps.contacts.models import ContactTime
-        from apps.signups.models import SignupPage, SignupFormField
+        from apps.signups.models import SignupPage, SignupFormField, SeatInfoContent
 
         # School and related models
         register_for_audit(
@@ -90,3 +90,5 @@ class AuditConfig(AppConfig):
         register_for_audit(SignupPage, AuditCfg())
 
         register_for_audit(SignupFormField, AuditCfg())
+
+        register_for_audit(SeatInfoContent, AuditCfg())

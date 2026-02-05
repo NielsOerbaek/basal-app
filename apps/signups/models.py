@@ -71,3 +71,37 @@ class SignupFormField(models.Model):
     def field_name(self):
         """Generate a unique field name for form usage."""
         return f"custom_{self.field_type}_{self.pk}"
+
+
+class SeatInfoScenario(models.TextChoices):
+    FIRST_YEAR_UNUSED = "first_year_unused", "Første år – ubrugte pladser"
+    FIRST_YEAR_ALL_USED = "first_year_all_used", "Første år – alle pladser brugt"
+    FIRST_YEAR_EXTRA = "first_year_extra", "Første år – ekstra pladser"
+    FORANKRING_AVAILABLE = "forankring_available", "Forankring – plads tilgængelig"
+    FORANKRING_NONE = "forankring_none", "Forankring – ingen gratis pladser"
+
+
+class SeatInfoContent(models.Model):
+    """Admin-editable content for seat info boxes on course signup page."""
+
+    scenario = models.CharField(
+        max_length=30,
+        unique=True,
+        choices=SeatInfoScenario.choices,
+        verbose_name="Scenarie",
+    )
+    title = models.CharField(max_length=255, verbose_name="Overskrift")
+    content = models.TextField(
+        verbose_name="Indhold",
+        help_text="HTML-tekst der vises i informationsboksen",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Pladsinformation"
+        verbose_name_plural = "Pladsinformationer"
+        ordering = ["scenario"]
+
+    def __str__(self):
+        return self.get_scenario_display()

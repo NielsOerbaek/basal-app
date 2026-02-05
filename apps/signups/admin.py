@@ -3,7 +3,7 @@ from django_summernote.admin import SummernoteModelAdmin
 
 from apps.core.decorators import can_manage_signups
 
-from .models import SignupFormField, SignupPage
+from .models import SeatInfoContent, SignupFormField, SignupPage
 
 
 class SignupAdminMixin:
@@ -71,3 +71,15 @@ class SignupFormFieldAdmin(SignupAdminMixin, admin.ModelAdmin):
     list_filter = ["signup_page", "field_type", "is_required"]
     search_fields = ["label", "help_text"]
     ordering = ["signup_page", "order", "id"]
+
+
+@admin.register(SeatInfoContent)
+class SeatInfoContentAdmin(SignupAdminMixin, SummernoteModelAdmin):
+    list_display = ["scenario", "title", "updated_at"]
+    readonly_fields = ["created_at", "updated_at"]
+    summernote_fields = ["content"]
+
+    fieldsets = [
+        (None, {"fields": ["scenario", "title", "content"]}),
+        ("Metadata", {"fields": ["created_at", "updated_at"], "classes": ["collapse"]}),
+    ]
