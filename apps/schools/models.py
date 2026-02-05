@@ -337,28 +337,56 @@ class School(models.Model):
         return self.get_forankring_seats()["free"]
 
     @property
+    def current_seats(self):
+        """Seat info for the school's current period (first year or forankring)."""
+        if not self.is_enrolled or not self.active_from:
+            return {"free": 0, "used": 0, "remaining": 0, "label": None}
+        from apps.schools.school_years import get_current_school_year
+
+        try:
+            current_year = get_current_school_year()
+        except SchoolYear.DoesNotExist:
+            return {"free": 0, "used": 0, "remaining": 0, "label": None}
+
+        first_year_name = self.get_first_school_year()
+
+        if self.active_from > current_year.end_date:
+            # Waiting for first year
+            info = {"free": self.BASE_SEATS, "used": 0, "remaining": self.BASE_SEATS}
+            info["label"] = "Første år (venter)"
+            return info
+        elif current_year.name == first_year_name:
+            info = self.get_first_year_seats()
+            info["label"] = "Første år"
+            return info
+        else:
+            info = self.get_forankring_seats()
+            info["label"] = "Forankring"
+            return info
+
+    @property
     def total_seats(self):
-        """Total free seats across both buckets."""
-        return self.get_first_year_seats()["free"] + self.get_forankring_seats()["free"]
+        """Total free seats for the current period."""
+        return self.current_seats["free"]
 
     @property
     def used_seats(self):
-        """Number of seats used across both buckets."""
-        return self.get_first_year_seats()["used"] + self.get_forankring_seats()["used"]
+        """Number of seats used in the current period."""
+        return self.current_seats["used"]
 
     @property
     def remaining_seats(self):
-        """Number of free seats remaining across both buckets."""
-        return self.get_first_year_seats()["remaining"] + self.get_forankring_seats()["remaining"]
+        """Number of free seats remaining in the current period."""
+        return self.current_seats["remaining"]
 
     @property
     def has_available_seats(self):
-        """Check if school has available free seats in either bucket."""
+        """Check if school has available free seats in current period."""
         return self.remaining_seats > 0
 
     @property
     def exceeds_seat_allocation(self):
-        """Check if school is using more seats than their free allocation."""
+        """Check if school is using more seats than their free allocation in current period."""
         return self.used_seats > self.total_seats
 
     def get_status_for_year(self, year_str: str) -> tuple[str, str, str]:

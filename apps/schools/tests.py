@@ -2906,41 +2906,42 @@ class SeatCalculationTest(TestCase):
 
     # --- Backward-compat properties ---
 
-    def test_backward_compat_total_seats(self):
-        """total_seats combines first year and forankring free seats."""
+    def test_current_seats_returns_current_bucket(self):
+        """current_seats returns the bucket matching the current school year."""
+        # School in forankring (active_from in previous school year)
         school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
-        expected = school.get_first_year_seats()["free"] + school.get_forankring_seats()["free"]
-        self.assertEqual(school.total_seats, expected)
+        seats = school.current_seats
+        self.assertEqual(seats["label"], "Forankring")
+        self.assertEqual(seats["free"], school.FORANKRING_SEATS)
 
-    def test_backward_compat_used_seats(self):
-        """used_seats combines first year and forankring used seats."""
+    def test_total_seats_returns_current_bucket(self):
+        """total_seats returns current bucket's free seats."""
         school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
-        # Add signup in first year
-        course = self._make_course(start_date=date(2024, 10, 15))
+        self.assertEqual(school.total_seats, school.current_seats["free"])
+
+    def test_used_seats_returns_current_bucket(self):
+        """used_seats returns current bucket's used seats."""
+        # School in forankring — signup in forankring period
+        school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
+        course = self._make_course(start_date=date(2025, 10, 15))  # In 2025/26 (forankring)
         self._make_signup(school, course, "A")
-        expected = school.get_first_year_seats()["used"] + school.get_forankring_seats()["used"]
-        self.assertEqual(school.used_seats, expected)
+        self.assertEqual(school.used_seats, 1)
 
-    def test_backward_compat_remaining_seats(self):
-        """remaining_seats combines first year and forankring remaining seats."""
+    def test_remaining_seats_returns_current_bucket(self):
+        """remaining_seats returns current bucket's remaining seats."""
         school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
-        expected = school.get_first_year_seats()["remaining"] + school.get_forankring_seats()["remaining"]
-        self.assertEqual(school.remaining_seats, expected)
+        self.assertEqual(school.remaining_seats, school.current_seats["remaining"])
 
-    def test_backward_compat_has_available_seats(self):
+    def test_has_available_seats(self):
         """has_available_seats is True when remaining_seats > 0."""
         school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
         self.assertTrue(school.has_available_seats)
 
-    def test_backward_compat_exceeds_seat_allocation(self):
-        """exceeds_seat_allocation is True when used > total."""
+    def test_exceeds_seat_allocation(self):
+        """exceeds_seat_allocation is True when used > total in current bucket."""
+        # School in forankring (1 free seat) — add 2 signups in forankring period
         school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
-        # Fill up first year seats (3) + 1 more to exceed
-        for i in range(4):
-            course = self._make_course(start_date=date(2024, 10, 1 + i))
+        for i in range(2):
+            course = self._make_course(start_date=date(2025, 10, 1 + i))  # In 2025/26
             self._make_signup(school, course, f"P{i}")
-        # If school also has forankring, total is 4, so need 5
-        if school.has_forankringsplads:
-            course = self._make_course(start_date=date(2024, 10, 20))
-            self._make_signup(school, course, "P_extra")
         self.assertTrue(school.exceeds_seat_allocation)
