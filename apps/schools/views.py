@@ -970,6 +970,21 @@ class SchoolPublicView(DetailView):
 
         context["enrollment_history"] = school.get_enrollment_history()
 
+        # Seat calculation context
+        context["first_year_seats"] = school.get_first_year_seats()
+        context["forankring_seats"] = school.get_forankring_seats()
+
+        if school.active_from:
+            from apps.schools.models import SchoolYear
+            from apps.schools.school_years import get_current_school_year
+
+            try:
+                current_year = get_current_school_year()
+                first_year_name = school.get_first_school_year()
+                context["is_in_first_year"] = current_year.name == first_year_name
+            except SchoolYear.DoesNotExist:
+                context["is_in_first_year"] = False
+
         # Courses with materials (newest first)
         from apps.courses.models import Course
 
