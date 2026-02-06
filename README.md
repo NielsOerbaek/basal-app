@@ -45,7 +45,7 @@ Basal handles:
 - **Static Files**: WhiteNoise
 - **WSGI Server**: Gunicorn
 - **Reverse Proxy**: Caddy (automatic HTTPS)
-- **Backups**: Backblaze B2 (via boto3 S3-compatible API)
+- **Backups**: S3-compatible object storage (via boto3)
 
 ## Setup
 
@@ -108,23 +108,23 @@ python manage.py create_demo_data --clear  # Clear existing data first
 ```
 
 ### `backup`
-Backs up the PostgreSQL database and media files to Backblaze B2 with automatic cleanup.
+Backs up the PostgreSQL database and media files to S3-compatible storage with automatic cleanup.
 ```bash
 python manage.py backup
 python manage.py backup --retention-days 60
-python manage.py backup --local-only  # Skip B2 upload
+python manage.py backup --local-only  # Skip S3 upload
 python manage.py backup --skip-media  # Database only
 ```
 Backups are stored as timestamped directories (e.g., `backup_20241217_123456/`) containing `database.sql.gz` and `media.tar.gz`.
 
-Requires: `B2_KEY_ID`, `B2_APPLICATION_KEY`, `B2_BUCKET_NAME`, `B2_ENDPOINT`
+Requires: `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET_NAME`, `S3_ENDPOINT`
 
 ### `restore_backup`
 Restores database and media files from a backup. Creates a safety backup before restoring.
 ```bash
 python manage.py restore_backup backup_20241217_123456
 python manage.py restore_backup 20241217_123456  # backup_ prefix optional
-python manage.py restore_backup backup_20241217_123456 --from-b2  # Download from B2
+python manage.py restore_backup backup_20241217_123456 --from-s3  # Download from S3
 python manage.py restore_backup backup_20241217_123456 --skip-media  # Database only
 python manage.py restore_backup backup_20241217_123456 --skip-pre-backup  # Skip safety backup
 python manage.py restore_backup backup_20241217_123456 --yes  # Skip confirmation
@@ -161,7 +161,7 @@ GitHub Actions workflows handle scheduled tasks:
 | Workflow | Schedule | Description |
 |----------|----------|-------------|
 | `send-reminders.yml` | Daily 08:00 UTC | Sends course reminders |
-| `backup.yml` | Daily 01:00 UTC | Database and media backups to B2 |
+| `backup.yml` | Daily 01:00 UTC | Database and media backups to S3 |
 
 Both use authenticated endpoints with `CRON_SECRET` bearer token.
 
@@ -185,7 +185,7 @@ Key environment variables:
 | `RESEND_API_KEY` | Resend email API key |
 | `DEFAULT_FROM_EMAIL` | Default sender email address |
 | `CRON_SECRET` | Secret for authenticated cron endpoints |
-| `B2_*` | Backblaze B2 credentials for backups |
+| `S3_*` | S3-compatible object storage credentials for backups |
 
 ## License
 

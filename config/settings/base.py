@@ -112,8 +112,8 @@ SCHOOL_SIGNUP_BCC_EMAIL = os.environ.get("SCHOOL_SIGNUP_BCC_EMAIL", "niels@osogd
 # Cron job authentication
 CRON_SECRET = os.environ.get("CRON_SECRET", "")
 
-# Backblaze B2 backup settings
-B2_KEY_ID = os.environ.get("B2_KEY_ID", "")
-B2_APPLICATION_KEY = os.environ.get("B2_APPLICATION_KEY", "")
-B2_BUCKET_NAME = os.environ.get("B2_BUCKET_NAME", "")
-B2_ENDPOINT = os.environ.get("B2_ENDPOINT", "")
+# S3-compatible object storage for backups (e.g. Hetzner Object Storage)
+S3_ACCESS_KEY = os.environ.get("S3_ACCESS_KEY", "")
+S3_SECRET_KEY = os.environ.get("S3_SECRET_KEY", "")
+S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME", "")
+S3_ENDPOINT = os.environ.get("S3_ENDPOINT", "")
