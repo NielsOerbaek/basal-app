@@ -39,44 +39,91 @@ S3_SECRET_KEY=$(grep -E '^S3_SECRET_KEY=' "$SCRIPT_DIR/.env" | cut -d'=' -f2)
 S3_BUCKET_NAME=$(grep -E '^S3_BUCKET_NAME=' "$SCRIPT_DIR/.env" | cut -d'=' -f2)
 S3_ENDPOINT=$(grep -E '^S3_ENDPOINT=' "$SCRIPT_DIR/.env" | cut -d'=' -f2)
 
-# Helper: list backups from S3
+# Helper: list backups from S3 using boto3
 list_backups() {
   echo "Fetching backups from S3..."
   echo ""
 
-  # List all manifest.json files to get backup info
-  manifests=$(AWS_ACCESS_KEY_ID="$S3_ACCESS_KEY" AWS_SECRET_ACCESS_KEY="$S3_SECRET_KEY" \
-    aws s3 ls "s3://$S3_BUCKET_NAME/backups/" \
-    --endpoint-url "$S3_ENDPOINT" \
-    --recursive 2>/dev/null | grep "manifest.json" | sort -r)
+  python3 << PYEOF
+import boto3
+from botocore.config import Config
+import json
 
-  if [ -z "$manifests" ]; then
-    # Fallback: list directories even without manifests
-    echo "No manifests found. Listing backup directories:"
-    AWS_ACCESS_KEY_ID="$S3_ACCESS_KEY" AWS_SECRET_ACCESS_KEY="$S3_SECRET_KEY" \
-      aws s3 ls "s3://$S3_BUCKET_NAME/backups/" \
-      --endpoint-url "$S3_ENDPOINT" 2>/dev/null | grep "PRE" | awk '{print $2}' | sed 's/\///'
-    return
-  fi
+s3 = boto3.client(
+    's3',
+    endpoint_url='$S3_ENDPOINT',
+    aws_access_key_id='$S3_ACCESS_KEY',
+    aws_secret_access_key='$S3_SECRET_KEY',
+    config=Config(signature_version='s3v4'),
+)
 
-  # Download and display each manifest
-  printf "%-28s %-14s %-10s %s\n" "BACKUP" "DATE" "BRANCH" "COMMIT"
-  printf "%-28s %-14s %-10s %s\n" "------" "----" "------" "------"
+# List all objects in backups/
+try:
+    response = s3.list_objects_v2(Bucket='$S3_BUCKET_NAME', Prefix='backups/')
+    contents = response.get('Contents', [])
+except Exception as e:
+    print(f"Error listing backups: {e}")
+    exit(1)
 
-  while IFS= read -r line; do
-    key=$(echo "$line" | awk '{print $4}')
-    backup_dir=$(echo "$key" | cut -d'/' -f2)
+# Find manifest.json files
+manifests = [obj for obj in contents if obj['Key'].endswith('manifest.json')]
 
-    manifest=$(AWS_ACCESS_KEY_ID="$S3_ACCESS_KEY" AWS_SECRET_ACCESS_KEY="$S3_SECRET_KEY" \
-      aws s3 cp "s3://$S3_BUCKET_NAME/$key" - \
-      --endpoint-url "$S3_ENDPOINT" 2>/dev/null)
+if not manifests:
+    # Fallback: list backup directories
+    print("No manifests found. Listing backup directories:")
+    dirs = set()
+    for obj in contents:
+        parts = obj['Key'].split('/')
+        if len(parts) >= 2 and parts[1].startswith('backup_'):
+            dirs.add(parts[1])
+    for d in sorted(dirs, reverse=True):
+        print(d)
+    exit(0)
 
-    timestamp=$(echo "$manifest" | python3 -c "import sys,json; print(json.load(sys.stdin).get('timestamp','?')[:16])" 2>/dev/null || echo "?")
-    branch=$(echo "$manifest" | python3 -c "import sys,json; print(json.load(sys.stdin).get('git_branch','?'))" 2>/dev/null || echo "?")
-    commit=$(echo "$manifest" | python3 -c "import sys,json; print(json.load(sys.stdin).get('git_commit','?')[:12])" 2>/dev/null || echo "?")
+# Sort by key (timestamp in name) descending
+manifests.sort(key=lambda x: x['Key'], reverse=True)
 
-    printf "%-28s %-14s %-10s %s\n" "$backup_dir" "$timestamp" "$branch" "$commit"
-  done <<< "$manifests"
+print(f"{'BACKUP':<28} {'DATE':<16} {'BRANCH':<10} COMMIT")
+print(f"{'------':<28} {'----':<16} {'------':<10} ------")
+
+for obj in manifests:
+    key = obj['Key']
+    backup_dir = key.split('/')[1]
+
+    try:
+        response = s3.get_object(Bucket='$S3_BUCKET_NAME', Key=key)
+        manifest = json.loads(response['Body'].read().decode('utf-8'))
+        timestamp = manifest.get('timestamp', '?')[:16]
+        branch = manifest.get('git_branch', '?')
+        commit = manifest.get('git_commit', '?')[:12] if manifest.get('git_commit') else '?'
+        print(f"{backup_dir:<28} {timestamp:<16} {branch:<10} {commit}")
+    except Exception as e:
+        print(f"{backup_dir:<28} {'?':<16} {'?':<10} ?")
+PYEOF
+}
+
+# Helper: get manifest from S3 using boto3
+get_manifest() {
+  local backup_name="$1"
+  python3 << PYEOF
+import boto3
+from botocore.config import Config
+import json
+
+s3 = boto3.client(
+    's3',
+    endpoint_url='$S3_ENDPOINT',
+    aws_access_key_id='$S3_ACCESS_KEY',
+    aws_secret_access_key='$S3_SECRET_KEY',
+    config=Config(signature_version='s3v4'),
+)
+
+try:
+    response = s3.get_object(Bucket='$S3_BUCKET_NAME', Key='backups/$backup_name/manifest.json')
+    print(response['Body'].read().decode('utf-8'))
+except Exception:
+    pass
+PYEOF
 }
 
 # List mode
@@ -135,9 +182,7 @@ echo ""
 
 # Download manifest
 echo "==> Downloading manifest..."
-MANIFEST=$(AWS_ACCESS_KEY_ID="$S3_ACCESS_KEY" AWS_SECRET_ACCESS_KEY="$S3_SECRET_KEY" \
-  aws s3 cp "s3://$S3_BUCKET_NAME/backups/$BACKUP_NAME/manifest.json" - \
-  --endpoint-url "$S3_ENDPOINT" 2>/dev/null || echo "")
+MANIFEST=$(get_manifest "$BACKUP_NAME")
 
 if [ -n "$MANIFEST" ]; then
   BACKUP_COMMIT=$(echo "$MANIFEST" | python3 -c "import sys,json; print(json.load(sys.stdin).get('git_commit',''))" 2>/dev/null)
