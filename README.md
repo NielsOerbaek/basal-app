@@ -115,7 +115,7 @@ python manage.py backup --retention-days 60
 python manage.py backup --local-only  # Skip S3 upload
 python manage.py backup --skip-media  # Database only
 ```
-Backups are stored as timestamped directories (e.g., `backup_20241217_123456/`) containing `database.sql.gz` and `media.tar.gz`.
+Backups are stored as timestamped directories (e.g., `backup_20241217_123456/`) containing `database.sql.gz`, `media.tar.gz`, and `manifest.json` (with git commit, branch, and applied migrations).
 
 Requires: `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET_NAME`, `S3_ENDPOINT`
 
@@ -153,6 +153,16 @@ python manage.py test_email signup_confirmation
 python manage.py test_email course_reminder --to test@example.com
 python manage.py test_email course_reminder --attachment materials.pdf
 ```
+
+### `restore-backup.sh`
+Orchestrates a full restore to dev or prod from your local machine. Checks out the correct code, deploys it, then restores the database and media.
+```bash
+./restore-backup.sh --list                        # List available backups
+./restore-backup.sh --dev backup_20260205_010000   # Restore to dev
+./restore-backup.sh --prod backup_20260205_010000  # Restore to prod
+```
+
+Requires AWS CLI installed locally. Reads S3 credentials from `.env`.
 
 ## Automated Tasks
 
