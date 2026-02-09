@@ -66,6 +66,9 @@ class Command(BaseCommand):
         if not skip_media:
             self._backup_media(local_backup_dir, s3, backup_name, local_only)
 
+        # Save manifest
+        self._create_manifest(local_backup_dir, s3, backup_name, local_only)
+
         # Clean up old backups
         self._cleanup_local_backups(backup_dir, options["retention_days"])
         if not local_only and s3:
@@ -204,6 +207,55 @@ class Command(BaseCommand):
 
         except Exception as e:
             self.stderr.write(self.style.WARNING(f"Media backup failed: {e}"))
+
+    def _create_manifest(self, local_backup_dir, s3, backup_name, local_only):
+        """Create manifest.json with code state and migration info."""
+        import json
+        import platform
+
+        import django
+        from django.db import connection
+
+        manifest = {
+            "timestamp": datetime.now().isoformat(),
+            "django_version": django.get_version(),
+            "python_version": platform.python_version(),
+        }
+
+        # Read BUILD_INFO if available
+        build_info_path = Path("/app/BUILD_INFO")
+        if build_info_path.exists():
+            for line in build_info_path.read_text().strip().splitlines():
+                if "=" in line:
+                    key, value = line.split("=", 1)
+                    manifest[key.lower()] = value
+        else:
+            self.stdout.write(self.style.WARNING("  BUILD_INFO not found — git state will not be recorded"))
+
+        # Get applied migrations from database
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT app, name FROM django_migrations ORDER BY app, name")
+                manifest["applied_migrations"] = [f"{row[0]}.{row[1]}" for row in cursor.fetchall()]
+        except Exception as e:
+            self.stderr.write(self.style.WARNING(f"  Could not read migrations: {e}"))
+            manifest["applied_migrations"] = []
+
+        # Write manifest
+        manifest_filename = "manifest.json"
+        local_path = local_backup_dir / manifest_filename
+        local_path.write_text(json.dumps(manifest, indent=2))
+        self.stdout.write(f"  Manifest: {manifest_filename}")
+
+        # Upload to S3
+        if not local_only and s3:
+            s3.put_object(
+                Bucket=settings.S3_BUCKET_NAME,
+                Key=f"backups/{backup_name}/{manifest_filename}",
+                Body=json.dumps(manifest, indent=2),
+                ContentType="application/json",
+            )
+            self.stdout.write(self.style.SUCCESS(f"  Uploaded to S3: {backup_name}/{manifest_filename}"))
 
     def _cleanup_s3_backups(self, s3, retention_days):
         """Clean up old backups from S3."""
