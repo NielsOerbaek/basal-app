@@ -69,3 +69,6 @@ deploy.sh
 
 # Worktrees
 .worktrees/
+
+# Deploy artifacts
+BUILD_INFO

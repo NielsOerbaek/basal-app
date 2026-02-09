@@ -115,6 +115,15 @@ if [ "$DEPLOY_ENV" = "prod" ]; then
   fi
 fi
 
+# Write build info for backup manifests
+echo "==> Writing BUILD_INFO..."
+cat > "$SCRIPT_DIR/BUILD_INFO" <<BUILDEOF
+GIT_COMMIT=$(git rev-parse HEAD)
+GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+GIT_DIRTY=$(git diff-index --quiet HEAD -- 2>/dev/null && echo "false" || echo "true")
+DEPLOY_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+BUILDEOF
+
 # Sync code to server (excluding local dev files)
 echo "==> Syncing code..."
 rsync -avz --delete \
@@ -132,6 +141,8 @@ rsync -avz --delete \
   --exclude='venv' \
   --exclude='todo.md' \
   ./ "$SERVER:$REMOTE_PATH/"
+
+rm -f "$SCRIPT_DIR/BUILD_INFO"
 
 # Build and restart containers
 echo "==> Building and starting containers..."
