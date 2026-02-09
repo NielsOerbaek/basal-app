@@ -4,6 +4,16 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 9. februar 2026
+
+### "Aktiv fra" vises nu som skoleår-chip
+I stedet for en rå dato vises "Aktiv fra" nu som en farvet badge med skoleåret (fx "2024/25"). Hvert skoleår har sin egen farve, så de er nemme at skelne fra hinanden. Ændringen gælder på skolelisten, skoledetaljesiden og tilmeldingsbekræftelsen.
+
+### Skoleår-dropdown ved redigering af tilmeldingsdatoer
+Når man redigerer en skoles tilmeldingsdatoer, vælger man nu skoleår fra en dropdown i stedet for at vælge en dato. Dropdown viser 5 skoleår startende fra tilmeldingsåret.
+
+---
+
 ## 5. februar 2026
 
 ### Ny pladsberegning: Første år og Forankring
