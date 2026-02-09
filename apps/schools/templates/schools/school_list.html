@@ -1,5 +1,5 @@
 {% extends 'core/base.html' %}
-{% load sorting_tags %}
+{% load sorting_tags school_tags %}
 
 {% block title %}Skoler - Basal{% endblock %}
 
@@ -115,11 +115,7 @@
                         {% endwith %}
                     </td>
                     <td>
-                        {% if school.active_from %}
-                        {{ school.get_first_school_year }}
-                        {% else %}
-                        <span class="text-muted">-</span>
-                        {% endif %}
+                        {% school_year_chip school.active_from %}
                     </td>
                     <td>
                         {% if school.enrolled_at and not school.opted_out_at %}

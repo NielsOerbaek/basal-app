@@ -286,7 +286,7 @@ class SchoolDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         from apps.schools.models import get_default_active_from, get_enrollment_cutoff_date
-        from apps.schools.school_years import get_current_school_year, get_school_year_for_date
+        from apps.schools.school_years import get_current_school_year
 
         context = super().get_context_data(**kwargs)
         context["contact_history"] = self.object.contact_history.select_related("created_by")[:10]
@@ -317,18 +317,6 @@ class SchoolDetailView(DetailView):
             except SchoolYear.DoesNotExist:
                 context["is_in_first_year"] = False
                 context["is_waiting_for_first_year"] = False
-
-        # School year for enrollment dates
-        if self.object.enrolled_at:
-            try:
-                context["enrolled_at_school_year"] = get_school_year_for_date(self.object.enrolled_at)
-            except SchoolYear.DoesNotExist:
-                pass
-        if self.object.active_from:
-            try:
-                context["active_from_school_year"] = get_school_year_for_date(self.object.active_from)
-            except SchoolYear.DoesNotExist:
-                pass
 
         # Enrollment cutoff info for modal
         try:
