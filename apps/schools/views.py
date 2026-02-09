@@ -899,6 +899,20 @@ class EditEnrollmentDatesView(View):
 
 
 @method_decorator(staff_required, name="dispatch")
+class ClearEnrollmentView(View):
+    """Clear all enrollment dates (enrolled_at, active_from, opted_out_at) for a school."""
+
+    def post(self, request, pk):
+        school = get_object_or_404(School, pk=pk)
+        school.enrolled_at = None
+        school.active_from = None
+        school.opted_out_at = None
+        school.save(update_fields=["enrolled_at", "active_from", "opted_out_at"])
+        messages.success(request, "Tilmeldingsdatoer nulstillet.")
+        return redirect("schools:detail", pk=school.pk)
+
+
+@method_decorator(staff_required, name="dispatch")
 class SchoolFileCreateView(View):
     def get(self, request, school_pk):
         school = get_object_or_404(School, pk=school_pk)

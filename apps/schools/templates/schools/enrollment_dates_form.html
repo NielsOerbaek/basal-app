@@ -31,6 +31,15 @@
                             <button type="submit" class="btn btn-primary">Gem</button>
                         </div>
                     </form>
+                    <hr>
+                    <form method="post" action="{% url 'schools:clear-enrollment' school.pk %}">
+                        {% csrf_token %}
+                        <p class="text-muted small mb-2">Hvis skolen blev tilmeldt ved en fejl, kan du nulstille alle tilmeldingsdatoer.</p>
+                        <button type="submit" class="btn btn-outline-danger btn-sm"
+                                onclick="return confirm('Er du sikker? Dette nulstiller tilmeldt-dato, aktiv fra og frameldingsdato.')">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Nulstil tilmelding
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
