@@ -81,6 +81,11 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("No media backup found, skipping media restore"))
             skip_media = True
 
+        # Read manifest if available
+        manifest = self._read_manifest(local_backup_path)
+        if manifest:
+            self._show_manifest_warnings(manifest)
+
         # Confirmation prompt
         if not confirmed:
             self.stdout.write("")
@@ -309,3 +314,83 @@ class Command(BaseCommand):
                 backup_media.rename(media_root)
                 self.stdout.write("  Restored original media directory")
             return False
+
+    def _read_manifest(self, backup_path):
+        """Read manifest.json from backup."""
+        import json
+
+        manifest_path = backup_path / "manifest.json"
+        if not manifest_path.exists():
+            self.stdout.write(self.style.WARNING("No manifest.json found — cannot verify code state"))
+            return None
+
+        try:
+            return json.loads(manifest_path.read_text())
+        except Exception as e:
+            self.stderr.write(self.style.WARNING(f"Could not read manifest: {e}"))
+            return None
+
+    def _show_manifest_warnings(self, manifest):
+        """Show warnings if current state doesn't match backup."""
+        from django.db import connection
+
+        self.stdout.write("")
+        self.stdout.write("Backup info:")
+        self.stdout.write(f'  Created:  {manifest.get("timestamp", "unknown")}')
+        self.stdout.write(f'  Commit:   {manifest.get("git_commit", "unknown")}')
+        self.stdout.write(f'  Branch:   {manifest.get("git_branch", "unknown")}')
+        self.stdout.write(f'  Django:   {manifest.get("django_version", "unknown")}')
+
+        # Check migration state
+        backup_migrations = set(manifest.get("applied_migrations", []))
+        if backup_migrations:
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT app, name FROM django_migrations ORDER BY app, name")
+                    current_migrations = {f"{row[0]}.{row[1]}" for row in cursor.fetchall()}
+
+                new_migrations = current_migrations - backup_migrations
+                missing_migrations = backup_migrations - current_migrations
+
+                if new_migrations:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"\n  WARNING: {len(new_migrations)} migration(s) applied "
+                            f"AFTER this backup was created:"
+                        )
+                    )
+                    for m in sorted(new_migrations):
+                        self.stdout.write(self.style.WARNING(f"    + {m}"))
+                    self.stdout.write(
+                        self.style.WARNING(
+                            "\n  The restored DB will not have these migrations."
+                            "\n  You should deploy the matching code first."
+                        )
+                    )
+
+                if missing_migrations:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"\n  WARNING: {len(missing_migrations)} migration(s) in backup " f"not in current code:"
+                        )
+                    )
+                    for m in sorted(missing_migrations):
+                        self.stdout.write(self.style.WARNING(f"    - {m}"))
+
+            except Exception:
+                pass  # DB might not be accessible, that's fine
+
+        # Check BUILD_INFO for code state
+        build_info_path = Path("/app/BUILD_INFO")
+        if build_info_path.exists() and manifest.get("git_commit"):
+            for line in build_info_path.read_text().strip().splitlines():
+                if line.startswith("GIT_COMMIT="):
+                    current_commit = line.split("=", 1)[1]
+                    if current_commit != manifest["git_commit"]:
+                        self.stdout.write(
+                            self.style.WARNING(
+                                f'\n  WARNING: Current deployed commit ({current_commit[:12]}) '
+                                f'differs from backup commit ({manifest["git_commit"][:12]})'
+                            )
+                        )
+                    break
