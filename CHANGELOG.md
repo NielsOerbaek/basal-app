@@ -12,6 +12,15 @@ I stedet for en rå dato vises "Aktiv fra" nu som en farvet badge med skoleåret
 ### Skoleår-dropdown ved redigering af tilmeldingsdatoer
 Når man redigerer en skoles tilmeldingsdatoer, vælger man nu skoleår fra en dropdown i stedet for at vælge en dato. Dropdown viser 5 skoleår startende fra tilmeldingsåret.
 
+### Nulstil tilmelding
+På siden "Rediger tilmeldingsdatoer" er der nu en knap til at nulstille alle tilmeldingsdatoer (tilmeldt, aktiv fra og frameldt), hvis en skole blev tilmeldt ved en fejl.
+
+### Koordinator-info på kursustilmeldingssiden
+Når en skole vælges på kursustilmeldingssiden, vises nu koordinatorens navn og kontaktoplysninger. Der er også et link til skolens side, hvor kontaktoplysningerne kan redigeres.
+
+### Lange filnavne afkortes
+Filnavne i fillisten på skoledetaljesiden afkortes nu med ellipsis hvis de er for lange, i stedet for at bryde layoutet.
+
 ---
 
 ## 5. februar 2026
