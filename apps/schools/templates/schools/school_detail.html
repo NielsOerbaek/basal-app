@@ -457,19 +457,17 @@
                 {% for file in school_files %}
                 <li class="list-group-item">
                     <div class="d-flex justify-content-between align-items-start">
-                        <div class="flex-grow-1">
-                            <div class="mb-1">
-                                <a href="{{ file.file.url }}" target="_blank" class="text-decoration-none d-inline-block text-truncate" style="max-width: 100%;" title="{{ file.filename }}">
-                                    <i class="bi bi-file-earmark me-1"></i>{{ file.filename }}
-                                </a>
-                            </div>
+                        <div class="flex-grow-1 overflow-hidden">
                             {% if file.description %}
-                            <div class="small text-muted">{{ file.description }}</div>
+                            <div class="mb-1">{{ file.description }}</div>
                             {% endif %}
-                            <div class="small text-muted">
+                            <div class="small text-muted mb-1">
                                 {{ file.uploaded_at|date:"d. M Y" }}
                                 {% if file.uploaded_by %} - {{ file.uploaded_by.get_full_name|default:file.uploaded_by.username }}{% endif %}
                             </div>
+                            <a href="{{ file.file.url }}" target="_blank" class="text-decoration-none small text-truncate d-block" style="font-family: monospace;" title="{{ file.filename }}">
+                                <i class="bi bi-file-earmark me-1"></i>{{ file.filename }}
+                            </a>
                         </div>
                         <div class="d-flex gap-1 ms-2">
                             <a href="{% url 'schools:file-edit' file.pk %}" class="btn btn-sm btn-outline-secondary" title="Rediger">

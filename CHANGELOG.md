@@ -18,8 +18,8 @@ På siden "Rediger tilmeldingsdatoer" er der nu en knap til at nulstille alle ti
 ### Koordinator-info på kursustilmeldingssiden
 Når en skole vælges på kursustilmeldingssiden, vises nu koordinatorens navn og kontaktoplysninger. Der er også et link til skolens side, hvor kontaktoplysningerne kan redigeres.
 
-### Lange filnavne afkortes
-Filnavne i fillisten på skoledetaljesiden afkortes nu med ellipsis hvis de er for lange, i stedet for at bryde layoutet.
+### Forbedret filvisning
+Fillisten på skoledetaljesiden viser nu beskrivelsen øverst, derefter dato og uploader, og filnavnet i monospace nederst. Lange filnavne afkortes med ellipsis.
 
 ---
 
