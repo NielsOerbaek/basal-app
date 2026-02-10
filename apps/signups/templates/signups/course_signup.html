@@ -72,6 +72,13 @@
     {# Course and school selection via crispy #}
     {% crispy form %}
 
+    <div id="koordinator-info" class="small text-muted border rounded p-2 mb-3" style="display: none;">
+        <i class="bi bi-person-badge me-1"></i><strong>Koordinator:</strong>
+        <span id="koordinator-name"></span>
+        <span id="koordinator-contact" class="ms-1"></span>
+        <br><a id="koordinator-link" href="#" class="small" target="_blank">Rediger kontaktoplysninger på skolens side</a>
+    </div>
+
     {# Participant section - rendered manually for dynamic cloning #}
     <hr>
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -156,6 +163,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const addParticipantBtn = document.getElementById('add-participant');
     const participantCountBadge = document.getElementById('participant-count');
     const submitBtn = document.querySelector('button[type="submit"]');
+
+    const koordinatorInfo = document.getElementById('koordinator-info');
+    const koordinatorName = document.getElementById('koordinator-name');
+    const koordinatorContact = document.getElementById('koordinator-contact');
+    const koordinatorLink = document.getElementById('koordinator-link');
 
     let participantIndex = 1;
     let schoolAvailableSeats = null;
@@ -303,16 +315,47 @@ document.addEventListener('DOMContentLoaded', function() {
         newEntry.querySelector('input[name^="participant_name"]').focus();
     }
 
+    function updateKoordinatorDisplay(data) {
+        if (data && data.koordinator) {
+            const k = data.koordinator;
+            koordinatorName.textContent = k.name;
+            const parts = [];
+            if (k.email) parts.push(k.email);
+            if (k.phone) parts.push(k.phone);
+            koordinatorContact.textContent = parts.length ? '(' + parts.join(', ') + ')' : '';
+            if (koordinatorLink && data.school_public_url) {
+                koordinatorLink.href = data.school_public_url;
+            }
+            koordinatorInfo.style.display = 'block';
+        } else {
+            koordinatorInfo.style.display = 'none';
+        }
+    }
+
     function checkSchoolSeats() {
         const seatInfoBox = document.getElementById('seat-info-box');
         const seatInfoTitle = document.getElementById('seat-info-title');
         const seatInfoContent = document.getElementById('seat-info-content');
 
-        if (!schoolSelect || !schoolSelect.value || !courseSelect || !courseSelect.value) {
+        if (!schoolSelect || !schoolSelect.value) {
             seatInfoBox.style.display = 'none';
             seatsWarning.style.display = 'none';
             seatData = null;
             seatContent = null;
+            updateKoordinatorDisplay(null);
+            return;
+        }
+
+        if (!courseSelect || !courseSelect.value) {
+            seatInfoBox.style.display = 'none';
+            seatsWarning.style.display = 'none';
+            seatData = null;
+            seatContent = null;
+            // Still fetch koordinator info even without course
+            fetch('{% url "signup:check-school-seats" %}?school_id=' + schoolSelect.value)
+                .then(response => response.json())
+                .then(data => updateKoordinatorDisplay(data))
+                .catch(() => updateKoordinatorDisplay(null));
             return;
         }
 
@@ -322,12 +365,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 seatData = data;
                 seatContent = data.seat_content || {};
                 updateSeatInfoDisplay();
+                updateKoordinatorDisplay(data);
             })
             .catch(() => {
                 seatInfoBox.style.display = 'none';
                 seatsWarning.style.display = 'none';
                 seatData = null;
                 seatContent = null;
+                updateKoordinatorDisplay(null);
             });
     }
 

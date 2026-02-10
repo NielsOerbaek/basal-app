@@ -1,5 +1,6 @@
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.views import View
 from django.views.generic import TemplateView
 
@@ -264,6 +265,20 @@ class CheckSchoolSeatsView(View):
         except School.DoesNotExist:
             return JsonResponse({"error": "School not found"}, status=404)
 
+        # Get koordinator info
+        koordinator = school.people.filter(is_koordinator=True).first()
+        koordinator_info = None
+        if koordinator:
+            koordinator_info = {
+                "name": koordinator.name,
+                "email": koordinator.email or None,
+                "phone": koordinator.phone or None,
+            }
+
+        school_public_url = None
+        if school.signup_token:
+            school_public_url = reverse("school-public", args=[school.signup_token])
+
         course_id = request.GET.get("course_id")
         if course_id:
             from apps.courses.models import Course
@@ -294,6 +309,8 @@ class CheckSchoolSeatsView(View):
                     "school_year": info["school_year"],
                     "has_available_seats": info["remaining"] > 0,
                     "seat_content": seat_content,
+                    "koordinator": koordinator_info,
+                    "school_public_url": school_public_url,
                 }
             )
 
@@ -302,6 +319,8 @@ class CheckSchoolSeatsView(View):
             {
                 "has_available_seats": school.has_available_seats,
                 "remaining_seats": school.remaining_seats,
+                "koordinator": koordinator_info,
+                "school_public_url": school_public_url,
             }
         )
 
