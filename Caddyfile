@@ -1,4 +1,11 @@
 {$DOMAIN:localhost} {
+    # Favicon fallback (browsers request /favicon.ico by default)
+    handle /favicon.ico {
+        rewrite * /static/img/favicon.png
+        root * /srv
+        file_server
+    }
+
     # Static files
     handle /static/* {
         root * /srv
@@ -16,10 +23,9 @@
         reverse_proxy app:8000
     }
 
-    # Security headers
+    # Security headers (X-Frame-Options is set by Django, not here, to avoid duplicates)
     header {
         X-Content-Type-Options nosniff
-        X-Frame-Options SAMEORIGIN
         Referrer-Policy strict-origin-when-cross-origin
     }
 
