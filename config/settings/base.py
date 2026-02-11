@@ -98,6 +98,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
+# Summernote (use non-iframe mode to avoid X-Frame-Options issues behind reverse proxies)
+SUMMERNOTE_CONFIG = {
+    "iframe": False,
+}
+
 # Authentication
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "/"
