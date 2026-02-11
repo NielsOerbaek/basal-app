@@ -4,6 +4,19 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 11. februar 2026
+
+### Filtrér og sortér skoler efter skoleår
+Skolelisten har nu en skoleår-dropdown, der filtrerer skoler efter det skoleår de blev tilmeldt i. Kolonnen "Tilmeldt skoleår" er nu også sorterbar. Dropdown viser kun skoleår hvor der faktisk er tilmeldte skoler.
+
+### Filtre aktiveres automatisk
+Alle dropdown-filtre på skolelisten aktiverer nu søgningen med det samme — man behøver ikke klikke på Søg-knappen.
+
+### Eksport matcher nu tabelkolonner
+Excel-eksporten fra skolelisten og kursuslisten er opdateret, så kolonnerne matcher de kolonner man ser i tabellen (Status, Skoleår, Pladser for skoler; Dato, Sted, Undervisere, Tilmeldinger, Status for kurser).
+
+---
+
 ## 9. februar 2026
 
 ### "Aktiv fra" vises nu som skoleår-chip

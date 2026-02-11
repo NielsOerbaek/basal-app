@@ -146,15 +146,27 @@ class CourseDeleteView(View):
 @method_decorator(staff_required, name="dispatch")
 class CourseExportView(View):
     def get(self, request):
-        queryset = Course.objects.select_related("location").all()
+        queryset = list(Course.objects.select_related("location").prefetch_related("instructors").all())
+        for course in queryset:
+            course._export_date = (
+                str(course.start_date)
+                if course.start_date == course.end_date
+                else f"{course.start_date} - {course.end_date}"
+            )
+            course._export_instructors = ", ".join(i.name for i in course.instructors.all())
+            course._export_signups = f"{course.signup_count}/{course.capacity}"
+            if course.is_past:
+                course._export_status = "Afholdt"
+            elif course.is_published:
+                course._export_status = "Offentliggjort"
+            else:
+                course._export_status = "Kladde"
         fields = [
-            ("display_name", "Kursus"),
-            ("start_date", "Startdato"),
-            ("end_date", "Slutdato"),
-            ("location", "Lokation"),
-            ("capacity", "Kapacitet"),
-            ("signup_count", "Tilmeldinger"),
-            ("is_published", "Offentliggjort"),
+            ("_export_date", "Dato"),
+            ("location", "Sted"),
+            ("_export_instructors", "Undervisere"),
+            ("_export_signups", "Tilmeldinger"),
+            ("_export_status", "Status"),
         ]
         return export_queryset_to_excel(queryset, fields, "courses")
 

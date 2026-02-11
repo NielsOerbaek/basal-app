@@ -70,6 +70,7 @@ class SchoolListView(SortableMixin, ListView):
     sortable_fields = {
         "name": "name",
         "kommune": "kommune",
+        "school_year": "active_from",
         "seats": "_remaining_seats",  # Special handling for computed property
         "contact": "_last_contact",  # Special handling for latest contact
     }
@@ -158,6 +159,17 @@ class SchoolListView(SortableMixin, ListView):
         if kommune_filter:
             queryset = queryset.filter(kommune=kommune_filter)
 
+        # School year filter
+        year_filter = self.request.GET.get("year")
+        if year_filter:
+            from apps.schools.school_years import get_school_year_dates
+
+            try:
+                start_date, end_date = get_school_year_dates(year_filter)
+                queryset = queryset.filter(active_from__gte=start_date, active_from__lte=end_date)
+            except Exception:
+                pass
+
         # School year status filter (for project goals drill-down)
         status_filter = self.request.GET.get("status")
         school_year_filter = self.request.GET.get("school_year")
@@ -217,6 +229,8 @@ class SchoolListView(SortableMixin, ListView):
                 queryset.sort(key=lambda s: s.name.lower(), reverse=reverse)
             elif sort == "kommune":
                 queryset.sort(key=lambda s: (s.kommune or "").lower(), reverse=reverse)
+            elif sort == "school_year":
+                queryset.sort(key=lambda s: s.active_from or date.min, reverse=reverse)
             return queryset
 
         # For computed fields with Django QuerySet, convert to list and sort
@@ -242,6 +256,14 @@ class SchoolListView(SortableMixin, ListView):
         context["kommuner"] = (
             School.objects.active().exclude(kommune="").values_list("kommune", flat=True).distinct().order_by("kommune")
         )
+        # Get school years that have schools with active_from dates in them
+        from apps.schools.school_years import calculate_school_year_for_date
+
+        active_from_dates = (
+            School.objects.active().filter(active_from__isnull=False).values_list("active_from", flat=True)
+        )
+        year_names = sorted({calculate_school_year_for_date(d) for d in active_from_dates}, reverse=True)
+        context["school_years"] = year_names
 
         # Metrics
         paginator = context.get("paginator")
@@ -478,13 +500,24 @@ class SchoolHardDeleteView(View):
 @method_decorator(staff_required, name="dispatch")
 class SchoolExportView(View):
     def get(self, request):
-        queryset = School.objects.active()
+        from apps.schools.school_years import calculate_school_year_for_date
+
+        queryset = list(School.objects.active().order_by("name"))
+        for school in queryset:
+            school._export_status = school.enrollment_status[1]
+            school._export_school_year = (
+                calculate_school_year_for_date(school.active_from) if school.active_from else ""
+            )
+            if school.enrolled_at and not school.opted_out_at:
+                school._export_seats = f"{school.used_seats} / {school.total_seats}"
+            else:
+                school._export_seats = ""
         fields = [
             ("name", "Navn"),
-            ("adresse", "Adresse"),
             ("kommune", "Kommune"),
-            ("enrolled_at", "Tilmeldt"),
-            ("created_at", "Oprettet"),
+            ("_export_status", "Status"),
+            ("_export_school_year", "Tilmeldt skoleår"),
+            ("_export_seats", "Brugte pladser"),
         ]
         return export_queryset_to_excel(queryset, fields, "schools")
 

@@ -46,7 +46,7 @@
 <div class="card mb-4">
     <div class="card-body">
         <form method="get" class="row g-3" id="school-search-form">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <input type="text" name="search" value="{{ request.GET.search }}" class="form-control" placeholder="Søg skoler...">
             </div>
             <div class="col-md-2">
@@ -70,15 +70,23 @@
                 </select>
             </div>
             <div class="col-md-2">
+                <select name="year" class="form-select">
+                    <option value="">Alle skoleår</option>
+                    {% for sy in school_years %}
+                    <option value="{{ sy }}" {% if request.GET.year == sy %}selected{% endif %}>{{ sy }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
                 <select name="unused_seats" class="form-select">
                     <option value="">Alle (pladser)</option>
                     <option value="yes" {% if request.GET.unused_seats == 'yes' %}selected{% endif %}>Har ubrugte pladser</option>
                     <option value="no" {% if request.GET.unused_seats == 'no' %}selected{% endif %}>Ingen ubrugte pladser</option>
                 </select>
             </div>
-            <div class="col-md-2">
+            <div class="col-md-1">
                 <button type="submit" class="btn btn-outline-primary w-100" id="search-btn">
-                    <i class="bi bi-search me-1" id="search-icon"></i><span id="search-text">Søg</span>
+                    <i class="bi bi-search" id="search-icon"></i><span class="d-none" id="search-text"></span>
                 </button>
             </div>
         </form>
@@ -99,7 +107,7 @@
                     <th>{% sort_header 'name' 'Navn' %}</th>
                     <th>{% sort_header 'kommune' 'Kommune' %}</th>
                     <th>Status</th>
-                    <th>Tilmeldt skoleår</th>
+                    <th>{% sort_header 'school_year' 'Tilmeldt skoleår' %}</th>
                     <th>{% sort_header 'seats' 'Brugte pladser' %}</th>
                     <th class="table-actions">Handlinger</th>
                 </tr>
@@ -149,14 +157,18 @@
 
 {% block extra_js %}
 <script>
-document.getElementById('school-search-form').addEventListener('submit', function() {
+const form = document.getElementById('school-search-form');
+
+form.addEventListener('submit', function() {
     const btn = document.getElementById('search-btn');
     const icon = document.getElementById('search-icon');
-    const text = document.getElementById('search-text');
-
     btn.disabled = true;
-    icon.className = 'spinner-border spinner-border-sm me-1';
-    text.textContent = 'Søger...';
+    icon.className = 'spinner-border spinner-border-sm';
+});
+
+// Auto-submit when any select filter changes
+form.querySelectorAll('select').forEach(function(select) {
+    select.addEventListener('change', function() { form.submit(); });
 });
 </script>
 {% endblock %}
