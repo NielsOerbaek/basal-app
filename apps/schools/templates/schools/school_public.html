@@ -20,8 +20,8 @@
                         <dd class="col-sm-8">
                             {% if school.is_enrolled %}
                             <span class="badge bg-success">Tilmeldt</span>
-                            {% if school.has_forankringsplads %}
-                            <span class="badge bg-info ms-1">Forankringsplads</span>
+                            {% if school.has_fortsaetterplads %}
+                            <span class="badge bg-info ms-1">Fortsætterplads</span>
                             {% endif %}
                             {% elif school.is_opted_out %}
                             <span class="badge bg-danger">Frameldt</span>
@@ -134,25 +134,25 @@
 
                     <hr>
 
-                    {# Forankring bucket #}
+                    {# Fortsætter bucket #}
                     <div class="{% if not is_in_first_year %}{% else %}opacity-50{% endif %}">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="mb-0">Forankring</h6>
-                            {% if not is_in_first_year and school.has_forankringsplads %}
+                            <h6 class="mb-0">Fortsætter</h6>
+                            {% if not is_in_first_year and school.has_fortsaetterplads %}
                             <span class="badge bg-primary">Nuværende</span>
                             {% endif %}
                         </div>
                         <div class="row text-center">
                             <div class="col-4">
-                                <div class="fs-4 fw-bold text-primary">{{ forankring_seats.free }}</div>
+                                <div class="fs-4 fw-bold text-primary">{{ fortsaetter_seats.free }}</div>
                                 <small class="text-muted">Pladser</small>
                             </div>
                             <div class="col-4">
-                                <div class="fs-4 fw-bold text-secondary">{{ forankring_seats.used }}</div>
+                                <div class="fs-4 fw-bold text-secondary">{{ fortsaetter_seats.used }}</div>
                                 <small class="text-muted">Brugt</small>
                             </div>
                             <div class="col-4">
-                                <div class="fs-4 fw-bold {% if forankring_seats.remaining > 0 %}text-success{% else %}text-muted{% endif %}">{{ forankring_seats.remaining }}</div>
+                                <div class="fs-4 fw-bold {% if fortsaetter_seats.remaining > 0 %}text-success{% else %}text-muted{% endif %}">{{ fortsaetter_seats.remaining }}</div>
                                 <small class="text-muted">Ledige</small>
                             </div>
                         </div>

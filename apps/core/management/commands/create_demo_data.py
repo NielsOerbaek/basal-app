@@ -310,13 +310,13 @@ class Command(BaseCommand):
                 "is_published": True,
             },
             {
-                "title": "Basal Forankring - Maj 2025",
+                "title": "Basal Fortsætter - Maj 2025",
                 "start_date": date(2025, 5, 12),
                 "end_date": date(2025, 5, 13),
                 "location": "Roskilde",
                 "capacity": 20,
                 "is_published": True,
-                "comment": "To-dages forankringskursus",
+                "comment": "To-dages fortsætterkursus",
             },
             # === 2025/26 school year courses (Aug 2025 - Jul 2026) ===
             {
@@ -354,13 +354,13 @@ class Command(BaseCommand):
                 "is_published": True,
             },
             {
-                "title": f"Basal Forankring - {get_month_name(today + timedelta(days=60))} 2026",
+                "title": f"Basal Fortsætter - {get_month_name(today + timedelta(days=60))} 2026",
                 "start_date": today + timedelta(days=60),
                 "end_date": today + timedelta(days=61),
                 "location": "København",
                 "capacity": 15,
                 "is_published": True,
-                "comment": "To-dages forankringskursus",
+                "comment": "To-dages fortsætterkursus",
             },
             # Unpublished course
             {
@@ -550,7 +550,7 @@ class Command(BaseCommand):
             "Sendt information om kommende kurser.",
             "Opfølgning på tidligere kursusdeltagelse. Ønsker flere pladser.",
             "Koordineret praktiske detaljer omkring kursusdeltagelse.",
-            "Diskuterede muligheder for forankringskursus.",
+            "Diskuterede muligheder for fortsætterkursus.",
             "Modtaget feedback fra tidligere kursus. Meget positive tilbagemeldinger.",
             "Aftalt at sende opdateret kursusoversigt til lærerne.",
             "Gennemgået tilmeldingsprocedure med ny kontaktperson.",

@@ -36,8 +36,8 @@
                         </span>
                     </td>
                     <td>
-                        {% if item.invoice_type == "forankring" %}
-                            <span class="badge bg-primary">Forankring</span>
+                        {% if item.invoice_type == "fortsaetter" %}
+                            <span class="badge bg-primary">Fortsætter</span>
                         {% elif item.invoice_type == "extra_seats" %}
                             <span class="badge bg-warning text-dark">{{ item.extra_seats }} ekstra plads{% if item.extra_seats != 1 %}er{% endif %}</span>
                         {% endif %}

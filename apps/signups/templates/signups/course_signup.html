@@ -404,9 +404,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             if (remaining > 0 && afterSignup >= 0) {
-                scenario = 'forankring_available';
+                scenario = 'fortsaetter_available';
             } else {
-                scenario = 'forankring_none';
+                scenario = 'fortsaetter_none';
             }
         }
 
@@ -435,7 +435,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Set alert style based on scenario
             seatInfoBox.className = 'alert';
-            if (scenario === 'first_year_extra' || scenario === 'forankring_none' || afterSignup < 0) {
+            if (scenario === 'first_year_extra' || scenario === 'fortsaetter_none' || afterSignup < 0) {
                 seatInfoBox.classList.add('alert-info');
             } else if (scenario === 'first_year_unused') {
                 seatInfoBox.classList.add('alert-warning');

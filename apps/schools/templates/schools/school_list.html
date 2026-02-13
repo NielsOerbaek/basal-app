@@ -54,7 +54,7 @@
                     <option value="">Alle (status)</option>
                     <option value="tilmeldt" {% if request.GET.status_filter == 'tilmeldt' %}selected{% endif %}>Alle tilmeldte</option>
                     <option value="tilmeldt_ny" {% if request.GET.status_filter == 'tilmeldt_ny' %}selected{% endif %}>Tilmeldt (ny)</option>
-                    <option value="tilmeldt_forankring" {% if request.GET.status_filter == 'tilmeldt_forankring' %}selected{% endif %}>Tilmeldt (forankring)</option>
+                    <option value="tilmeldt_fortsaetter" {% if request.GET.status_filter == 'tilmeldt_fortsaetter' %}selected{% endif %}>Tilmeldt (fortsætter)</option>
                     <option value="tilmeldt_venter" {% if request.GET.status_filter == 'tilmeldt_venter' %}selected{% endif %}>Tilmeldt fra næste år</option>
                     <option value="ikke_tilmeldt" {% if request.GET.status_filter == 'ikke_tilmeldt' %}selected{% endif %}>Ikke tilmeldt</option>
                     <option value="frameldt" {% if request.GET.status_filter == 'frameldt' %}selected{% endif %}>Frameldt</option>

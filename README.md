@@ -7,7 +7,7 @@ A course enrollment management system for teacher training programs. Built with 
 Basal handles:
 - **School Enrollment**: Track schools enrolled in the teacher training program
 - **Course Management**: Create and publish training courses
-- **Seat Allocation**: Manage course seats with business rules (3 base seats per school, 1 additional "forankringsplads" after 1 year, purchasable extra seats)
+- **Seat Allocation**: Manage course seats with business rules (3 base seats per school, 1 additional "fortsætterplads" after 1 year, purchasable extra seats)
 - **Course Sign-ups**: Track participant registrations
 - **Contact History**: Log all interactions with schools
 - **Activity Auditing**: Track all data changes
@@ -178,7 +178,7 @@ Both use authenticated endpoints with `CRON_SECRET` bearer token.
 ## Business Logic
 
 - Schools receive **3 base seats** upon enrollment
-- After **1 year**: schools receive 1 additional "forankringsplads" seat
+- After **1 year**: schools receive 1 additional "fortsætterplads" seat
 - Additional seats can be **purchased**
 - All signups count against available seats
 - Public signup forms only show **published courses**

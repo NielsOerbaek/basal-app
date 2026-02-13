@@ -134,12 +134,12 @@
                         </td>
                     </tr>
 
-                    <!-- Forankring -->
+                    <!-- Fortsætter -->
                     <tr class="section-header">
-                        <td colspan="{{ years_data|length|add:2 }}"><strong>Forankring blandt partnerskoler</strong></td>
+                        <td colspan="{{ years_data|length|add:2 }}"><strong>Fortsætter blandt partnerskoler</strong></td>
                     </tr>
                     <tr>
-                        <td>Antal partnerskoler i forankring</td>
+                        <td>Antal partnerskoler der fortsætter</td>
                         {% for year_data in years_data %}
                         <td{% if year_data.is_current %} class="current-year"{% elif year_data.is_future %} class="future-year"{% endif %}>
                             {% if year_data.is_future %}
@@ -268,7 +268,7 @@
 
         <div class="mt-3">
             <small class="text-muted">
-                * For at sikre et godt udgangspunkt for drift og forankring efter projektets afslutning, udbydes flere kursuspladser til skolerne i 2027/28 end i 2024/25.<br>
+                * For at sikre et godt udgangspunkt for drift og videreførelse efter projektets afslutning, udbydes flere kursuspladser til skolerne i 2027/28 end i 2024/25.<br>
                 ** Hertil kommer de forløb, tidligere uddannede lærere afholder. Beregnet som: uddannede undervisere × {{ settings.klasseforloeb_per_teacher_per_year }} klasseforløb/år × {{ settings.students_per_klasseforloeb }} elever/forløb.
             </small>
         </div>

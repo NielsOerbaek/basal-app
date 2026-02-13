@@ -6,6 +6,9 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ## 13. februar 2026
 
+### "Forankring" omdøbt til "Fortsætter"
+Alle steder i systemet hvor der stod "forankring" eller "forankringsplads" er nu ændret til "fortsætter" og "fortsætterplads". Dette gælder skolelisten, skoledetaljer, skolens side, dashboard, projektmål, tilmeldingssiden og faktura-oversigten.
+
 ### Advarsel om synlig kommentar på personredigering
 Når man redigerer en kontaktperson i staff-viewet, vises nu en advarsel om at kommentarfeltet også er synligt på skolens side. Fortrolige bemærkninger bør i stedet tilføjes som en kommentar på skolen.
 

@@ -253,7 +253,7 @@ class CheckSchoolSeatsView(View):
     """AJAX endpoint to check if a school has available seats.
 
     If course_id is provided, returns seat info scoped to that course's
-    school year (first-year vs forankring bucket).
+    school year (first-year vs fortsætter bucket).
     """
 
     def get(self, request):

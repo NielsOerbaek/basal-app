@@ -77,8 +77,8 @@ class SeatInfoScenario(models.TextChoices):
     FIRST_YEAR_UNUSED = "first_year_unused", "Første år – ubrugte pladser"
     FIRST_YEAR_ALL_USED = "first_year_all_used", "Første år – alle pladser brugt"
     FIRST_YEAR_EXTRA = "first_year_extra", "Første år – ekstra pladser"
-    FORANKRING_AVAILABLE = "forankring_available", "Forankring – plads tilgængelig"
-    FORANKRING_NONE = "forankring_none", "Forankring – ingen gratis pladser"
+    FORTSAETTER_AVAILABLE = "fortsaetter_available", "Fortsætter – plads tilgængelig"
+    FORTSAETTER_NONE = "fortsaetter_none", "Fortsætter – ingen gratis pladser"
 
 
 class SeatInfoContent(models.Model):

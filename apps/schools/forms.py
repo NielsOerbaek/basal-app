@@ -296,7 +296,7 @@ class EnrollmentDatesForm(forms.ModelForm):
             HTML(
                 '<p class="form-text text-muted small">'
                 "<strong>Tilmeldt d.</strong> er datoen skolen tilmeldte sig. "
-                "<strong>Aktiv fra (skoleår)</strong> er det skoleår tilmeldingen træder i kraft og bestemmer pladser og forankringsstatus."
+                "<strong>Aktiv fra (skoleår)</strong> er det skoleår tilmeldingen træder i kraft og bestemmer pladser og fortsætter-status."
                 "</p>"
             ),
         )

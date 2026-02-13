@@ -110,8 +110,8 @@ class ActiveFromSeatsTest(TestCase):
         )
         self.assertEqual(school.base_seats, School.BASE_SEATS)
 
-    def test_forankring_uses_active_from_not_enrolled_at(self):
-        """Forankring status uses active_from, not enrolled_at."""
+    def test_fortsaetter_uses_active_from_not_enrolled_at(self):
+        """Fortsætter status uses active_from, not enrolled_at."""
         # School enrolled recently but with active_from backdated
         school = School.objects.create(
             name="Test",
@@ -120,7 +120,7 @@ class ActiveFromSeatsTest(TestCase):
             enrolled_at=date.today(),
             active_from=self.current_year.start_date - timedelta(days=1),
         )
-        self.assertTrue(school.has_forankringsplads)
+        self.assertTrue(school.has_fortsaetterplads)
 
 
 class SchoolYearEnrolledSchoolsTest(TestCase):
@@ -197,8 +197,8 @@ class SchoolModelTest(TestCase):
         school = School.objects.create(name="Test", adresse="Test", kommune="Test", enrolled_at=date.today())
         self.assertEqual(school.base_seats, 0)
 
-    def test_forankringsplads_before_one_year(self):
-        """School active less than 1 year ago has no forankringsplads."""
+    def test_fortsaetterplads_before_one_year(self):
+        """School active less than 1 year ago has no fortsaetterplads."""
         active_from_date = date.today() - timedelta(days=100)
         school = School.objects.create(
             name="Test",
@@ -207,11 +207,11 @@ class SchoolModelTest(TestCase):
             enrolled_at=active_from_date,
             active_from=active_from_date,
         )
-        self.assertFalse(school.has_forankringsplads)
-        self.assertEqual(school.forankring_seats, 0)
+        self.assertFalse(school.has_fortsaetterplads)
+        self.assertEqual(school.fortsaetter_seats, 0)
 
-    def test_forankringsplads_after_one_year(self):
-        """School active more than 1 year ago has forankringsplads."""
+    def test_fortsaetterplads_after_one_year(self):
+        """School active more than 1 year ago has fortsaetterplads."""
         active_from_date = date.today() - timedelta(days=400)
         school = School.objects.create(
             name="Test",
@@ -220,8 +220,8 @@ class SchoolModelTest(TestCase):
             enrolled_at=active_from_date,
             active_from=active_from_date,
         )
-        self.assertTrue(school.has_forankringsplads)
-        self.assertEqual(school.forankring_seats, School.FORANKRING_SEATS)
+        self.assertTrue(school.has_fortsaetterplads)
+        self.assertEqual(school.fortsaetter_seats, School.FORTSAETTER_SEATS)
 
     def test_exceeds_seat_allocation_false_when_under(self):
         """exceeds_seat_allocation is False when used_seats <= total_seats."""
@@ -1610,13 +1610,13 @@ class MissingInvoicesViewTest(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-    def test_missing_invoices_shows_forankring_school_without_invoice(self):
-        """Forankring schools (enrolled before year) without invoice appear in list."""
+    def test_missing_invoices_shows_fortsaetter_school_without_invoice(self):
+        """Fortsætter schools (enrolled before year) without invoice appear in list."""
         School.objects.create(
-            name="Forankring School",
+            name="Fortsætter School",
             adresse="Test Address",
             kommune="København",
-            enrolled_at=date(2023, 9, 1),  # Enrolled before 2024/25 = forankring
+            enrolled_at=date(2023, 9, 1),  # Enrolled before 2024/25 = fortsætter
             active_from=date(2023, 9, 1),
         )
 
@@ -1624,7 +1624,7 @@ class MissingInvoicesViewTest(TestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Forankring School")
+        self.assertContains(response, "Fortsætter School")
         self.assertContains(response, "2024/25")
 
     def test_missing_invoices_excludes_new_school_without_invoice(self):
@@ -1644,14 +1644,14 @@ class MissingInvoicesViewTest(TestCase):
         # New schools don't need invoice in first year
         self.assertNotContains(response, "New School")
 
-    def test_missing_invoices_excludes_forankring_school_with_invoice(self):
-        """Forankring schools with invoice for a year don't appear in missing list."""
+    def test_missing_invoices_excludes_fortsaetter_school_with_invoice(self):
+        """Fortsætter schools with invoice for a year don't appear in missing list."""
 
         school = School.objects.create(
             name="School With Invoice",
             adresse="Test Address",
             kommune="København",
-            enrolled_at=date(2023, 9, 1),  # Forankring
+            enrolled_at=date(2023, 9, 1),  # Fortsætter
             active_from=date(2023, 9, 1),
         )
         Invoice.objects.create(
@@ -2588,7 +2588,7 @@ class KontaktpersonerKursusdeltagereIntegrationTest(TestCase):
 
 class StatusForYearTest(TestCase):
     def test_get_status_uses_active_from(self):
-        """get_status_for_year uses active_from for forankring check."""
+        """get_status_for_year uses active_from for fortsætter check."""
         school_year, _ = SchoolYear.objects.get_or_create(
             name="2025/26",
             defaults={
@@ -2605,7 +2605,7 @@ class StatusForYearTest(TestCase):
             active_from=date(2024, 8, 1),
         )
         status_code, _, _ = school.get_status_for_year("2025/26")
-        self.assertEqual(status_code, "tilmeldt_forankring")
+        self.assertEqual(status_code, "tilmeldt_fortsaetter")
 
     def test_was_enrolled_in_year_uses_active_from(self):
         """was_enrolled_in_year uses active_from."""
@@ -2808,70 +2808,70 @@ class SeatCalculationTest(TestCase):
         self.assertEqual(info["used"], 0)
         self.assertEqual(info["remaining"], 0)
 
-    # --- get_forankring_seats ---
+    # --- get_fortsaetter_seats ---
 
-    def test_forankring_seats_zero_signups(self):
-        """Forankring with 0 signups: 1 free, 0 used, 1 remaining."""
-        # active_from in 2024/25, so in 2025/26+ the school is forankring
+    def test_fortsaetter_seats_zero_signups(self):
+        """Fortsætter with 0 signups: 1 free, 0 used, 1 remaining."""
+        # active_from in 2024/25, so in 2025/26+ the school is fortsætter
         school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
-        info = school.get_forankring_seats()
-        # has_forankringsplads depends on current year being after first year,
+        info = school.get_fortsaetter_seats()
+        # has_fortsaetterplads depends on current year being after first year,
         # so we need to check if the school is eligible
-        if school.has_forankringsplads:
+        if school.has_fortsaetterplads:
             self.assertEqual(info["free"], 1)
             self.assertEqual(info["used"], 0)
             self.assertEqual(info["remaining"], 1)
         else:
-            # If current date is in 2024/25, school doesn't have forankring yet
+            # If current date is in 2024/25, school doesn't have fortsætter yet
             self.assertEqual(info["free"], 0)
             self.assertEqual(info["used"], 0)
             self.assertEqual(info["remaining"], 0)
 
-    def test_forankring_seats_with_signup(self):
-        """Forankring with 1 signup: 1 free, 1 used, 0 remaining."""
-        # Use a school active from 2024/25 (should have forankring if current year > 2024/25)
+    def test_fortsaetter_seats_with_signup(self):
+        """Fortsætter with 1 signup: 1 free, 1 used, 0 remaining."""
+        # Use a school active from 2024/25 (should have fortsætter if current year > 2024/25)
         school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
-        if not school.has_forankringsplads:
-            self.skipTest("Current date is in the school's first year, forankring not applicable")
+        if not school.has_fortsaetterplads:
+            self.skipTest("Current date is in the school's first year, fortsætter not applicable")
         # Course after first year ends (i.e., in 2025/26 or later)
         course = self._make_course(start_date=date(2025, 9, 15))
         self._make_signup(school, course, "A")
-        info = school.get_forankring_seats()
+        info = school.get_fortsaetter_seats()
         self.assertEqual(info["free"], 1)
         self.assertEqual(info["used"], 1)
         self.assertEqual(info["remaining"], 0)
 
-    def test_forankring_seats_not_enrolled(self):
-        """Not-enrolled school gets zero forankring seats."""
+    def test_fortsaetter_seats_not_enrolled(self):
+        """Not-enrolled school gets zero fortsætter seats."""
         school = self._make_school()
-        info = school.get_forankring_seats()
+        info = school.get_fortsaetter_seats()
         self.assertEqual(info["free"], 0)
         self.assertEqual(info["used"], 0)
         self.assertEqual(info["remaining"], 0)
 
-    def test_forankring_seats_no_forankringsplads(self):
-        """School without forankringsplads gets zero forankring seats."""
-        # A school that just started this year has no forankring
+    def test_fortsaetter_seats_no_fortsaetterplads(self):
+        """School without fortsaetterplads gets zero fortsætter seats."""
+        # A school that just started this year has no fortsætter
         today = date.today()
         school = self._make_school(enrolled_at=today, active_from=today)
-        info = school.get_forankring_seats()
+        info = school.get_fortsaetter_seats()
         self.assertEqual(info["free"], 0)
         self.assertEqual(info["used"], 0)
 
     # --- Cross-bucket isolation ---
 
-    def test_first_year_signups_not_in_forankring(self):
-        """Signups in the first year do not count in forankring bucket."""
+    def test_first_year_signups_not_in_fortsaetter(self):
+        """Signups in the first year do not count in fortsætter bucket."""
         school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
-        if not school.has_forankringsplads:
+        if not school.has_fortsaetterplads:
             self.skipTest("Current date is in the school's first year")
         # Create signup in first year
         course_first = self._make_course(start_date=date(2024, 10, 15))
         self._make_signup(school, course_first, "First Year Person")
-        info = school.get_forankring_seats()
+        info = school.get_fortsaetter_seats()
         self.assertEqual(info["used"], 0)
 
-    def test_forankring_signups_not_in_first_year(self):
+    def test_fortsaetter_signups_not_in_first_year(self):
         """Signups after the first year do not count in first year bucket."""
         school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
         # Create signup after first year
@@ -2892,14 +2892,14 @@ class SeatCalculationTest(TestCase):
         self.assertEqual(info["free"], 3)
 
     def test_seats_for_course_later_year(self):
-        """seats_for_course returns forankring info for a course in a later year."""
+        """seats_for_course returns fortsætter info for a course in a later year."""
         school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
         course = self._make_course(start_date=date(2025, 10, 1))
         info = school.seats_for_course(course)
         self.assertFalse(info["is_first_year"])
         self.assertEqual(info["school_year"], "2025/26")
-        # free seats depend on has_forankringsplads
-        if school.has_forankringsplads:
+        # free seats depend on has_fortsaetterplads
+        if school.has_fortsaetterplads:
             self.assertEqual(info["free"], 1)
         else:
             self.assertEqual(info["free"], 0)
@@ -2908,11 +2908,11 @@ class SeatCalculationTest(TestCase):
 
     def test_current_seats_returns_current_bucket(self):
         """current_seats returns the bucket matching the current school year."""
-        # School in forankring (active_from in previous school year)
+        # School in fortsætter (active_from in previous school year)
         school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
         seats = school.current_seats
-        self.assertEqual(seats["label"], "Forankring")
-        self.assertEqual(seats["free"], school.FORANKRING_SEATS)
+        self.assertEqual(seats["label"], "Fortsætter")
+        self.assertEqual(seats["free"], school.FORTSAETTER_SEATS)
 
     def test_total_seats_returns_current_bucket(self):
         """total_seats returns current bucket's free seats."""
@@ -2921,9 +2921,9 @@ class SeatCalculationTest(TestCase):
 
     def test_used_seats_returns_current_bucket(self):
         """used_seats returns current bucket's used seats."""
-        # School in forankring — signup in forankring period
+        # School in fortsætter -- signup in fortsætter period
         school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
-        course = self._make_course(start_date=date(2025, 10, 15))  # In 2025/26 (forankring)
+        course = self._make_course(start_date=date(2025, 10, 15))  # In 2025/26 (fortsætter)
         self._make_signup(school, course, "A")
         self.assertEqual(school.used_seats, 1)
 
@@ -2939,7 +2939,7 @@ class SeatCalculationTest(TestCase):
 
     def test_exceeds_seat_allocation(self):
         """exceeds_seat_allocation is True when used > total in current bucket."""
-        # School in forankring (1 free seat) — add 2 signups in forankring period
+        # School in fortsætter (1 free seat) -- add 2 signups in fortsætter period
         school = self._make_school(enrolled_at=date(2024, 6, 1), active_from=date(2024, 9, 1))
         for i in range(2):
             course = self._make_course(start_date=date(2025, 10, 1 + i))  # In 2025/26

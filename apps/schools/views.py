@@ -112,8 +112,8 @@ class SchoolListView(SortableMixin, ListView):
                 active_from__lte=current_sy.end_date,
                 opted_out_at__isnull=True,
             )
-        elif status_filter == "tilmeldt_forankring":
-            # Active before the current school year (forankring = anchoring)
+        elif status_filter == "tilmeldt_fortsaetter":
+            # Active before the current school year (fortsætter)
             from apps.schools.school_years import get_current_school_year
 
             current_sy = get_current_school_year()
@@ -181,7 +181,7 @@ class SchoolListView(SortableMixin, ListView):
             if status_filter == "new":
                 queryset = [s for s in queryset if s.get_status_for_year(year_str)[0] == "tilmeldt_ny"]
             elif status_filter == "anchoring":
-                queryset = [s for s in queryset if s.get_status_for_year(year_str)[0] == "tilmeldt_forankring"]
+                queryset = [s for s in queryset if s.get_status_for_year(year_str)[0] == "tilmeldt_fortsaetter"]
 
         # Unused seats filter
         unused_filter = self.request.GET.get("unused_seats")
@@ -281,7 +281,7 @@ class SchoolListView(SortableMixin, ListView):
             if status == "new":
                 context["filter_explanation"] = f"Viser skoler der blev tilmeldt i skoleåret {year_display}"
             elif status == "anchoring":
-                context["filter_explanation"] = f"Viser skoler med forankringspladser i skoleåret {year_display}"
+                context["filter_explanation"] = f"Viser fortsætterskoler i skoleåret {year_display}"
 
         return context
 
@@ -327,7 +327,7 @@ class SchoolDetailView(DetailView):
 
         # Seat calculation context
         context["first_year_seats"] = self.object.get_first_year_seats()
-        context["forankring_seats"] = self.object.get_forankring_seats()
+        context["fortsaetter_seats"] = self.object.get_fortsaetter_seats()
 
         # Determine which bucket is "current"
         if self.object.active_from:
@@ -830,7 +830,7 @@ class MissingInvoicesView(ListView):
         relevant_years = self._get_relevant_years()
 
         # For hvert skoleår, find skoler der mangler faktura
-        # Forankring invoices are per school year
+        # Fortsætter invoices are per school year
         # Extra seats invoices are NOT per school year - only one needed ever
         missing = []
 
@@ -840,19 +840,19 @@ class MissingInvoicesView(ListView):
                 # Check existing invoices for this school year
                 invoices_for_year = school.invoices.filter(school_year=school_year)
 
-                # Determine if school needs forankring invoice (per school year)
-                is_forankring = school.enrolled_at and school.enrolled_at < school_year.start_date
+                # Determine if school needs fortsætter invoice (per school year)
+                is_fortsaetter = school.enrolled_at and school.enrolled_at < school_year.start_date
 
-                # Check if forankring invoice exists for this year
-                has_forankring_invoice = invoices_for_year.exclude(comment__icontains="ekstra").exists()
+                # Check if fortsætter invoice exists for this year
+                has_fortsaetter_invoice = invoices_for_year.exclude(comment__icontains="ekstra").exists()
 
-                # Add missing forankring invoice
-                if is_forankring and not has_forankring_invoice:
+                # Add missing fortsætter invoice
+                if is_fortsaetter and not has_fortsaetter_invoice:
                     missing.append(
                         {
                             "school": school,
                             "school_year": school_year,
-                            "invoice_type": "forankring",
+                            "invoice_type": "fortsaetter",
                             "extra_seats": 0,
                         }
                     )
@@ -1053,7 +1053,7 @@ class SchoolPublicView(DetailView):
 
         # Seat calculation context
         context["first_year_seats"] = school.get_first_year_seats()
-        context["forankring_seats"] = school.get_forankring_seats()
+        context["fortsaetter_seats"] = school.get_fortsaetter_seats()
 
         if school.active_from:
             from apps.schools.models import SchoolYear

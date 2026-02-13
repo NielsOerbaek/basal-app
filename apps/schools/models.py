@@ -73,7 +73,7 @@ class SchoolManager(models.Manager):
 
 class School(models.Model):
     BASE_SEATS = 3
-    FORANKRING_SEATS = 1
+    FORTSAETTER_SEATS = 1
 
     name = models.CharField(max_length=255, verbose_name="Navn")
     adresse = models.CharField(max_length=255, verbose_name="Adresse")
@@ -98,7 +98,7 @@ class School(models.Model):
         null=True,
         blank=True,
         verbose_name="Aktiv fra",
-        help_text="Dato hvor tilmeldingen træder i kraft (påvirker pladser og forankring)",
+        help_text="Dato hvor tilmeldingen træder i kraft (påvirker pladser og fortsætter-status)",
     )
     is_active = models.BooleanField(default=True)
     opted_out_at = models.DateField(
@@ -253,8 +253,8 @@ class School(models.Model):
         return history
 
     @property
-    def has_forankringsplads(self):
-        """School gets forankringsplads if active_from is before current school year."""
+    def has_fortsaetterplads(self):
+        """School gets fortsætterplads if active_from is before current school year."""
         if not self.active_from:
             return False
         from apps.schools.school_years import get_current_school_year
@@ -292,9 +292,9 @@ class School(models.Model):
             "year": first_year,
         }
 
-    def get_forankring_seats(self):
-        """Seat info for the forankring bucket (1 free seat, all years after first)."""
-        if not self.is_enrolled or not self.has_forankringsplads:
+    def get_fortsaetter_seats(self):
+        """Seat info for the fortsætter bucket (1 free seat, all years after first)."""
+        if not self.is_enrolled or not self.has_fortsaetterplads:
             return {"free": 0, "used": 0, "remaining": 0}
         from apps.schools.school_years import get_school_year_dates
 
@@ -304,9 +304,9 @@ class School(models.Model):
             course__start_date__gt=first_year_end,
         ).count()
         return {
-            "free": self.FORANKRING_SEATS,
+            "free": self.FORTSAETTER_SEATS,
             "used": used,
-            "remaining": max(0, self.FORANKRING_SEATS - used),
+            "remaining": max(0, self.FORTSAETTER_SEATS - used),
         }
 
     def seats_for_course(self, course):
@@ -320,7 +320,7 @@ class School(models.Model):
         if is_first_year:
             info = self.get_first_year_seats()
         else:
-            info = self.get_forankring_seats()
+            info = self.get_fortsaetter_seats()
 
         info["is_first_year"] = is_first_year
         info["school_year"] = course_year
@@ -332,13 +332,13 @@ class School(models.Model):
         return self.get_first_year_seats()["free"]
 
     @property
-    def forankring_seats(self):
-        """Forankringsplads seats (for backward compat)."""
-        return self.get_forankring_seats()["free"]
+    def fortsaetter_seats(self):
+        """Fortsætterplads seats (for backward compat)."""
+        return self.get_fortsaetter_seats()["free"]
 
     @property
     def current_seats(self):
-        """Seat info for the school's current period (first year or forankring)."""
+        """Seat info for the school's current period (first year or fortsætter)."""
         if not self.is_enrolled or not self.active_from:
             return {"free": 0, "used": 0, "remaining": 0, "label": None}
         from apps.schools.school_years import get_current_school_year
@@ -360,8 +360,8 @@ class School(models.Model):
             info["label"] = "Første år"
             return info
         else:
-            info = self.get_forankring_seats()
-            info["label"] = "Forankring"
+            info = self.get_fortsaetter_seats()
+            info["label"] = "Fortsætter"
             return info
 
     @property
@@ -425,7 +425,7 @@ class School(models.Model):
             return ("tilmeldt_ny", "Tilmeldt (ny)", "bg-success")
         else:
             # Active before this school year = anchoring
-            return ("tilmeldt_forankring", "Tilmeldt (forankring)", "bg-primary")
+            return ("tilmeldt_fortsaetter", "Tilmeldt (fortsætter)", "bg-primary")
 
     def generate_credentials(self):
         """Generate signup password and token for this school."""
