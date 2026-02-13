@@ -4,6 +4,16 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 13. februar 2026
+
+### Advarsel om synlig kommentar på personredigering
+Når man redigerer en kontaktperson i staff-viewet, vises nu en advarsel om at kommentarfeltet også er synligt på skolens side. Fortrolige bemærkninger bør i stedet tilføjes som en kommentar på skolen.
+
+### Email-domænebegrænsning på dev
+Dev-miljøet kan nu kun sende emails til osogdata.dk, raakode.dk og sundkom.dk. Dette forhindrer at rigtige brugere ved en fejl modtager emails fra dev-serveren.
+
+---
+
 ## 11. februar 2026
 
 ### Filtrér og sortér skoler efter skoleår
