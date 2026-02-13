@@ -9,6 +9,19 @@ from .models import EmailLog, EmailTemplate, EmailType
 
 logger = logging.getLogger(__name__)
 
+
+def check_email_domain_allowed(email):
+    """
+    Check if the recipient email domain is in the allowlist.
+    Returns True if allowed (or if no allowlist is configured).
+    """
+    allowed = settings.EMAIL_ALLOWED_DOMAINS
+    if not allowed:
+        return True
+    domain = email.rsplit("@", 1)[-1].lower()
+    return domain in [d.lower() for d in allowed]
+
+
 EMAIL_FOOTER = """
 <hr style="margin-top: 30px; border: none; border-top: 1px solid #ccc;">
 <p style="color: #666; font-size: 12px;">
@@ -63,6 +76,24 @@ def send_email(email_type, signup, attachments=None):
     context = get_signup_context(signup)
     subject = render_template(template.subject, context)
     body_html = add_email_footer(render_template(template.body_html, context))
+
+    # Enforce email domain allowlist
+    if not check_email_domain_allowed(signup.participant_email):
+        logger.warning(
+            f"[EMAIL BLOCKED] Recipient {signup.participant_email} not in allowed domains: "
+            f"{settings.EMAIL_ALLOWED_DOMAINS}"
+        )
+        EmailLog.objects.create(
+            email_type=email_type,
+            recipient_email=signup.participant_email,
+            recipient_name=signup.participant_name,
+            subject=subject,
+            course=signup.course,
+            signup=signup,
+            success=False,
+            error_message=f"[BLOCKED] Domain not in EMAIL_ALLOWED_DOMAINS: {settings.EMAIL_ALLOWED_DOMAINS}",
+        )
+        return False
 
     # Check if we have a Resend API key
     if not settings.RESEND_API_KEY:
@@ -166,6 +197,13 @@ def send_school_enrollment_confirmation(school, contact_email, contact_name):
     context = get_school_enrollment_context(school, contact_name)
     subject = render_template(template.subject, context)
     body_html = add_email_footer(render_template(template.body_html, context))
+
+    # Enforce email domain allowlist
+    if not check_email_domain_allowed(contact_email):
+        logger.warning(
+            f"[EMAIL BLOCKED] Recipient {contact_email} not in allowed domains: " f"{settings.EMAIL_ALLOWED_DOMAINS}"
+        )
+        return False
 
     bcc_email = getattr(settings, "SCHOOL_SIGNUP_BCC_EMAIL", "niels@osogdata.dk")
 

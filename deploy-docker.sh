@@ -144,6 +144,15 @@ rsync -avz --delete \
 
 rm -f "$SCRIPT_DIR/BUILD_INFO"
 
+# Ensure dev deployment has email domain restrictions
+if [ "$DEPLOY_ENV" = "dev" ]; then
+  echo "==> Enforcing email domain allowlist for dev..."
+  DEV_ALLOWED_DOMAINS="osogdata.dk,raakode.dk,sundkom.dk"
+  ssh "$SERVER" "cd $REMOTE_PATH && grep -q '^EMAIL_ALLOWED_DOMAINS=' .env 2>/dev/null \
+    && sed -i 's/^EMAIL_ALLOWED_DOMAINS=.*/EMAIL_ALLOWED_DOMAINS=$DEV_ALLOWED_DOMAINS/' .env \
+    || echo 'EMAIL_ALLOWED_DOMAINS=$DEV_ALLOWED_DOMAINS' >> .env"
+fi
+
 # Build and restart containers
 echo "==> Building and starting containers..."
 ssh "$SERVER" "cd $REMOTE_PATH && docker compose build && docker compose up -d"

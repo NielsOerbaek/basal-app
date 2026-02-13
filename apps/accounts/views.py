@@ -116,6 +116,15 @@ def send_password_email(user, new_password):
     <p>Med venlig hilsen,<br>Basal</p>
     """
 
+    # Enforce email domain allowlist
+    from apps.emails.services import check_email_domain_allowed
+
+    if not check_email_domain_allowed(user.email):
+        logger.warning(
+            f"[EMAIL BLOCKED] Recipient {user.email} not in allowed domains: " f"{settings.EMAIL_ALLOWED_DOMAINS}"
+        )
+        return False
+
     if not getattr(settings, "RESEND_API_KEY", None):
         # Log to console in development
         logger.info(f"[EMAIL] To: {user.email}")

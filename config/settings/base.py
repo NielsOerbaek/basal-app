@@ -112,6 +112,10 @@ DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Basal <noreply@basal.
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 SCHOOL_SIGNUP_BCC_EMAIL = os.environ.get("SCHOOL_SIGNUP_BCC_EMAIL", "niels@osogdata.dk")
 
+# Email domain allowlist (comma-separated). When set, emails can ONLY be sent to these domains.
+# Used on dev to prevent accidentally emailing real users.
+EMAIL_ALLOWED_DOMAINS = [d.strip() for d in os.environ.get("EMAIL_ALLOWED_DOMAINS", "").split(",") if d.strip()]
+
 # Cron job authentication
 CRON_SECRET = os.environ.get("CRON_SECRET", "")
 
