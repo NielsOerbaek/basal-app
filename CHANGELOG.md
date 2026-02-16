@@ -6,6 +6,9 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ## 16. februar 2026
 
+### Kodeord og tilmeldingsknap på skolens side
+Skolens offentlige side viser nu kodeordet under "Kodeord og links" (med vis/skjul og kopiér), samt en "Tilmeld til kursus"-knap der linker direkte til kursustilmeldingen.
+
 ### Skoleår-dropdown går nu tilbage til 2022/23
 Dropdown'en for "Aktiv fra (skoleår)" på tilmeldingsdato-siden viser nu alle skoleår fra 2022/23 og frem, i stedet for kun 5 år fra tilmeldingsdatoen.
 
