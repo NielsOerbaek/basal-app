@@ -263,12 +263,14 @@ class EnrollmentDatesForm(forms.ModelForm):
                     pass
         base_date = enrolled_at or date.today()
 
-        # Build 5 school year choices starting from the school year of base_date
+        # Build school year choices from 2022/23 up to 4 years after base_date
+        EARLIEST_YEAR = 2022
         base_year_str = calculate_school_year_for_date(base_date)
         base_start_year = parse_school_year(base_year_str)
+        last_year = base_start_year + 4
         choices = []
-        for i in range(5):
-            yr_str = format_school_year(base_start_year + i)
+        for yr in range(EARLIEST_YEAR, last_year + 1):
+            yr_str = format_school_year(yr)
             choices.append((yr_str, yr_str))
 
         # Pre-select the school year that active_from falls in (if editing)
