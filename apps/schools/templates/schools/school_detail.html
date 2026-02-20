@@ -433,11 +433,16 @@
                             </div>
                             <div>{{ comment.comment|linebreaks }}</div>
                         </div>
-                        <button type="button" class="btn btn-sm btn-outline-danger ms-2" title="Slet"
-                                hx-get="{% url 'schools:comment-delete' comment.pk %}"
-                                hx-target="#modal-container">
-                            <i class="bi bi-x-lg"></i>
-                        </button>
+                        <div class="d-flex ms-2">
+                            <a href="{% url 'schools:comment-edit' comment.pk %}" class="btn btn-sm btn-outline-secondary me-1" title="Rediger">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger" title="Slet"
+                                    hx-get="{% url 'schools:comment-delete' comment.pk %}"
+                                    hx-target="#modal-container">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
                     </div>
                 </li>
                 {% empty %}

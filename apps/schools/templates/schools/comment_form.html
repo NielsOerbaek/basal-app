@@ -1,32 +1,33 @@
 {% extends 'core/base.html' %}
 {% load crispy_forms_tags %}
 
-{% block title %}Tilføj kommentar - {{ school.name }} - Basal{% endblock %}
+{% block title %}{% if editing %}Rediger kommentar{% else %}Tilføj kommentar{% endif %} - {{ school.name }} - Basal{% endblock %}
 
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{% url 'schools:list' %}">Skoler</a></li>
         <li class="breadcrumb-item"><a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a></li>
-        <li class="breadcrumb-item active">Tilføj kommentar</li>
+        <li class="breadcrumb-item active">{% if editing %}Rediger kommentar{% else %}Tilføj kommentar{% endif %}</li>
     </ol>
 </nav>
 {% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="bi bi-chat-text me-2"></i>Tilføj kommentar</h1>
+    <h1><i class="bi bi-chat-text me-2"></i>{% if editing %}Rediger kommentar{% else %}Tilføj kommentar{% endif %}</h1>
 </div>
 
 <div class="row">
     <div class="col-lg-6">
         <div class="card">
-            <div class="card-header">Tilføj kommentar til {{ school.name }}</div>
+            <div class="card-header">{% if editing %}Rediger kommentar til{% else %}Tilføj kommentar til{% endif %} {{ school.name }}</div>
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
                     {% crispy form %}
                 </form>
+                <a href="{% url 'schools:detail' school.pk %}" class="btn btn-secondary mt-2">Annuller</a>
             </div>
         </div>
     </div>

@@ -4,6 +4,13 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 20. februar 2026
+
+### Rediger og slet kommentarer på skolesiden
+Staff kan nu redigere kommentarer på skolesiden via en ny redigeringsknap (blyant-ikon) ved siden af sletteknappen.
+
+---
+
 ## 16. februar 2026
 
 ### Kodeord og tilmeldingsknap på skolens side
