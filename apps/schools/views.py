@@ -724,6 +724,39 @@ class SchoolCommentCreateView(View):
 
 
 @method_decorator(staff_required, name="dispatch")
+class SchoolCommentEditView(View):
+    def get(self, request, pk):
+        comment = get_object_or_404(SchoolComment, pk=pk)
+        form = SchoolCommentForm(instance=comment)
+        return render(
+            request,
+            "schools/comment_form.html",
+            {
+                "school": comment.school,
+                "form": form,
+                "editing": True,
+            },
+        )
+
+    def post(self, request, pk):
+        comment = get_object_or_404(SchoolComment, pk=pk)
+        form = SchoolCommentForm(request.POST, instance=comment)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Kommentar opdateret.")
+            return redirect("schools:detail", pk=comment.school.pk)
+        return render(
+            request,
+            "schools/comment_form.html",
+            {
+                "school": comment.school,
+                "form": form,
+                "editing": True,
+            },
+        )
+
+
+@method_decorator(staff_required, name="dispatch")
 class SchoolCommentDeleteView(View):
     def get(self, request, pk):
         get_object_or_404(SchoolComment, pk=pk)  # Verify exists

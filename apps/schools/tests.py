@@ -565,6 +565,29 @@ class SchoolCommentViewTest(TestCase):
         self.assertEqual(response.status_code, 200)  # JSON response
         self.assertFalse(SchoolComment.objects.filter(pk=comment_pk).exists())
 
+    def test_comment_edit_requires_login(self):
+        """Comment edit should redirect unauthenticated users."""
+        self.client.logout()
+        response = self.client.get(reverse("schools:comment-edit", kwargs={"pk": self.comment.pk}))
+        self.assertEqual(response.status_code, 302)
+
+    def test_comment_edit_form_loads(self):
+        """Comment edit GET should load the form with existing data."""
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(reverse("schools:comment-edit", kwargs={"pk": self.comment.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Test comment")
+
+    def test_comment_edit_saves(self):
+        """Comment edit POST should update the comment and redirect."""
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.post(
+            reverse("schools:comment-edit", kwargs={"pk": self.comment.pk}), {"comment": "Updated comment"}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.comment.refresh_from_db()
+        self.assertEqual(self.comment.comment, "Updated comment")
+
 
 class SchoolDeleteViewTest(TestCase):
     def setUp(self):

@@ -30,6 +30,7 @@ urlpatterns = [
     # Comment URLs
     path("<int:school_pk>/comment/add/", views.SchoolCommentCreateView.as_view(), name="comment-create"),
     path("comment/<int:pk>/delete/", views.SchoolCommentDeleteView.as_view(), name="comment-delete"),
+    path("comment/<int:pk>/edit/", views.SchoolCommentEditView.as_view(), name="comment-edit"),
     # Invoice URLs
     path("<int:school_pk>/invoice/add/", views.InvoiceCreateView.as_view(), name="invoice-create"),
     path("invoice/<int:pk>/delete/", views.InvoiceDeleteView.as_view(), name="invoice-delete"),
