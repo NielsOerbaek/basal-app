@@ -324,12 +324,11 @@ class School(models.Model):
                             }
                         )
 
-            # Tjek for ændring af active_from (kun ved standalone rettelse)
-            if "active_from" in changes and not is_reset:
+            # Tjek for ændring af active_from
+            if "active_from" in changes and not is_reset and not is_reenrollment:
                 old_val = changes["active_from"].get("old")
                 new_val = changes["active_from"].get("new")
-                is_initial = "enrolled_at" in changes or is_reenrollment
-                if new_val and old_val and not is_initial:
+                if new_val and old_val:
                     history.append(
                         {
                             "event_type": "correction",
@@ -338,6 +337,18 @@ class School(models.Model):
                             "description": format_html(
                                 "Rettede aktiv fra-datoen fra {} til {}",
                                 _bold(_parse(old_val)),
+                                _bold(_parse(new_val)),
+                            ),
+                        }
+                    )
+                elif new_val and not old_val:
+                    history.append(
+                        {
+                            "event_type": "enrolled",
+                            "timestamp": log.timestamp,
+                            "user": _user_str(log),
+                            "description": format_html(
+                                "Satte aktiv fra til {}",
                                 _bold(_parse(new_val)),
                             ),
                         }
