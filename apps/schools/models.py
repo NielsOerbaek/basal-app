@@ -222,8 +222,22 @@ class School(models.Model):
                 and not changes["opted_out_at"].get("new")
             )
 
-            # Tjek for ændring af enrolled_at (spring over hvis gentilmelding — håndteres nedenfor)
-            if "enrolled_at" in changes and not is_reenrollment:
+            # Tjek om dette er en nulstilling (enrolled_at fjernet)
+            is_reset = (
+                "enrolled_at" in changes and changes["enrolled_at"].get("old") and not changes["enrolled_at"].get("new")
+            )
+
+            if is_reset:
+                history.append(
+                    {
+                        "event_type": "reset",
+                        "timestamp": log.timestamp,
+                        "user": _user_str(log),
+                        "description": format_html("Nulstillede tilmelding for {}", name),
+                    }
+                )
+            elif "enrolled_at" in changes and not is_reenrollment:
+                # Tjek for ændring af enrolled_at (spring over hvis gentilmelding — håndteres nedenfor)
                 old_val = changes["enrolled_at"].get("old")
                 new_val = changes["enrolled_at"].get("new")
                 if new_val and not old_val:
@@ -239,9 +253,22 @@ class School(models.Model):
                             ),
                         }
                     )
+                elif new_val and old_val:
+                    history.append(
+                        {
+                            "event_type": "correction",
+                            "timestamp": log.timestamp,
+                            "user": _user_str(log),
+                            "description": format_html(
+                                "Rettede tilmeldingsdatoen fra {} til {}",
+                                _bold(_parse(old_val)),
+                                _bold(_parse(new_val)),
+                            ),
+                        }
+                    )
 
-            # Tjek for ændring af opted_out_at
-            if "opted_out_at" in changes:
+            # Tjek for ændring af opted_out_at (spring over ved nulstilling)
+            if "opted_out_at" in changes and not is_reset:
                 old_val = changes["opted_out_at"].get("old")
                 new_val = changes["opted_out_at"].get("new")
                 if new_val and not old_val:
@@ -297,8 +324,8 @@ class School(models.Model):
                             }
                         )
 
-            # Tjek for ændring af active_from (kun hvis det ikke er del af tilmelding/gentilmelding)
-            if "active_from" in changes:
+            # Tjek for ændring af active_from (kun ved standalone rettelse)
+            if "active_from" in changes and not is_reset:
                 old_val = changes["active_from"].get("old")
                 new_val = changes["active_from"].get("new")
                 is_initial = "enrolled_at" in changes or is_reenrollment
