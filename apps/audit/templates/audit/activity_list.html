@@ -11,7 +11,24 @@
 <div class="card mb-4">
     <div class="card-body">
         <form method="get" class="row g-3">
-            <div class="col-md-3">
+            <div class="col-md-2">
+                <label class="form-label">Fra dato</label>
+                <input type="date" name="date_from" class="form-control" value="{{ request.GET.date_from }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Til dato</label>
+                <input type="date" name="date_to" class="form-control" value="{{ request.GET.date_to }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Medarbejder</label>
+                <select name="user" class="form-select">
+                    <option value="">Alle</option>
+                    {% for u in users %}
+                        <option value="{{ u.id }}" {% if request.GET.user == u.id|stringformat:"d" %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
                 <label class="form-label">Handling</label>
                 <select name="action" class="form-select">
                     <option value="">Alle</option>
@@ -20,7 +37,7 @@
                     <option value="DELETE" {% if request.GET.action == 'DELETE' %}selected{% endif %}>Slettet</option>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label">Type</label>
                 <select name="type" class="form-select">
                     <option value="">Alle</option>
@@ -33,7 +50,7 @@
                     <option value="contacttime" {% if request.GET.type == 'contacttime' %}selected{% endif %}>Henvendelse</option>
                 </select>
             </div>
-            <div class="col-md-3 d-flex align-items-end">
+            <div class="col-md-2 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary">Filtrer</button>
                 <a href="{% url 'audit:activity_list' %}" class="btn btn-outline-secondary ms-2">Nulstil</a>
             </div>

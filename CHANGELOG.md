@@ -6,6 +6,9 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ## 11. marts 2026
 
+### Aktivitetsloggen kan nu filtreres på dato og medarbejder
+Aktivitetsloggen (/aktivitet) har fået nye filtre: dato-interval (fra/til) og medarbejder. Alle filtre kan kombineres og bevares ved sideskift.
+
 ### Afmeldelsesdato kan nu rettes
 Hvis en skole er frameldt med en forkert dato, kan datoen nu rettes via en redigeringsknap på skolens detaljeside. Detaljesiden viser nu også tilmeldingsdatoer og "Frameldt d." for frameldte skoler. Tilmeldingshistorikken viser nu tidspunkt, bruger og før/efter-værdier ved rettelser.
 
