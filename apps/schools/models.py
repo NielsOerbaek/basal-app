@@ -226,18 +226,24 @@ class School(models.Model):
         for log in logs:
             changes = log.changes or {}
 
-            # Tilmelding: enrolled_at sat for første gang
+            # Tilmelding eller gentilmelding
+            is_reenrollment = (
+                "opted_out_at" in changes
+                and changes["opted_out_at"].get("old")
+                and not changes["opted_out_at"].get("new")
+            )
             if "enrolled_at" in changes:
-                old_val = changes["enrolled_at"].get("old")
                 new_val = changes["enrolled_at"].get("new")
+                old_val = changes["enrolled_at"].get("old")
                 if new_val and not old_val:
-                    is_reenrollment = (
-                        "opted_out_at" in changes
-                        and changes["opted_out_at"].get("old")
-                        and not changes["opted_out_at"].get("new")
-                    )
                     label = "Gentilmeldt" if is_reenrollment else "Tilmeldt"
                     history.append(_entry(log, "enrolled", label, _parse(new_val)))
+                elif new_val and old_val and is_reenrollment:
+                    history.append(_entry(log, "enrolled", "Gentilmeldt", _parse(new_val)))
+            elif is_reenrollment:
+                # opted_out_at cleared without enrolled_at change
+                enrolled_date = self.enrolled_at
+                history.append(_entry(log, "enrolled", "Gentilmeldt", enrolled_date))
 
             # Framelding: opted_out_at sat for første gang
             if "opted_out_at" in changes:
