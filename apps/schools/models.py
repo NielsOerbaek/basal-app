@@ -176,25 +176,34 @@ class School(models.Model):
     def get_enrollment_history(self):
         """
         Hent historik over til- og frameldinger fra ActivityLog.
-        Returnerer en liste af dicts med 'date', 'event_type', 'label',
-        'timestamp' (datetime), 'user' (str), og 'detail' (str).
+        Returnerer en liste af dicts med 'event_type', 'timestamp' (datetime),
+        og 'description' (str) — sorteret efter timestamp.
         """
         from datetime import datetime
 
         from django.contrib.contenttypes.models import ContentType
+        from django.utils.formats import date_format
+        from django.utils.html import format_html
 
         from apps.audit.models import ActivityLog
 
         def _parse(val):
             return datetime.strptime(val, "%Y-%m-%d").date() if val else None
 
+        def _fmt(d):
+            return date_format(d, "d. N Y")
+
+        def _bold(d):
+            return format_html("<strong>{}</strong>", _fmt(d))
+
         def _user_str(log):
             if log.user:
                 return log.user.get_full_name() or log.user.username
-            return None
+            return "Ukendt"
 
         history = []
         school_ct = ContentType.objects.get_for_model(School)
+        name = self.name
 
         # Hent alle ændringer til denne skole
         logs = (
@@ -211,15 +220,16 @@ class School(models.Model):
                 old_val = changes["enrolled_at"].get("old")
                 new_val = changes["enrolled_at"].get("new")
                 if new_val and not old_val:
-                    # Ny tilmelding
                     history.append(
                         {
-                            "date": _parse(new_val),
                             "event_type": "enrolled",
-                            "label": "Tilmeldt",
                             "timestamp": log.timestamp,
-                            "user": _user_str(log),
-                            "detail": None,
+                            "description": format_html(
+                                "{} tilmeldte {} per {}",
+                                _user_str(log),
+                                name,
+                                _bold(_parse(new_val)),
+                            ),
                         }
                     )
 
@@ -228,70 +238,64 @@ class School(models.Model):
                 old_val = changes["opted_out_at"].get("old")
                 new_val = changes["opted_out_at"].get("new")
                 if new_val and not old_val:
-                    # Framelding
                     history.append(
                         {
-                            "date": _parse(new_val),
                             "event_type": "opted_out",
-                            "label": "Frameldt",
                             "timestamp": log.timestamp,
-                            "user": _user_str(log),
-                            "detail": None,
+                            "description": format_html(
+                                "{} frameldte {} per {}",
+                                _user_str(log),
+                                name,
+                                _bold(_parse(new_val)),
+                            ),
                         }
                     )
                 elif new_val and old_val:
-                    # Rettelse af frameldingsdato
-                    old_date = _parse(old_val)
-                    new_date = _parse(new_val)
                     history.append(
                         {
-                            "date": new_date,
                             "event_type": "correction",
-                            "label": "Frameldt (rettet)",
                             "timestamp": log.timestamp,
-                            "user": _user_str(log),
-                            "detail": f"{old_date.strftime('%d. %b %Y')} → {new_date.strftime('%d. %b %Y')}",
+                            "description": format_html(
+                                "{} rettede frameldingsdatoen fra {} til {}",
+                                _user_str(log),
+                                _bold(_parse(old_val)),
+                                _bold(_parse(new_val)),
+                            ),
                         }
                     )
                 elif old_val and not new_val:
-                    # Fjernelse af framelding = gentilmelding
                     history.append(
                         {
-                            "date": log.timestamp.date(),
                             "event_type": "enrolled",
-                            "label": "Tilmeldt igen",
                             "timestamp": log.timestamp,
-                            "user": _user_str(log),
-                            "detail": None,
+                            "description": format_html(
+                                "{} gentilmeldte {}",
+                                _user_str(log),
+                                name,
+                            ),
                         }
                     )
 
-        # Hvis ingen historik men skolen har enrolled_at, tilføj det som første event
+        # Hvis ingen historik men skolen har enrolled_at, tilføj som fallback
         if not history and self.enrolled_at:
             history.append(
                 {
-                    "date": self.enrolled_at,
                     "event_type": "enrolled",
-                    "label": "Tilmeldt",
                     "timestamp": None,
-                    "user": None,
-                    "detail": None,
+                    "description": format_html("Tilmeldt per {}", _bold(self.enrolled_at)),
                 }
             )
             if self.opted_out_at:
                 history.append(
                     {
-                        "date": self.opted_out_at,
                         "event_type": "opted_out",
-                        "label": "Frameldt",
                         "timestamp": None,
-                        "user": None,
-                        "detail": None,
+                        "description": format_html("Frameldt per {}", _bold(self.opted_out_at)),
                     }
                 )
 
-        # Sortér efter dato
-        history.sort(key=lambda x: x["date"])
+        # Sortér efter timestamp (fallback-entries uden timestamp først)
+        history.sort(key=lambda x: x["timestamp"] or datetime.min)
         return history
 
     @property

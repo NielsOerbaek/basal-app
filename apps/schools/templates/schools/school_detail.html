@@ -126,19 +126,7 @@
                         <ul class="list-group list-group-flush small">
                             {% for event in enrollment_history %}
                             <li class="list-group-item px-0 py-1">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="text-muted">{{ event.date|date:"d. M Y" }}</span>
-                                    <span class="badge {% if event.event_type == 'enrolled' %}bg-success{% elif event.event_type == 'correction' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
-                                        {{ event.label }}
-                                    </span>
-                                </div>
-                                {% if event.detail or event.user or event.timestamp %}
-                                <div class="text-muted" style="font-size: 0.8em;">
-                                    {% if event.detail %}{{ event.detail }}{% endif %}
-                                    {% if event.timestamp %} — {{ event.timestamp|date:"d. M Y H:i" }}{% endif %}
-                                    {% if event.user %} af {{ event.user }}{% endif %}
-                                </div>
-                                {% endif %}
+                                {% if event.timestamp %}<span class="text-muted">{{ event.timestamp|date:"d. M Y H:i" }}</span> {% endif %}{{ event.description }}
                             </li>
                             {% endfor %}
                         </ul>
