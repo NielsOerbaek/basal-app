@@ -10,7 +10,10 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 Aktivitetsloggen (/aktivitet) har fået nye filtre: dato-interval (fra/til) og medarbejder. Alle filtre kan kombineres og bevares ved sideskift.
 
 ### Afmeldelsesdato kan nu rettes
-Hvis en skole er frameldt med en forkert dato, kan datoen nu rettes via en redigeringsknap på skolens detaljeside. Detaljesiden viser nu også tilmeldingsdatoer og "Frameldt d." for frameldte skoler. Tilmeldingshistorikken viser nu tidspunkt, bruger og før/efter-værdier ved rettelser.
+Hvis en skole er frameldt med en forkert dato, kan datoen nu rettes via en redigeringsknap på skolens detaljeside. Detaljesiden viser nu også tilmeldingsdatoer og "Frameldt d." for frameldte skoler.
+
+### Tilmeldingshistorik med farvede chips og mulighed for at slette
+Tilmeldingshistorikken viser nu tilmeldings- og frameldingshændelser med farvede chips (grøn for Tilmeldt, rød for Frameldt). Datoerne afspejler altid de aktuelle værdier, også efter rettelser. Hver række kan slettes hvis der er fejl (fx ved utilsigtet framelding og gentilmelding).
 
 ### Kolonneoverskrift "Tilmeldt skoleår" omdøbt til "Aktiv fra"
 I skolelisten er kolonneoverskriften ændret fra "Tilmeldt skoleår" til "Aktiv fra" for at matche det faktiske indhold.
