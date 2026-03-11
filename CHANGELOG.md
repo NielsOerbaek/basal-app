@@ -7,7 +7,7 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 ## 11. marts 2026
 
 ### Afmeldelsesdato kan nu rettes
-Hvis en skole er frameldt med en forkert dato, kan datoen nu rettes via en redigeringsknap på skolens detaljeside. Detaljesiden viser nu også tilmeldingsdatoer og "Frameldt d." for frameldte skoler.
+Hvis en skole er frameldt med en forkert dato, kan datoen nu rettes via en redigeringsknap på skolens detaljeside. Detaljesiden viser nu også tilmeldingsdatoer og "Frameldt d." for frameldte skoler. Tilmeldingshistorikken viser nu tidspunkt, bruger og før/efter-værdier ved rettelser.
 
 ### Kolonneoverskrift "Tilmeldt skoleår" omdøbt til "Aktiv fra"
 I skolelisten er kolonneoverskriften ændret fra "Tilmeldt skoleår" til "Aktiv fra" for at matche det faktiske indhold.
