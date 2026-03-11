@@ -279,6 +279,19 @@ class School(models.Model):
                 )
 
         history.sort(key=lambda x: x["timestamp"] or datetime.min)
+
+        # Opdater seneste enrolled/opted_out med aktuelle værdier fra modellen
+        if self.enrolled_at:
+            for event in reversed(history):
+                if event["event_type"] == "enrolled":
+                    event["date_str"] = _fmt(self.enrolled_at)
+                    break
+        if self.opted_out_at:
+            for event in reversed(history):
+                if event["event_type"] == "opted_out":
+                    event["date_str"] = _fmt(self.opted_out_at)
+                    break
+
         return history
 
     @property
