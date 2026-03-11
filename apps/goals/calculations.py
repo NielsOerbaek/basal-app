@@ -35,18 +35,23 @@ def get_metrics_for_year(year_str: str) -> dict:
     settings = ProjectSettings.get()
 
     # New school partnerships: active_from falls in this year
-    new_schools = School.objects.active().filter(active_from__gte=start_date, active_from__lte=end_date).count()
+    # Exclude schools that opted out before the year started
+    new_schools = (
+        School.objects.active()
+        .filter(active_from__gte=start_date, active_from__lte=end_date)
+        .exclude(opted_out_at__lte=start_date)
+        .count()
+    )
 
-    # Anchoring: active_from before this year, still active (not opted out)
+    # Anchoring: active_from before this year, still active
+    # Exclude schools that opted out before the year started
     anchoring_schools = (
         School.objects.active()
         .filter(
             active_from__lt=start_date,
             active_from__isnull=False,
         )
-        .exclude(
-            opted_out_at__lte=end_date  # Exclude schools that opted out before end of year
-        )
+        .exclude(opted_out_at__lte=start_date)
         .count()
     )
 

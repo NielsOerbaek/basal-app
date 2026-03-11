@@ -145,6 +145,11 @@
                             {% if year_data.is_future %}
                             <span class="target-label">Mål: {{ year_data.targets.anchoring }}</span>
                             <span class="actual-value">-</span>
+                            {% elif year_data.is_upcoming %}
+                            <a href="{% url 'schools:list' %}?status=anchoring&school_year={{ year_data.url_year }}" class="metric-link">
+                                <span class="target-label">Mål: {{ year_data.targets.anchoring }}</span>
+                                <span class="actual-value" style="font-style: italic;" title="Forudsætter at alle nuværende partnerskoler fortsætter. Tallet kan falde hvis skoler framelder sig.">{{ year_data.metrics.anchoring }}*</span>
+                            </a>
                             {% else %}
                             <a href="{% url 'schools:list' %}?status=anchoring&school_year={{ year_data.url_year }}" class="metric-link">
                                 <span class="target-label">Mål: {{ year_data.targets.anchoring }}</span>
