@@ -965,6 +965,32 @@ class EditEnrollmentDatesView(View):
 
 
 @method_decorator(staff_required, name="dispatch")
+class EditOptedOutDateView(View):
+    """Edit the opted_out_at date for a school."""
+
+    def post(self, request, pk):
+        from datetime import datetime
+
+        school = get_object_or_404(School, pk=pk)
+        date_str = request.POST.get("date")
+
+        try:
+            new_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            messages.error(request, "Ugyldig dato.")
+            return redirect("schools:detail", pk=pk)
+
+        if not school.opted_out_at:
+            messages.error(request, "Skolen er ikke frameldt.")
+            return redirect("schools:detail", pk=pk)
+
+        school.opted_out_at = new_date
+        school.save(update_fields=["opted_out_at"])
+        messages.success(request, f"Afmeldelsesdato ændret til {new_date.strftime('%d. %b %Y')}.")
+        return redirect("schools:detail", pk=pk)
+
+
+@method_decorator(staff_required, name="dispatch")
 class ClearEnrollmentView(View):
     """Clear all enrollment dates (enrolled_at, active_from, opted_out_at) for a school."""
 

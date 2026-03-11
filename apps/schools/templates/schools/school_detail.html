@@ -99,6 +99,22 @@
                     <dd class="col-sm-8">
                         {% school_year_chip school.active_from %}
                     </dd>
+                    {% elif school.is_opted_out %}
+                    <dt class="col-sm-4">Tilmeldt d.</dt>
+                    <dd class="col-sm-8">
+                        {{ school.enrolled_at|date:"d. M Y"|default:"-" }}
+                    </dd>
+                    <dt class="col-sm-4">Aktiv fra</dt>
+                    <dd class="col-sm-8">
+                        {% school_year_chip school.active_from %}
+                    </dd>
+                    <dt class="col-sm-4">Frameldt d.</dt>
+                    <dd class="col-sm-8">
+                        {{ school.opted_out_at|date:"d. M Y" }}
+                        <button type="button" class="btn btn-outline-secondary btn-sm ms-2 py-0 px-1" data-bs-toggle="modal" data-bs-target="#editOptedOutDateModal" title="Ret afmeldelsesdato">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </dd>
                     {% endif %}
                 </dl>
                 {% if enrollment_history %}
@@ -525,6 +541,35 @@
         </div>
     </div>
 </div>
+
+<!-- Edit Opted Out Date Modal -->
+{% if school.is_opted_out %}
+<div class="modal fade" id="editOptedOutDateModal" tabindex="-1" aria-labelledby="editOptedOutDateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editOptedOutDateModalLabel">Ret afmeldelsesdato</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'schools:edit-opted-out-date' school.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Ret afmeldelsesdatoen for <strong>{{ school.name }}</strong>.</p>
+                    <div class="mb-3">
+                        <label for="opted-out-date" class="form-label">Afmeldelsesdato</label>
+                        <input type="date" class="form-control" id="opted-out-date" name="date"
+                               value="{{ school.opted_out_at|date:'Y-m-d' }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuller</button>
+                    <button type="submit" class="btn btn-primary">Gem</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Enrollment Modal -->
 <div class="modal fade" id="enrollmentModal" tabindex="-1" aria-labelledby="enrollmentModalLabel" aria-hidden="true">

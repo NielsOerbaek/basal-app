@@ -2968,3 +2968,58 @@ class SeatCalculationTest(TestCase):
             course = self._make_course(start_date=date(2025, 10, 1 + i))  # In 2025/26
             self._make_signup(school, course, f"P{i}")
         self.assertTrue(school.exceeds_seat_allocation)
+
+
+class EditOptedOutDateViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="testuser", password="testpass123", is_staff=True)
+        self.school = School.objects.create(
+            name="Test School",
+            kommune="Test Kommune",
+            enrolled_at=date(2024, 1, 15),
+            active_from=date(2024, 8, 1),
+            opted_out_at=date(2026, 6, 30),
+        )
+        self.client.login(username="testuser", password="testpass123")
+        self.url = reverse("schools:edit-opted-out-date", kwargs={"pk": self.school.pk})
+
+    def test_update_opted_out_date(self):
+        """Can change opted_out_at to a new date."""
+        response = self.client.post(self.url, {"date": "2025-06-30"})
+        self.assertEqual(response.status_code, 302)
+        self.school.refresh_from_db()
+        self.assertEqual(self.school.opted_out_at, date(2025, 6, 30))
+
+    def test_invalid_date_shows_error(self):
+        """Invalid date returns error message."""
+        response = self.client.post(self.url, {"date": "not-a-date"})
+        self.assertEqual(response.status_code, 302)
+        self.school.refresh_from_db()
+        self.assertEqual(self.school.opted_out_at, date(2026, 6, 30))  # unchanged
+
+    def test_rejects_if_not_opted_out(self):
+        """Cannot edit opted_out_at if school is not opted out."""
+        self.school.opted_out_at = None
+        self.school.save()
+        response = self.client.post(self.url, {"date": "2025-06-30"})
+        self.assertEqual(response.status_code, 302)
+        self.school.refresh_from_db()
+        self.assertIsNone(self.school.opted_out_at)
+
+    def test_requires_staff(self):
+        """Non-staff users are redirected."""
+        self.client.logout()
+        User.objects.create_user(username="regular", password="testpass123", is_staff=False)
+        self.client.login(username="regular", password="testpass123")
+        response = self.client.post(self.url, {"date": "2025-06-30"})
+        self.assertIn(response.status_code, [302, 403])
+        self.school.refresh_from_db()
+        self.assertEqual(self.school.opted_out_at, date(2026, 6, 30))  # unchanged
+
+    def test_detail_shows_opted_out_date_and_edit_button(self):
+        """Detail page shows the opted_out_at date with an edit button."""
+        response = self.client.get(reverse("schools:detail", kwargs={"pk": self.school.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Frameldt d.")
+        self.assertContains(response, "editOptedOutDateModal")
