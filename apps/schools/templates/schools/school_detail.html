@@ -127,16 +127,8 @@
                             {% for event in enrollment_history %}
                             <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
                                 <div>
-                                    {% if event.timestamp or event.user %}
-                                    <div class="text-muted" style="font-size: 0.85em;">
-                                        {% if event.timestamp %}{{ event.timestamp|date:"d. M Y H:i" }}{% endif %}
-                                        {% if event.user %} — {{ event.user }}{% endif %}
-                                    </div>
-                                    {% endif %}
-                                    <div>
-                                        <span class="badge {{ event.badge_class }}">{{ event.label }}</span>
-                                        per {{ event.date_str }}
-                                    </div>
+                                    <span class="badge {{ event.badge_class }}">{{ event.label }}</span>
+                                    per {{ event.date_str }}
                                 </div>
                                 {% if event.log_id %}
                                 <button type="button" class="btn btn-outline-danger btn-sm py-0 px-1 ms-2"
