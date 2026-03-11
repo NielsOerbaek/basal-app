@@ -196,6 +196,11 @@ class School(models.Model):
         def _bold(d):
             return format_html("<strong>{}</strong>", _fmt(d))
 
+        def _bold_year(d):
+            from apps.schools.school_years import calculate_school_year_for_date
+
+            return format_html("<strong>{}</strong>", calculate_school_year_for_date(d))
+
         def _user_str(log):
             if log.user:
                 return log.user.get_full_name() or log.user.username
@@ -335,9 +340,9 @@ class School(models.Model):
                             "timestamp": log.timestamp,
                             "user": _user_str(log),
                             "description": format_html(
-                                "Rettede aktiv fra-datoen fra {} til {}",
-                                _bold(_parse(old_val)),
-                                _bold(_parse(new_val)),
+                                "Rettede aktiv fra fra {} til {}",
+                                _bold_year(_parse(old_val)),
+                                _bold_year(_parse(new_val)),
                             ),
                         }
                     )
@@ -349,7 +354,7 @@ class School(models.Model):
                             "user": _user_str(log),
                             "description": format_html(
                                 "Satte aktiv fra til {}",
-                                _bold(_parse(new_val)),
+                                _bold_year(_parse(new_val)),
                             ),
                         }
                     )
