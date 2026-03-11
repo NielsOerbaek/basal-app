@@ -297,6 +297,25 @@ class School(models.Model):
                             }
                         )
 
+            # Tjek for ændring af active_from (kun hvis det ikke er del af tilmelding/gentilmelding)
+            if "active_from" in changes:
+                old_val = changes["active_from"].get("old")
+                new_val = changes["active_from"].get("new")
+                is_initial = "enrolled_at" in changes or is_reenrollment
+                if new_val and old_val and not is_initial:
+                    history.append(
+                        {
+                            "event_type": "correction",
+                            "timestamp": log.timestamp,
+                            "user": _user_str(log),
+                            "description": format_html(
+                                "Rettede aktiv fra-datoen fra {} til {}",
+                                _bold(_parse(old_val)),
+                                _bold(_parse(new_val)),
+                            ),
+                        }
+                    )
+
         # Hvis ingen historik men skolen har enrolled_at, tilføj som fallback
         if not history and self.enrolled_at:
             history.append(
