@@ -3023,3 +3023,45 @@ class EditOptedOutDateViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Frameldt d.")
         self.assertContains(response, "editOptedOutDateModal")
+
+
+class DeleteEnrollmentHistoryViewTest(TestCase):
+    def setUp(self):
+        from django.contrib.contenttypes.models import ContentType
+
+        from apps.audit.models import ActivityLog
+
+        self.client = Client()
+        self.user = User.objects.create_user(username="testuser", password="testpass123", is_staff=True)
+        self.school = School.objects.create(
+            name="Test School",
+            kommune="Test Kommune",
+            enrolled_at=date(2024, 1, 15),
+            active_from=date(2024, 8, 1),
+        )
+        school_ct = ContentType.objects.get_for_model(School)
+        self.log_entry = ActivityLog.objects.create(
+            user=self.user,
+            content_type=school_ct,
+            object_id=self.school.pk,
+            object_repr=str(self.school),
+            action="UPDATE",
+            changes={"enrolled_at": {"old": None, "new": "2024-01-15"}},
+        )
+        self.client.login(username="testuser", password="testpass123")
+
+    def test_delete_history_row(self):
+        """Can delete an audit log entry from the enrollment history."""
+        from apps.audit.models import ActivityLog
+
+        url = reverse("schools:delete-enrollment-history", kwargs={"pk": self.school.pk, "log_id": self.log_entry.pk})
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(ActivityLog.objects.filter(pk=self.log_entry.pk).exists())
+
+    def test_cannot_delete_other_schools_log(self):
+        """Cannot delete a log entry belonging to a different school."""
+        other_school = School.objects.create(name="Other School", kommune="Other")
+        url = reverse("schools:delete-enrollment-history", kwargs={"pk": other_school.pk, "log_id": self.log_entry.pk})
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 404)

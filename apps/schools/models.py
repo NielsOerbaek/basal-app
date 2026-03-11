@@ -175,9 +175,9 @@ class School(models.Model):
 
     def get_enrollment_history(self):
         """
-        Hent historik over til- og frameldinger fra ActivityLog.
-        Returnerer en liste af dicts med 'event_type', 'timestamp' (datetime),
-        og 'description' (str) — sorteret efter timestamp.
+        Hent historik over tilmeldingsændringer fra ActivityLog.
+        Returnerer en liste af dicts med 'log_id', 'event_type', 'timestamp',
+        'user', og 'description' — sorteret efter timestamp.
         """
         from datetime import datetime
 
@@ -193,24 +193,23 @@ class School(models.Model):
         def _fmt(d):
             return date_format(d, "d. N Y")
 
-        def _bold(d):
-            return format_html("<strong>{}</strong>", _fmt(d))
-
-        def _bold_year(d):
-            from apps.schools.school_years import calculate_school_year_for_date
-
-            return format_html("<strong>{}</strong>", calculate_school_year_for_date(d))
-
         def _user_str(log):
             if log.user:
                 return log.user.get_full_name() or log.user.username
             return "Offentlig tilmelding"
 
+        def _entry(log, event_type, description):
+            return {
+                "log_id": log.pk,
+                "event_type": event_type,
+                "timestamp": log.timestamp,
+                "user": _user_str(log),
+                "description": description,
+            }
+
         history = []
         school_ct = ContentType.objects.get_for_model(School)
-        name = self.name
 
-        # Hent alle ændringer til denne skole
         logs = (
             ActivityLog.objects.filter(content_type=school_ct, object_id=self.pk)
             .select_related("user")
@@ -220,166 +219,49 @@ class School(models.Model):
         for log in logs:
             changes = log.changes or {}
 
-            # Tjek om dette er en gentilmelding (opted_out_at fjernet)
-            is_reenrollment = (
-                "opted_out_at" in changes
-                and changes["opted_out_at"].get("old")
-                and not changes["opted_out_at"].get("new")
-            )
-
-            # Tjek om dette er en nulstilling (enrolled_at fjernet)
-            is_reset = (
-                "enrolled_at" in changes and changes["enrolled_at"].get("old") and not changes["enrolled_at"].get("new")
-            )
-
-            if is_reset:
-                history.append(
-                    {
-                        "event_type": "reset",
-                        "timestamp": log.timestamp,
-                        "user": _user_str(log),
-                        "description": format_html("Nulstillede tilmelding for {}", name),
-                    }
-                )
-            elif "enrolled_at" in changes and not is_reenrollment:
-                # Tjek for ændring af enrolled_at (spring over hvis gentilmelding — håndteres nedenfor)
+            # Tilmelding: enrolled_at sat for første gang
+            if "enrolled_at" in changes:
                 old_val = changes["enrolled_at"].get("old")
                 new_val = changes["enrolled_at"].get("new")
                 if new_val and not old_val:
-                    history.append(
-                        {
-                            "event_type": "enrolled",
-                            "timestamp": log.timestamp,
-                            "user": _user_str(log),
-                            "description": format_html(
-                                "Tilmeldte {} per {}",
-                                name,
-                                _bold(_parse(new_val)),
-                            ),
-                        }
+                    # Tjek om opted_out_at også fjernes (gentilmelding)
+                    is_reenrollment = (
+                        "opted_out_at" in changes
+                        and changes["opted_out_at"].get("old")
+                        and not changes["opted_out_at"].get("new")
                     )
-                elif new_val and old_val:
-                    history.append(
-                        {
-                            "event_type": "correction",
-                            "timestamp": log.timestamp,
-                            "user": _user_str(log),
-                            "description": format_html(
-                                "Rettede tilmeldingsdatoen fra {} til {}",
-                                _bold(_parse(old_val)),
-                                _bold(_parse(new_val)),
-                            ),
-                        }
-                    )
+                    label = "Gentilmeldt" if is_reenrollment else "Tilmeldt"
+                    history.append(_entry(log, "enrolled", format_html("{} per {}", label, _fmt(_parse(new_val)))))
 
-            # Tjek for ændring af opted_out_at (spring over ved nulstilling)
-            if "opted_out_at" in changes and not is_reset:
+            # Framelding: opted_out_at sat for første gang
+            if "opted_out_at" in changes:
                 old_val = changes["opted_out_at"].get("old")
                 new_val = changes["opted_out_at"].get("new")
                 if new_val and not old_val:
-                    history.append(
-                        {
-                            "event_type": "opted_out",
-                            "timestamp": log.timestamp,
-                            "user": _user_str(log),
-                            "description": format_html(
-                                "Frameldte {} per {}",
-                                name,
-                                _bold(_parse(new_val)),
-                            ),
-                        }
-                    )
-                elif new_val and old_val:
-                    history.append(
-                        {
-                            "event_type": "correction",
-                            "timestamp": log.timestamp,
-                            "user": _user_str(log),
-                            "description": format_html(
-                                "Rettede frameldingsdatoen fra {} til {}",
-                                _bold(_parse(old_val)),
-                                _bold(_parse(new_val)),
-                            ),
-                        }
-                    )
-                elif is_reenrollment:
-                    # Gentilmelding: brug den nye enrolled_at dato hvis tilgængelig
-                    enrolled_change = changes.get("enrolled_at", {})
-                    enrolled_val = enrolled_change.get("new")
-                    if enrolled_val:
-                        history.append(
-                            {
-                                "event_type": "enrolled",
-                                "timestamp": log.timestamp,
-                                "user": _user_str(log),
-                                "description": format_html(
-                                    "Gentilmeldte {} per {}",
-                                    name,
-                                    _bold(_parse(enrolled_val)),
-                                ),
-                            }
-                        )
-                    else:
-                        history.append(
-                            {
-                                "event_type": "enrolled",
-                                "timestamp": log.timestamp,
-                                "user": _user_str(log),
-                                "description": format_html("Gentilmeldte {}", name),
-                            }
-                        )
+                    history.append(_entry(log, "opted_out", format_html("Frameldt per {}", _fmt(_parse(new_val)))))
 
-            # Tjek for ændring af active_from
-            if "active_from" in changes and not is_reset and not is_reenrollment:
-                old_val = changes["active_from"].get("old")
-                new_val = changes["active_from"].get("new")
-                if new_val and old_val:
-                    history.append(
-                        {
-                            "event_type": "correction",
-                            "timestamp": log.timestamp,
-                            "user": _user_str(log),
-                            "description": format_html(
-                                "Rettede aktiv fra fra {} til {}",
-                                _bold_year(_parse(old_val)),
-                                _bold_year(_parse(new_val)),
-                            ),
-                        }
-                    )
-                elif new_val and not old_val:
-                    history.append(
-                        {
-                            "event_type": "enrolled",
-                            "timestamp": log.timestamp,
-                            "user": _user_str(log),
-                            "description": format_html(
-                                "Satte aktiv fra til {}",
-                                _bold_year(_parse(new_val)),
-                            ),
-                        }
-                    )
-
-        # Hvis ingen historik men skolen har enrolled_at, tilføj som fallback
+        # Fallback hvis ingen historik men skolen har datoer
         if not history and self.enrolled_at:
             history.append(
                 {
+                    "log_id": None,
                     "event_type": "enrolled",
                     "timestamp": None,
                     "user": None,
-                    "description": format_html("Tilmeldt per {}", _bold(self.enrolled_at)),
+                    "description": format_html("Tilmeldt per {}", _fmt(self.enrolled_at)),
                 }
             )
             if self.opted_out_at:
                 history.append(
                     {
+                        "log_id": None,
                         "event_type": "opted_out",
                         "timestamp": None,
                         "user": None,
-                        "description": format_html("Frameldt per {}", _bold(self.opted_out_at)),
+                        "description": format_html("Frameldt per {}", _fmt(self.opted_out_at)),
                     }
                 )
 
-        # Sortér efter timestamp (fallback-entries uden timestamp først)
         history.sort(key=lambda x: x["timestamp"] or datetime.min)
         return history
 

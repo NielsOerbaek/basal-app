@@ -965,6 +965,23 @@ class EditEnrollmentDatesView(View):
 
 
 @method_decorator(staff_required, name="dispatch")
+class DeleteEnrollmentHistoryView(View):
+    """Delete an ActivityLog entry from the enrollment history."""
+
+    def post(self, request, pk, log_id):
+        from django.contrib.contenttypes.models import ContentType
+
+        from apps.audit.models import ActivityLog
+
+        school = get_object_or_404(School, pk=pk)
+        school_ct = ContentType.objects.get_for_model(School)
+        log = get_object_or_404(ActivityLog, pk=log_id, content_type=school_ct, object_id=school.pk)
+        log.delete()
+        messages.success(request, "Rækken er fjernet fra historikken.")
+        return redirect("schools:detail", pk=pk)
+
+
+@method_decorator(staff_required, name="dispatch")
 class EditOptedOutDateView(View):
     """Edit the opted_out_at date for a school."""
 
