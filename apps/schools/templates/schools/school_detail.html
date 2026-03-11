@@ -125,7 +125,7 @@
                     <div class="collapse mt-2" id="enrollmentHistory">
                         <ul class="list-group list-group-flush small">
                             {% for event in enrollment_history %}
-                            <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-start">
+                            <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
                                 <div>
                                     {% if event.timestamp or event.user %}
                                     <div class="text-muted" style="font-size: 0.85em;">
@@ -133,15 +133,20 @@
                                         {% if event.user %} — {{ event.user }}{% endif %}
                                     </div>
                                     {% endif %}
-                                    <div>{{ event.description }}</div>
+                                    <div>
+                                        <span class="badge {{ event.badge_class }}">{{ event.label }}</span>
+                                        per {{ event.date_str }}
+                                    </div>
                                 </div>
                                 {% if event.log_id %}
-                                <form method="post" action="{% url 'schools:delete-enrollment-history' school.pk event.log_id %}" class="ms-2" onsubmit="return confirm('Er du sikker på at du vil fjerne denne række?')">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" title="Fjern">
-                                        <i class="bi bi-x-lg"></i>
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-outline-danger btn-sm py-0 px-1 ms-2"
+                                        title="Fjern"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#deleteHistoryModal"
+                                        data-delete-url="{% url 'schools:delete-enrollment-history' school.pk event.log_id %}"
+                                        data-delete-label="{{ event.label }} per {{ event.date_str }}">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
                                 {% endif %}
                             </li>
                             {% endfor %}
@@ -555,6 +560,28 @@
     </div>
 </div>
 
+<!-- Delete History Entry Modal -->
+<div class="modal fade" id="deleteHistoryModal" tabindex="-1" aria-labelledby="deleteHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteHistoryModalLabel">Fjern fra historik</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Er du sikker på at du vil fjerne <strong id="deleteHistoryLabel"></strong> fra historikken?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuller</button>
+                <form id="deleteHistoryForm" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Fjern</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Edit Opted Out Date Modal -->
 {% if school.is_opted_out %}
 <div class="modal fade" id="editOptedOutDateModal" tabindex="-1" aria-labelledby="editOptedOutDateModalLabel" aria-hidden="true">
@@ -664,6 +691,15 @@ function copyToClipboard(elementId) {
     const originalHtml = btn.innerHTML;
     btn.innerHTML = '<i class="bi bi-check"></i>';
     setTimeout(() => { btn.innerHTML = originalHtml; }, 1500);
+}
+
+var deleteHistoryModal = document.getElementById('deleteHistoryModal');
+if (deleteHistoryModal) {
+    deleteHistoryModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        document.getElementById('deleteHistoryForm').action = button.getAttribute('data-delete-url');
+        document.getElementById('deleteHistoryLabel').textContent = button.getAttribute('data-delete-label');
+    });
 }
 </script>
 {% endblock %}

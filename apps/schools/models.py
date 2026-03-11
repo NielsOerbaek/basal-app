@@ -183,7 +183,6 @@ class School(models.Model):
 
         from django.contrib.contenttypes.models import ContentType
         from django.utils.formats import date_format
-        from django.utils.html import format_html
 
         from apps.audit.models import ActivityLog
 
@@ -198,13 +197,21 @@ class School(models.Model):
                 return log.user.get_full_name() or log.user.username
             return "Offentlig tilmelding"
 
-        def _entry(log, event_type, description):
+        BADGES = {
+            "enrolled": ("Tilmeldt", "bg-success"),
+            "opted_out": ("Frameldt", "bg-danger"),
+        }
+
+        def _entry(log, event_type, label, date_val):
+            badge_label, badge_class = BADGES.get(event_type, (label, "bg-secondary"))
             return {
                 "log_id": log.pk,
                 "event_type": event_type,
                 "timestamp": log.timestamp,
                 "user": _user_str(log),
-                "description": description,
+                "label": label,
+                "badge_class": badge_class,
+                "date_str": _fmt(date_val),
             }
 
         history = []
@@ -224,21 +231,20 @@ class School(models.Model):
                 old_val = changes["enrolled_at"].get("old")
                 new_val = changes["enrolled_at"].get("new")
                 if new_val and not old_val:
-                    # Tjek om opted_out_at også fjernes (gentilmelding)
                     is_reenrollment = (
                         "opted_out_at" in changes
                         and changes["opted_out_at"].get("old")
                         and not changes["opted_out_at"].get("new")
                     )
                     label = "Gentilmeldt" if is_reenrollment else "Tilmeldt"
-                    history.append(_entry(log, "enrolled", format_html("{} per {}", label, _fmt(_parse(new_val)))))
+                    history.append(_entry(log, "enrolled", label, _parse(new_val)))
 
             # Framelding: opted_out_at sat for første gang
             if "opted_out_at" in changes:
                 old_val = changes["opted_out_at"].get("old")
                 new_val = changes["opted_out_at"].get("new")
                 if new_val and not old_val:
-                    history.append(_entry(log, "opted_out", format_html("Frameldt per {}", _fmt(_parse(new_val)))))
+                    history.append(_entry(log, "opted_out", "Frameldt", _parse(new_val)))
 
         # Fallback hvis ingen historik men skolen har datoer
         if not history and self.enrolled_at:
@@ -248,7 +254,9 @@ class School(models.Model):
                     "event_type": "enrolled",
                     "timestamp": None,
                     "user": None,
-                    "description": format_html("Tilmeldt per {}", _fmt(self.enrolled_at)),
+                    "label": "Tilmeldt",
+                    "badge_class": "bg-success",
+                    "date_str": _fmt(self.enrolled_at),
                 }
             )
             if self.opted_out_at:
@@ -258,7 +266,9 @@ class School(models.Model):
                         "event_type": "opted_out",
                         "timestamp": None,
                         "user": None,
-                        "description": format_html("Frameldt per {}", _fmt(self.opted_out_at)),
+                        "label": "Frameldt",
+                        "badge_class": "bg-danger",
+                        "date_str": _fmt(self.opted_out_at),
                     }
                 )
 
