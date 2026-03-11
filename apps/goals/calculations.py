@@ -23,8 +23,8 @@ def get_metrics_for_year(year_str: str) -> dict:
     Calculate all metrics for a given school year.
 
     Returns dict with:
-    - new_schools: Schools enrolled in this year
-    - anchoring: Schools enrolled before this year, still active
+    - new_schools: Schools with active_from in this year
+    - anchoring: Schools with active_from before this year, still active
     - courses: Number of courses in this year
     - trained_total: Participants who attended courses
     - trained_teachers: Teachers (is_underviser=True) who attended
@@ -34,15 +34,15 @@ def get_metrics_for_year(year_str: str) -> dict:
     start_date, end_date = get_school_year_dates(year_str)
     settings = ProjectSettings.get()
 
-    # New school partnerships: enrolled this year
-    new_schools = School.objects.active().filter(enrolled_at__gte=start_date, enrolled_at__lte=end_date).count()
+    # New school partnerships: active_from falls in this year
+    new_schools = School.objects.active().filter(active_from__gte=start_date, active_from__lte=end_date).count()
 
-    # Anchoring: enrolled before this year, still active (not opted out)
+    # Anchoring: active_from before this year, still active (not opted out)
     anchoring_schools = (
         School.objects.active()
         .filter(
-            enrolled_at__lt=start_date,
-            enrolled_at__isnull=False,
+            active_from__lt=start_date,
+            active_from__isnull=False,
         )
         .exclude(
             opted_out_at__lte=end_date  # Exclude schools that opted out before end of year

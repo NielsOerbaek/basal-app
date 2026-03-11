@@ -166,9 +166,9 @@ class School(models.Model):
 
     def get_enrolled_years(self):
         """Hent alle skoleår skolen var/er tilmeldt i."""
-        if not self.enrolled_at:
+        if not self.active_from:
             return SchoolYear.objects.none()
-        qs = SchoolYear.objects.filter(end_date__gte=self.enrolled_at)
+        qs = SchoolYear.objects.filter(end_date__gte=self.active_from)
         if self.opted_out_at:
             qs = qs.filter(start_date__lt=self.opted_out_at)
         return qs

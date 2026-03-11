@@ -81,20 +81,22 @@ class MetricsCalculationTests(TestCase):
         self.location = Location.objects.create(name="Test Location")
 
     def test_new_schools_count(self):
-        """Counts schools enrolled in given year."""
-        # Create school enrolled in 2024/25
+        """Counts schools with active_from in given year."""
+        # Create school active from 2024/25
         School.objects.create(
             name="New School",
             adresse="Test Address",
             kommune="Test Kommune",
-            enrolled_at=date(2024, 9, 1),  # Sept 2024 = 2024/25
+            enrolled_at=date(2024, 9, 1),
+            active_from=date(2024, 9, 1),  # Sept 2024 = 2024/25
         )
-        # Create school enrolled in different year
+        # Create school active from different year
         School.objects.create(
             name="Old School",
             adresse="Test Address",
             kommune="Test Kommune",
-            enrolled_at=date(2023, 9, 1),  # 2023/24
+            enrolled_at=date(2023, 9, 1),
+            active_from=date(2023, 9, 1),  # 2023/24
         )
 
         metrics = get_metrics_for_year("2024/25")
@@ -102,16 +104,21 @@ class MetricsCalculationTests(TestCase):
 
     def test_anchoring_schools_count(self):
         """Counts schools from previous years still active."""
-        # School enrolled before 2024/25, still active
+        # School active from before 2024/25, still active
         School.objects.create(
-            name="Anchoring School", adresse="Test Address", kommune="Test Kommune", enrolled_at=date(2023, 9, 1)
+            name="Anchoring School",
+            adresse="Test Address",
+            kommune="Test Kommune",
+            enrolled_at=date(2023, 9, 1),
+            active_from=date(2023, 9, 1),
         )
-        # School enrolled before 2024/25, but opted out
+        # School active from before 2024/25, but opted out
         School.objects.create(
             name="Opted Out School",
             adresse="Test Address",
             kommune="Test Kommune",
             enrolled_at=date(2023, 9, 1),
+            active_from=date(2023, 9, 1),
             opted_out_at=date(2024, 6, 1),  # Opted out before 2024/25
         )
 

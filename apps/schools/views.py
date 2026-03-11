@@ -874,7 +874,7 @@ class MissingInvoicesView(ListView):
                 invoices_for_year = school.invoices.filter(school_year=school_year)
 
                 # Determine if school needs fortsætter invoice (per school year)
-                is_fortsaetter = school.enrolled_at and school.enrolled_at < school_year.start_date
+                is_fortsaetter = school.active_from and school.active_from < school_year.start_date
 
                 # Check if fortsætter invoice exists for this year
                 has_fortsaetter_invoice = invoices_for_year.exclude(comment__icontains="ekstra").exists()
