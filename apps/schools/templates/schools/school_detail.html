@@ -125,8 +125,14 @@
                     <div class="collapse mt-2" id="enrollmentHistory">
                         <ul class="list-group list-group-flush small">
                             {% for event in enrollment_history %}
-                            <li class="list-group-item px-0 py-1">
-                                {% if event.timestamp %}<span class="text-muted">{{ event.timestamp|date:"d. M Y H:i" }}</span> {% endif %}{{ event.description }}
+                            <li class="list-group-item px-0 py-2">
+                                {% if event.timestamp or event.user %}
+                                <div class="text-muted" style="font-size: 0.85em;">
+                                    {% if event.timestamp %}{{ event.timestamp|date:"d. M Y H:i" }}{% endif %}
+                                    {% if event.user %} — {{ event.user }}{% endif %}
+                                </div>
+                                {% endif %}
+                                <div>{{ event.description }}</div>
                             </li>
                             {% endfor %}
                         </ul>

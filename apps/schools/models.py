@@ -199,7 +199,7 @@ class School(models.Model):
         def _user_str(log):
             if log.user:
                 return log.user.get_full_name() or log.user.username
-            return "Ukendt"
+            return "Offentlig tilmelding"
 
         history = []
         school_ct = ContentType.objects.get_for_model(School)
@@ -224,9 +224,9 @@ class School(models.Model):
                         {
                             "event_type": "enrolled",
                             "timestamp": log.timestamp,
+                            "user": _user_str(log),
                             "description": format_html(
-                                "{} tilmeldte {} per {}",
-                                _user_str(log),
+                                "Tilmeldte {} per {}",
                                 name,
                                 _bold(_parse(new_val)),
                             ),
@@ -242,9 +242,9 @@ class School(models.Model):
                         {
                             "event_type": "opted_out",
                             "timestamp": log.timestamp,
+                            "user": _user_str(log),
                             "description": format_html(
-                                "{} frameldte {} per {}",
-                                _user_str(log),
+                                "Frameldte {} per {}",
                                 name,
                                 _bold(_parse(new_val)),
                             ),
@@ -255,9 +255,9 @@ class School(models.Model):
                         {
                             "event_type": "correction",
                             "timestamp": log.timestamp,
+                            "user": _user_str(log),
                             "description": format_html(
-                                "{} rettede frameldingsdatoen fra {} til {}",
-                                _user_str(log),
+                                "Rettede frameldingsdatoen fra {} til {}",
                                 _bold(_parse(old_val)),
                                 _bold(_parse(new_val)),
                             ),
@@ -268,11 +268,8 @@ class School(models.Model):
                         {
                             "event_type": "enrolled",
                             "timestamp": log.timestamp,
-                            "description": format_html(
-                                "{} gentilmeldte {}",
-                                _user_str(log),
-                                name,
-                            ),
+                            "user": _user_str(log),
+                            "description": format_html("Gentilmeldte {}", name),
                         }
                     )
 
@@ -282,6 +279,7 @@ class School(models.Model):
                 {
                     "event_type": "enrolled",
                     "timestamp": None,
+                    "user": None,
                     "description": format_html("Tilmeldt per {}", _bold(self.enrolled_at)),
                 }
             )
@@ -290,6 +288,7 @@ class School(models.Model):
                     {
                         "event_type": "opted_out",
                         "timestamp": None,
+                        "user": None,
                         "description": format_html("Frameldt per {}", _bold(self.opted_out_at)),
                     }
                 )
