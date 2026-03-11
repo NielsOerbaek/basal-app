@@ -9,6 +9,9 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 ### Ny/fortsætter-status baseret på "aktiv fra" i stedet for tilmeldingsdato
 Projektmål-siden og forsiden viser nu ny/fortsætter-status for skoler baseret på "aktiv fra"-datoen i stedet for tilmeldingsdatoen. Det betyder at en skole er "ny" i det skoleår hvor "aktiv fra" falder, og "fortsætter" i de efterfølgende år. Samme rettelse er lavet i faktura-oversigten.
 
+### Projektmål viser nu også det kommende skoleår
+Projektmål-siden viser nu tal for det kommende skoleår (fx skoler der allerede har tilmeldt sig), i stedet for kun at vise måltal.
+
 ---
 
 ## 20. februar 2026

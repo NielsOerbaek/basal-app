@@ -25,7 +25,7 @@ class ProjectGoalsView(TemplateView):
         # Build data for each year
         years_data = []
         for idx, year in enumerate(PROJECT_YEARS):
-            is_future = idx > current_year_idx if current_year_idx >= 0 else False
+            is_future = idx > current_year_idx + 1 if current_year_idx >= 0 else False
             metrics = get_metrics_for_year(year) if not is_future else None
             targets = PROJECT_TARGETS[year]
             # URL-friendly year format: 2024/25 -> 2024-25
