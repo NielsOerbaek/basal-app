@@ -215,8 +215,15 @@ class School(models.Model):
         for log in logs:
             changes = log.changes or {}
 
-            # Tjek for ændring af enrolled_at
-            if "enrolled_at" in changes:
+            # Tjek om dette er en gentilmelding (opted_out_at fjernet)
+            is_reenrollment = (
+                "opted_out_at" in changes
+                and changes["opted_out_at"].get("old")
+                and not changes["opted_out_at"].get("new")
+            )
+
+            # Tjek for ændring af enrolled_at (spring over hvis gentilmelding — håndteres nedenfor)
+            if "enrolled_at" in changes and not is_reenrollment:
                 old_val = changes["enrolled_at"].get("old")
                 new_val = changes["enrolled_at"].get("new")
                 if new_val and not old_val:
@@ -263,15 +270,32 @@ class School(models.Model):
                             ),
                         }
                     )
-                elif old_val and not new_val:
-                    history.append(
-                        {
-                            "event_type": "enrolled",
-                            "timestamp": log.timestamp,
-                            "user": _user_str(log),
-                            "description": format_html("Gentilmeldte {}", name),
-                        }
-                    )
+                elif is_reenrollment:
+                    # Gentilmelding: brug den nye enrolled_at dato hvis tilgængelig
+                    enrolled_change = changes.get("enrolled_at", {})
+                    enrolled_val = enrolled_change.get("new")
+                    if enrolled_val:
+                        history.append(
+                            {
+                                "event_type": "enrolled",
+                                "timestamp": log.timestamp,
+                                "user": _user_str(log),
+                                "description": format_html(
+                                    "Gentilmeldte {} per {}",
+                                    name,
+                                    _bold(_parse(enrolled_val)),
+                                ),
+                            }
+                        )
+                    else:
+                        history.append(
+                            {
+                                "event_type": "enrolled",
+                                "timestamp": log.timestamp,
+                                "user": _user_str(log),
+                                "description": format_html("Gentilmeldte {}", name),
+                            }
+                        )
 
         # Hvis ingen historik men skolen har enrolled_at, tilføj som fallback
         if not history and self.enrolled_at:
