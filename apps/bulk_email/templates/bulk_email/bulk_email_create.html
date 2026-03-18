@@ -13,9 +13,14 @@
 
 {% block content %}
 <div class="container-fluid py-3">
-    <h1 class="h3 mb-3">
-        {% if draft %}Rediger kladde #{{ draft.pk }}{% elif copy_source %}Ny udsendelse — kopieret fra #{{ copy_source.pk }}{% else %}Ny udsendelse{% endif %}
-    </h1>
+    <div class="mb-3">
+        <input type="text" id="id_subject" name="subject" class="form-control form-control-lg fw-bold border-0 px-0"
+               style="font-size:1.5rem; background:transparent;"
+               value="{{ form.subject.value|default:'' }}"
+               placeholder="Navngiv denne udsendelse..."
+               maxlength="500">
+        <div class="text-muted small">Dette er både navnet på udsendelsen og emnelinjen i e-mailen. Brug et beskrivende navn, så du nemt kan finde den igen. Du kan bruge variabler som {% templatetag openvariable %} skole_navn {% templatetag closevariable %}.</div>
+    </div>
 
     {# ── 1. Modtagere ───────────────────────────────────────── #}
     <div class="card mb-3">
@@ -48,12 +53,8 @@
 
     {# ── 2. Emne & indhold ──────────────────────────────────── #}
     <div class="card mb-3">
-        <div class="card-header fw-semibold">2. Skriv e-mailens emne og indhold</div>
+        <div class="card-header fw-semibold">2. Skriv e-mailens indhold</div>
         <div class="card-body">
-            <div class="mb-3">
-                <label for="id_subject" class="form-label">Emne</label>
-                {{ form.subject }}
-            </div>
             <div class="mb-3">
                 <label class="form-label">Indhold</label>
                 {{ form.body_html }}

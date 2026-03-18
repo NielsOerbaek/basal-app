@@ -38,12 +38,6 @@
                             {% elif campaign.is_interrupted %}
                                 <span class="badge bg-warning text-dark ms-1">Afbrudt</span>
                             {% endif %}
-                            <button type="button" class="btn btn-sm btn-link text-muted p-0 ms-1" title="Omdøb"
-                                    data-bs-toggle="modal" data-bs-target="#renameModal"
-                                    data-rename-url="{% url 'bulk_email:rename' campaign.pk %}"
-                                    data-rename-subject="{{ campaign.subject }}">
-                                <i class="bi bi-pencil"></i>
-                            </button>
                         </td>
                         <td>{{ campaign.get_recipient_type_display }}</td>
                         <td class="text-muted small">{{ campaign.get_filter_summary_display|default:"—" }}</td>
@@ -112,28 +106,6 @@
     </div>
 </div>
 
-{# Rename modal #}
-<div class="modal fade" id="renameModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form id="renameForm" method="post">
-                {% csrf_token %}
-                <div class="modal-header">
-                    <h5 class="modal-title">Omdøb udsendelse</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <label for="renameInput" class="form-label">Nyt emne/navn</label>
-                    <input type="text" class="form-control" id="renameInput" name="subject" required maxlength="500">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuller</button>
-                    <button type="submit" class="btn btn-primary">Gem</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -142,11 +114,6 @@ document.getElementById("deleteModal").addEventListener("show.bs.modal", functio
     const btn = event.relatedTarget;
     document.getElementById("deleteForm").action = btn.getAttribute("data-delete-url");
     document.getElementById("deleteSubject").textContent = btn.getAttribute("data-delete-subject");
-});
-document.getElementById("renameModal").addEventListener("show.bs.modal", function(event) {
-    const btn = event.relatedTarget;
-    document.getElementById("renameForm").action = btn.getAttribute("data-rename-url");
-    document.getElementById("renameInput").value = btn.getAttribute("data-rename-subject");
 });
 </script>
 {% endblock %}

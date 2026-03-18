@@ -452,14 +452,3 @@ class BulkEmailDeleteView(View):
             att.file.delete(save=False)
         campaign.delete()
         return redirect("bulk_email:list")
-
-
-@method_decorator(full_admin_required, name="dispatch")
-class BulkEmailRenameView(View):
-    def post(self, request, pk):
-        campaign = get_object_or_404(BulkEmail, pk=pk)
-        new_subject = request.POST.get("subject", "").strip()
-        if new_subject:
-            campaign.subject = new_subject
-            campaign.save(update_fields=["subject"])
-        return redirect("bulk_email:list")
