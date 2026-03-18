@@ -3065,3 +3065,105 @@ class DeleteEnrollmentHistoryViewTest(TestCase):
         url = reverse("schools:delete-enrollment-history", kwargs={"pk": other_school.pk, "log_id": self.log_entry.pk})
         response = self.client.post(url)
         self.assertEqual(response.status_code, 404)
+
+
+class FilterSummaryTest(TestCase):
+    def _make_request(self, params):
+        from django.test import RequestFactory
+
+        return RequestFactory().get("/schools/", params)
+
+    def test_no_filters_returns_empty_string(self):
+        from apps.schools.views import get_filter_summary
+
+        assert get_filter_summary(self._make_request({})) == ""
+
+    def test_search_only(self):
+        from apps.schools.views import get_filter_summary
+
+        assert get_filter_summary(self._make_request({"search": "Viborg"})) == 'Søgning: "Viborg"'
+
+    def test_year_only(self):
+        from apps.schools.views import get_filter_summary
+
+        assert get_filter_summary(self._make_request({"year": "2024/25"})) == "Skoleår: 2024/25"
+
+    def test_year_with_status_ny(self):
+        from apps.schools.views import get_filter_summary
+
+        assert (
+            get_filter_summary(self._make_request({"year": "2024/25", "status_filter": "tilmeldt_ny"}))
+            == "Ny tilmeldt i 2024/25"
+        )
+
+    def test_year_with_status_fortsaetter(self):
+        from apps.schools.views import get_filter_summary
+
+        assert (
+            get_filter_summary(self._make_request({"year": "2024/25", "status_filter": "tilmeldt_fortsaetter"}))
+            == "Fortsætter i 2024/25"
+        )
+
+    def test_year_with_status_frameldt(self):
+        from apps.schools.views import get_filter_summary
+
+        assert (
+            get_filter_summary(self._make_request({"year": "2024/25", "status_filter": "frameldt"}))
+            == "Frameldt i 2024/25"
+        )
+
+    def test_year_with_status_venter(self):
+        from apps.schools.views import get_filter_summary
+
+        assert (
+            get_filter_summary(self._make_request({"year": "2024/25", "status_filter": "tilmeldt_venter"}))
+            == "Ventende til 2024/25"
+        )
+
+    def test_year_with_status_ikke_tilmeldt(self):
+        from apps.schools.views import get_filter_summary
+
+        assert (
+            get_filter_summary(self._make_request({"year": "2024/25", "status_filter": "ikke_tilmeldt"}))
+            == "Ikke tilmeldt i 2024/25"
+        )
+
+    def test_no_year_frameldt(self):
+        from apps.schools.views import get_filter_summary
+
+        assert get_filter_summary(self._make_request({"status_filter": "frameldt"})) == "Frameldt"
+
+    def test_no_year_tilmeldt_ny(self):
+        from apps.schools.views import get_filter_summary
+
+        assert (
+            get_filter_summary(self._make_request({"status_filter": "tilmeldt_ny"})) == "Ny tilmeldt (indeværende år)"
+        )
+
+    def test_kommune(self):
+        from apps.schools.views import get_filter_summary
+
+        assert get_filter_summary(self._make_request({"kommune": "Aarhus"})) == "Kommune: Aarhus"
+
+    def test_unused_seats_yes(self):
+        from apps.schools.views import get_filter_summary
+
+        assert get_filter_summary(self._make_request({"unused_seats": "yes"})) == "Har ubrugte pladser"
+
+    def test_unused_seats_no(self):
+        from apps.schools.views import get_filter_summary
+
+        assert get_filter_summary(self._make_request({"unused_seats": "no"})) == "Ingen ubrugte pladser"
+
+    def test_multiple_filters_combined(self):
+        from apps.schools.views import get_filter_summary
+
+        result = get_filter_summary(
+            self._make_request({"year": "2024/25", "status_filter": "tilmeldt_ny", "kommune": "Aarhus"})
+        )
+        assert result == "Ny tilmeldt i 2024/25 · Kommune: Aarhus"
+
+    def test_empty_search_not_included(self):
+        from apps.schools.views import get_filter_summary
+
+        assert get_filter_summary(self._make_request({"search": ""})) == ""
