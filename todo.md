@@ -8,6 +8,43 @@
 
 ## TODO
 
+
+Kommune:
+- Kommuner skal være en rigere datamodel med betalings information
+  - Hvis der er kommuneaftale, gælder det så altid for alle skoler i kommunen, eller kun folkeskoler, eller kun nogen skoler?
+    - KUN DEM HVOR DER ER KRYDS I KOMMUNEN BETALER
+  - Skal det vises som mulighed når en skole tilmelder sig?
+  - Skal faktisk efterligne skole-modellen ret meget.
+  - Vise en liste over skoler i kommunen der har kommunen betaler
+
+- Kursusdeltagere skal også kunne kobles på en kommune, og en kommune skal kunne have kontaktpersoner
+
+- Gøre det tydeligt man kan tilmelde sig kursus i næste skoleår, hvis man er ny tilmeldt og snart er fortsætter
+
+- Generelt email udsendings tool.
+  - filter på skole tilmelding kommune
+  - dry-run på modtagerliste
+  - Send til mig som om jeg
+  - preview vindue
+  - Gem tidligere sendte mails.
+
+  - Gøre det tydeligt at skolen er frameldt fra SKOLEÅR 
+  - Trække liste af skoler som er med, og som ikke har frameldt sig i fremtiden.
+
+- Sortering på skoler. 
+  - Skoleår søger på match aktiv fra.
+  - Vi vil gerne både kunne søge på Aktiv fra. 
+  - Projekt mål gør det rigtigt
+  - Gør filter mere tydelig og verbøs, så man forstår hvad man filtrerer på.
+
+- Private og friskoler, efterskole. 
+  - Ny status på skoler, alle nuværende er folkeskoler per default, men skal kunne ændres.
+  - INSTITUTIONS_TYPE
+  - Importér data
+  - Fix bornholms frie *skole til privat skole.
+
+
+  
 ### QA
 
 - Fungerer emails som de skal? Kommer alle attachements med?
