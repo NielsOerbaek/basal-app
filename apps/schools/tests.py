@@ -3433,3 +3433,35 @@ class FilterContextTest(TestCase):
     def test_filter_summary_populated_when_filters_active(self):
         response = self._get({"year": "2024/25", "status_filter": "tilmeldt_ny"})
         self.assertEqual(response.context["filter_summary"], "Ny tilmeldt i 2024/25")
+
+
+class CalculateSeatPriceTest(TestCase):
+    def test_zero_seats(self):
+        from apps.schools.consumption import calculate_seat_price
+
+        self.assertEqual(calculate_seat_price(0), 0)
+
+    def test_one_seat(self):
+        from apps.schools.consumption import calculate_seat_price
+
+        self.assertEqual(calculate_seat_price(1), 7995)
+
+    def test_two_seats(self):
+        from apps.schools.consumption import calculate_seat_price
+
+        self.assertEqual(calculate_seat_price(2), 15190)
+
+    def test_three_seats(self):
+        from apps.schools.consumption import calculate_seat_price
+
+        self.assertEqual(calculate_seat_price(3), 21586)
+
+    def test_four_seats(self):
+        from apps.schools.consumption import calculate_seat_price
+
+        self.assertEqual(calculate_seat_price(4), 4 * 7195)
+
+    def test_five_seats(self):
+        from apps.schools.consumption import calculate_seat_price
+
+        self.assertEqual(calculate_seat_price(5), 5 * 7195)
