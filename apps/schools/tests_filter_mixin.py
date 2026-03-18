@@ -76,3 +76,40 @@ class SchoolFilterMixinContextTest(TestCase):
         view = DummyView(request)
         ctx = view.get_filter_context()
         self.assertIn("2024/25", list(ctx["school_years"]))
+
+
+class SchoolFilterMixinQuerysetTest(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        School.objects.create(
+            name="Aarhus Skole",
+            kommune="Aarhus",
+            signup_token="tok1",
+            signup_password="pw1",
+        )
+        School.objects.create(
+            name="Odense Skole",
+            kommune="Odense",
+            signup_token="tok2",
+            signup_password="pw2",
+        )
+
+    def test_no_filters_returns_active_schools(self):
+        request = self.factory.get("/")
+        view = DummyView(request)
+        qs = view.get_school_filter_queryset()
+        self.assertEqual(len(list(qs)), 2)
+
+    def test_search_filters_by_name(self):
+        request = self.factory.get("/?search=Aarhus")
+        view = DummyView(request)
+        qs = list(view.get_school_filter_queryset())
+        self.assertEqual(len(qs), 1)
+        self.assertEqual(qs[0].name, "Aarhus Skole")
+
+    def test_kommune_filter(self):
+        request = self.factory.get("/?kommune=Odense")
+        view = DummyView(request)
+        qs = list(view.get_school_filter_queryset())
+        self.assertEqual(len(qs), 1)
+        self.assertEqual(qs[0].name, "Odense Skole")

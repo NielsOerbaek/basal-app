@@ -62,61 +62,6 @@ class KommuneDetailView(ListView):
         return context
 
 
-_STATUS_LABELS_NO_YEAR = {
-    "tilmeldt": "Alle tilmeldte",
-    "tilmeldt_ny": "Ny tilmeldt (indeværende år)",
-    "tilmeldt_fortsaetter": "Fortsætter (indeværende år)",
-    "tilmeldt_venter": "Tilmeldt fra næste år",
-    "frameldt": "Frameldt",
-    "ikke_tilmeldt": "Ikke tilmeldt",
-    "har_tilmeldinger_ikke_basal": "Har kurstilmeldinger (ikke tilmeldt i Basal)",
-}
-
-_STATUS_LABELS_WITH_YEAR = {
-    "tilmeldt_ny": "Ny tilmeldt i {year}",
-    "tilmeldt_fortsaetter": "Fortsætter i {year}",
-    "frameldt": "Frameldt i {year}",
-    "tilmeldt_venter": "Ventende til {year}",
-    "ikke_tilmeldt": "Ikke tilmeldt i {year}",
-}
-
-
-def get_filter_summary(request):
-    """Build a human-readable summary of active filters for display in the collapsed bar."""
-    parts = []
-    search = request.GET.get("search", "").strip()
-    year = request.GET.get("year", "").strip()
-    status_filter = request.GET.get("status_filter", "").strip()
-    kommune = request.GET.get("kommune", "").strip()
-    unused_seats = request.GET.get("unused_seats", "").strip()
-
-    if search:
-        parts.append(f'Søgning: "{search}"')
-
-    if year and status_filter:
-        template = _STATUS_LABELS_WITH_YEAR.get(status_filter)
-        if template:
-            parts.append(template.format(year=year))
-        else:
-            parts.append(f"Skoleår: {year}")
-    elif year:
-        parts.append(f"Skoleår: {year}")
-    elif status_filter:
-        label = _STATUS_LABELS_NO_YEAR.get(status_filter)
-        if label:
-            parts.append(label)
-
-    if kommune:
-        parts.append(f"Kommune: {kommune}")
-
-    if unused_seats == "yes":
-        parts.append("Har ubrugte pladser")
-    elif unused_seats == "no":
-        parts.append("Ingen ubrugte pladser")
-
-    return " · ".join(parts)
-
-
 @method_decorator(staff_required, name="dispatch")
 class SchoolListView(SchoolFilterMixin, SortableMixin, ListView):
     model = School
