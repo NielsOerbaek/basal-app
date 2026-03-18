@@ -1,12 +1,18 @@
+import json
 import logging
 
 from django.db.models import F
+from django.http import FileResponse, JsonResponse
+from django.shortcuts import get_object_or_404, render
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import DetailView, ListView
 
-from apps.bulk_email.models import BulkEmail
+from apps.bulk_email.models import BulkEmail, BulkEmailAttachment
+from apps.bulk_email.services import find_missing_variables, render_for_school, resolve_recipients
 from apps.core.decorators import staff_required
+from apps.schools.mixins import SchoolFilterMixin
+from apps.schools.models import School
 
 logger = logging.getLogger(__name__)
 
@@ -60,17 +66,94 @@ class BulkEmailCreateView(View):
 @method_decorator(staff_required, name="dispatch")
 class BulkEmailPreviewView(View):
     def post(self, request):
-        from django.http import HttpResponse
+        try:
+            payload = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-        return HttpResponse("preview placeholder")
+        school_pk = payload.get("school_pk")
+        subject = payload.get("subject", "")
+        body_html = payload.get("body_html", "")
+        recipient_type = payload.get("recipient_type", BulkEmail.KOORDINATOR)
+
+        school = get_object_or_404(School, pk=school_pk)
+
+        # Find the contact person based on recipient type
+        person = None
+        if recipient_type == BulkEmail.KOORDINATOR:
+            person = school.people.filter(is_koordinator=True, email__isnull=False).exclude(email="").first()
+        elif recipient_type == BulkEmail.OEKONOMISK_ANSVARLIG:
+            person = school.people.filter(is_oekonomisk_ansvarlig=True, email__isnull=False).exclude(email="").first()
+        if person is None:
+            person = school.people.first()
+
+        rendered_body = render_for_school(body_html, school, person)
+        rendered_subject = render_for_school(subject, school, person)
+
+        return render(
+            request,
+            "bulk_email/bulk_email_preview.html",
+            {
+                "subject": rendered_subject,
+                "body_html": rendered_body,
+                "school": school,
+            },
+        )
 
 
 @method_decorator(staff_required, name="dispatch")
 class BulkEmailDryRunView(View):
     def post(self, request):
-        from django.http import HttpResponse
+        try:
+            payload = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-        return HttpResponse("dry-run placeholder")
+        recipient_type = payload.get("recipient_type", BulkEmail.KOORDINATOR)
+        subject = payload.get("subject", "")
+        body_html = payload.get("body_html", "")
+        filter_params = payload.get("filter_params", {})
+
+        # Build a fake request to use the mixin filter logic
+        from urllib.parse import urlencode
+
+        from django.http import QueryDict
+
+        fake_qs = QueryDict(urlencode(filter_params))
+
+        class _FakeRequest:
+            GET = fake_qs
+
+        # Use SchoolFilterMixin to resolve filtered schools
+        class _FilterView(SchoolFilterMixin):
+            request = _FakeRequest()
+
+        view = _FilterView()
+        schools = list(view.get_school_filter_queryset())
+
+        pairs = resolve_recipients(schools, recipient_type)
+
+        # Combined template for variable analysis
+        combined = subject + " " + body_html
+        warnings = find_missing_variables(combined, pairs)
+
+        recipients_data = [
+            {
+                "school": school.name,
+                "person": person.name,
+                "email": person.email,
+            }
+            for school, person in pairs
+        ]
+
+        return JsonResponse(
+            {
+                "recipients": recipients_data,
+                "total": len(recipients_data),
+                "skipped": len(schools) - len(pairs),
+                "warnings": warnings,
+            }
+        )
 
 
 @method_decorator(staff_required, name="dispatch")
@@ -84,14 +167,18 @@ class BulkEmailSendView(View):
 @method_decorator(staff_required, name="dispatch")
 class BulkEmailAttachmentUploadView(View):
     def post(self, request):
-        from django.http import HttpResponse
-
-        return HttpResponse("upload placeholder")
+        f = request.FILES.get("file")
+        if not f:
+            return JsonResponse({"error": "No file"}, status=400)
+        attachment = BulkEmailAttachment.objects.create(
+            filename=f.name,
+            file=f,
+        )
+        return JsonResponse({"pk": attachment.pk, "filename": attachment.filename})
 
 
 @method_decorator(staff_required, name="dispatch")
 class BulkEmailAttachmentDownloadView(View):
     def get(self, request, pk):
-        from django.http import HttpResponse
-
-        return HttpResponse("download placeholder")
+        attachment = get_object_or_404(BulkEmailAttachment, pk=pk)
+        return FileResponse(attachment.file.open("rb"), as_attachment=True, filename=attachment.filename)
