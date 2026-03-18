@@ -196,7 +196,9 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
     new_school_by = forms.CharField(max_length=100, required=False, label="By")
 
     # School EAN (required for all)
-    ean_nummer = forms.CharField(max_length=13, label="EAN-nummer", help_text="13-cifret EAN-nummer til fakturering")
+    ean_nummer = forms.CharField(
+        max_length=13, label="EAN/CVR-nummer", help_text="13-cifret EAN-nummer til evt. fremtidig fakturering"
+    )
 
     # Koordinator - contact to Komiteen for Sundhedsoplysning
     koordinator_name = forms.CharField(max_length=255, label="Navn")

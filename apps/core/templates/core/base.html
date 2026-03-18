@@ -114,8 +114,7 @@
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{% url 'goals:project-goals' %}"><i class="bi bi-graph-up-arrow me-2"></i>Projektmål</a></li>
                             <li><a class="dropdown-item" href="{% url 'audit:activity_list' %}"><i class="bi bi-clock-history me-2"></i>Aktivitet</a></li>
-                            <li><a class="dropdown-item" href="{% url 'schools:missing-invoices' %}"><i class="bi bi-receipt me-2"></i>Manglende fakturaer</a></li>
-                            {% if can_manage_users %}
+{% if can_manage_users %}
                             <li><a class="dropdown-item" href="{% url 'accounts:user-list' %}"><i class="bi bi-people me-2"></i>Brugere</a></li>
                             {% endif %}
                             {% if user.is_superuser %}

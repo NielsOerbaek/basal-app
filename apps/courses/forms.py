@@ -209,9 +209,9 @@ class CourseForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
 
-        # Set default registration_deadline if not provided (5 weeks before start_date)
+        # Set default registration_deadline if not provided (6 weeks before start_date)
         if not instance.registration_deadline and instance.start_date:
-            instance.registration_deadline = instance.start_date - timedelta(weeks=5)
+            instance.registration_deadline = instance.start_date - timedelta(weeks=6)
 
         if commit:
             instance.save()

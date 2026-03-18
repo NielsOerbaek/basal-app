@@ -6,6 +6,29 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ## 18. marts 2026
 
+### Fakturamodulet er fjernet
+Fakturaregistrering i databasen er fjernet. Fakturering håndteres fremover uden for databasen.
+
+### Notifikationsmail ved kursustilmelding
+Basal modtager nu en automatisk mail, når en skole tilmelder sig et kursus. Mailen indeholder skolens navn, kursus, deltagere, økonomisk ansvarlig, EAN/CVR-nummer og beregnet fakturabeløb (gratis eller tilkøbspris).
+
+### Tilmeld til kursus åbner nu i nyt vindue
+Knappen "Tilmeld til kursus" på skolernes egen side åbner nu tilmeldingssiden i et nyt vindue.
+
+### EAN-advarsel vises ikke længere når kommunen betaler
+Advarslen om manglende EAN-nummer vises ikke, hvis skolen er markeret som kommunalt betalt.
+
+### Advarsel om overskridelse af kursuspladser er fjernet
+Advarslen "Skolen bruger flere pladser end tildelt" er fjernet fra skolesiden.
+
+### Automatisk tilmeldingsfrist ændret til 6 uger
+Standard tilmeldingsfrist sættes nu til 6 uger før kursusstart (tidligere 5 uger).
+
+### Tekstrettelser
+- EAN-nummer omdøbt til EAN/CVR-nummer
+- Hjælpetekst ved EAN-felt på tilmeldingssiden opdateret til "evt. fremtidig fakturering"
+- Tekst ved underviser-felt på kursustilmelding præciseret
+
 ### Skolelisten har fået en ny filterpanel
 Filterpanelet i skolelisten er omdesignet: det er nu skjult som standard og kan foldes ud. Når filtre er aktive, vises en kort dansk opsummering i stedet for de individuelle filterfelter. Filteret tager nu hensyn til det valgte skoleår, så fx status (tilmeldt/frameldt/afventer) vurderes i forhold til det pågældende skoleår frem for det nuværende.
 

@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from apps.contacts.models import ContactTime
 from apps.courses.models import Course, CourseSignUp, Location
-from apps.schools.models import Invoice, Person, School, SchoolComment
+from apps.schools.models import Person, School, SchoolComment
 
 from .models import ProjectSettings
 
@@ -104,14 +104,6 @@ def smoke_test_data(db, staff_user):
         comment="Test comment",
     )
 
-    # Create invoice
-    invoice = Invoice.objects.create(
-        school=school,
-        invoice_number="TEST-001",
-        amount=1000,
-        date=date.today(),
-    )
-
     # Create location and course
     location = Location.objects.create(name="Test Location")
     course = Course.objects.create(
@@ -143,7 +135,6 @@ def smoke_test_data(db, staff_user):
         "school": school,
         "person": person,
         "comment": comment,
-        "invoice": invoice,
         "course": course,
         "signup": signup,
         "contact": contact,

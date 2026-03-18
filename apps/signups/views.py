@@ -173,12 +173,13 @@ class CourseSignupView(View):
                 )
 
         if form.is_valid():
-            from apps.emails.services import send_signup_confirmation
+            from apps.emails.services import send_course_signup_notification, send_signup_confirmation
 
             course = form.cleaned_data["course"]
             school = form.cleaned_data["school"]
 
             # Create a signup for each participant
+            created_signups = []
             for participant in participants:
                 signup = CourseSignUp.objects.create(
                     course=course,
@@ -189,8 +190,12 @@ class CourseSignupView(View):
                     participant_title=participant.get("title", ""),
                     is_underviser=participant.get("is_underviser", True),
                 )
+                created_signups.append(signup)
                 # Send confirmation email to each participant
                 send_signup_confirmation(signup)
+
+            # Send notification to admin
+            send_course_signup_notification(school, course, created_signups)
 
             return redirect("signup:course-success")
 
