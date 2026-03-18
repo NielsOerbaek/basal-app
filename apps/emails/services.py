@@ -164,6 +164,19 @@ def send_course_reminder(signup, attachments=None):
     return send_email(EmailType.COURSE_REMINDER, signup, attachments=attachments)
 
 
+def _cumulative_seat_price(n):
+    """Calculate cumulative price for n paid course seats (volume discount per school year)."""
+    if n <= 0:
+        return 0
+    if n == 1:
+        return 7995
+    if n == 2:
+        return 15190
+    if n == 3:
+        return 21586
+    return 21586 + (n - 3) * 7195
+
+
 def send_course_signup_notification(school, course, signups):
     """
     Send notification email to admin when a school signs up for a course.
@@ -178,6 +191,25 @@ def send_course_signup_notification(school, course, signups):
     oeko = school.people.filter(is_oekonomisk_ansvarlig=True).first()
     oeko_name = oeko.name if oeko else "–"
 
+    # Calculate billing: signups are already saved, so derive "before" state
+    n_new = len(signups)
+    seat_info = school.seats_for_course(course)
+    free_seats = seat_info["free"]
+    used_after = seat_info["used"]
+    used_before = used_after - n_new
+
+    paid_before = max(0, used_before - free_seats)
+    paid_after = max(0, used_after - free_seats)
+    paid_this = paid_after - paid_before
+    free_this = n_new - paid_this
+
+    invoice_amount = _cumulative_seat_price(paid_after) - _cumulative_seat_price(paid_before)
+
+    if paid_this > 0:
+        billing_html = f"<li><strong>Fakturering:</strong> {paid_this} tilkøbt plads{'er' if paid_this != 1 else ''} – <strong>{invoice_amount:,} kr.</strong></li>"
+    else:
+        billing_html = f"<li><strong>Fakturering:</strong> Gratis ({free_this} inkluderet plads{'er' if free_this != 1 else ''})</li>"
+
     participants_html = "".join(f"<li>{s.participant_name} ({s.participant_email})</li>" for s in signups)
 
     body_html = f"""
@@ -190,6 +222,7 @@ def send_course_signup_notification(school, course, signups):
   </li>
   <li><strong>Økonomisk ansvarlig:</strong> {oeko_name}</li>
   <li><strong>EAN/CVR-nummer:</strong> {school.ean_nummer or "–"}</li>
+  {billing_html}
 </ul>
 """
 
