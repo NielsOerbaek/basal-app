@@ -488,6 +488,24 @@ class SchoolSignupView(View):
                 is_oekonomisk_ansvarlig=True,
             )
 
+            # Auto-attach any signup form attachments as school files
+            if page:
+                import re
+
+                from django.core.files.base import ContentFile
+
+                from apps.schools.models import SchoolFile
+
+                for field_config in page.form_fields.all():
+                    if field_config.attachment:
+                        filename = field_config.attachment.name.split("/")[-1]
+                        description = re.sub(r"<[^>]+>", "", field_config.label).strip()
+                        SchoolFile.objects.create(
+                            school=school,
+                            file=ContentFile(field_config.attachment.read(), name=filename),
+                            description=description,
+                        )
+
             # Send confirmation email
             send_school_enrollment_confirmation(school, koordinator_email, koordinator_name)
 

@@ -222,6 +222,22 @@
                 </div>
             </div>
 
+            {% if school.files.exists %}
+            <div class="card mb-4">
+                <div class="card-header"><i class="bi bi-folder me-2"></i>Dokumenter</div>
+                <ul class="list-group list-group-flush">
+                    {% for file in school.files.all %}
+                    <li class="list-group-item">
+                        <a href="{{ file.file.url }}" target="_blank" class="text-decoration-none">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>{{ file.filename }}
+                        </a>
+                        {% if file.description %}<div class="small text-muted">{{ file.description }}</div>{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
             {% if courses_with_materials %}
             <div class="card mb-4">
                 <div class="card-header"><i class="bi bi-file-earmark-text me-2"></i>Kursusmaterialer</div>
