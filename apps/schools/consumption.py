@@ -119,7 +119,8 @@ def get_consumption_overview(school, today=None):
         )
 
     forankringsplads_data = {
-        "is_applicable": is_continuation,
+        "is_applicable": True,
+        "is_available": is_continuation,  # can actually use it (past first year)
         "used": 1 if forankringsplads_used else 0,
         "total": 1,
         "valid_until_year": FORANKRINGSPLADS_VALID_UNTIL,

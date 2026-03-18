@@ -131,7 +131,7 @@
                                     {{ year.year_name }}
                                     {% if year.is_first_year %}<span class="badge bg-light text-dark ms-1 fw-normal">Første år</span>{% endif %}
                                     {% if year.is_current %}<span class="badge bg-primary ms-1 fw-normal">Nuværende</span>{% endif %}
-                                    {% if year.is_greyed %}<span class="badge bg-secondary ms-1 fw-normal small">Ikke åbnet endnu</span>{% endif %}
+                                    {% if year.is_greyed %}<span class="badge bg-secondary ms-1 fw-normal small">Næste skoleår</span>{% endif %}
                                 </span>
                                 <i class="bi bi-chevron-down small text-muted"></i>
                             </button>
@@ -183,7 +183,7 @@
 
                         {% with fp=consumption_overview.forankringsplads %}
                         {% if fp.is_applicable %}
-                        <div class="border-bottom bg-light">
+                        <div class="border-bottom bg-light {% if not fp.is_available %}opacity-50{% endif %}">
                             <button class="btn btn-link w-100 text-start text-decoration-none px-3 py-2 d-flex justify-content-between align-items-center"
                                     type="button"
                                     data-bs-toggle="collapse"
@@ -199,6 +199,7 @@
                             </button>
                             <div id="forankringsplads-block"
                                  class="collapse {% if fp.is_expanded %}show{% endif %} px-3 pb-3">
+                                {% if fp.is_available %}
                                 <p class="small text-muted mb-1">
                                     Efter første tilmeldte skoleår får I 1 ekstra gratis kursusplads til at forankre projektet på skolen.
                                     Denne plads kan bruges frem t.o.m. skoleåret {{ fp.valid_until_year }}.
@@ -211,6 +212,12 @@
                                         {% if fp.used == 0 %}Ikke brugt endnu{% else %}Brugt{% endif %}
                                     </div>
                                 </div>
+                                {% else %}
+                                <p class="small text-muted mb-0">
+                                    Efter første skoleår får I 1 ekstra gratis kursusplads til at forankre projektet på skolen.
+                                    Pladsen kan bruges frem t.o.m. skoleåret {{ fp.valid_until_year }}.
+                                </p>
+                                {% endif %}
                             </div>
                         </div>
                         {% endif %}
