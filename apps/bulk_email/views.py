@@ -5,7 +5,7 @@ import resend
 from django.conf import settings
 from django.db.models import F
 from django.http import FileResponse, JsonResponse, QueryDict, StreamingHttpResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -441,3 +441,14 @@ class BulkEmailAttachmentDownloadView(View):
     def get(self, request, pk):
         attachment = get_object_or_404(BulkEmailAttachment, pk=pk)
         return FileResponse(attachment.file.open("rb"), as_attachment=True, filename=attachment.filename)
+
+
+@method_decorator(full_admin_required, name="dispatch")
+class BulkEmailDeleteView(View):
+    def post(self, request, pk):
+        campaign = get_object_or_404(BulkEmail, pk=pk)
+        # Delete attachment files from storage
+        for att in campaign.attachments.all():
+            att.file.delete(save=False)
+        campaign.delete()
+        return redirect("bulk_email:list")

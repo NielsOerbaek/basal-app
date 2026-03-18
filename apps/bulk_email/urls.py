@@ -14,4 +14,5 @@ urlpatterns = [
     path("dry-run/", views.BulkEmailDryRunView.as_view(), name="dry_run"),
     path("send/", views.BulkEmailSendView.as_view(), name="send"),
     path("attachments/<int:pk>/", views.BulkEmailAttachmentDownloadView.as_view(), name="attachment_download"),
+    path("<int:pk>/slet/", views.BulkEmailDeleteView.as_view(), name="delete"),
 ]

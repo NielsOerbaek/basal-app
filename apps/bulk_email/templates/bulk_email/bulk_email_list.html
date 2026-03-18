@@ -55,7 +55,7 @@
                                 <span class="text-danger">({{ campaign.failure_count }} fejl)</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="text-nowrap">
                             {% if campaign.is_draft %}
                             <a href="{% url 'bulk_email:create' %}?draft={{ campaign.pk }}{% for k, v in campaign.filter_params.items %}&{{ k }}={{ v|urlencode }}{% endfor %}"
                                class="btn btn-sm btn-outline-primary">
@@ -66,6 +66,12 @@
                                class="btn btn-sm btn-outline-secondary">
                                 Kopier til ny
                             </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                    data-delete-url="{% url 'bulk_email:delete' campaign.pk %}"
+                                    data-delete-subject="{{ campaign.subject|truncatechars:40 }}">
+                                Slet
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -77,4 +83,36 @@
     <p class="text-muted">Ingen udsendelser endnu.</p>
     {% endif %}
 </div>
+
+{# Delete confirmation modal #}
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Slet udsendelse</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Er du sikker på at du vil slette <strong id="deleteSubject"></strong>? Dette kan ikke fortrydes.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuller</button>
+                <form id="deleteForm" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Slet</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById("deleteModal").addEventListener("show.bs.modal", function(event) {
+    const btn = event.relatedTarget;
+    document.getElementById("deleteForm").action = btn.getAttribute("data-delete-url");
+    document.getElementById("deleteSubject").textContent = btn.getAttribute("data-delete-subject");
+});
+</script>
 {% endblock %}
