@@ -53,6 +53,16 @@ def build_template_context(school, person):
     return {var: (accessor(school, person) or "") for var, accessor in VARIABLE_ACCESSORS.items()}
 
 
+def make_urls_absolute(html):
+    """Convert relative src/href URLs to absolute using SITE_URL."""
+    site_url = getattr(settings, "SITE_URL", "").rstrip("/")
+    if not site_url:
+        return html
+    # Convert src="/media/..." and href="/media/..." etc. to absolute
+    html = re.sub(r'(src|href)="(/[^"]+)"', rf'\1="{site_url}\2"', html)
+    return html
+
+
 def render_for_school(template_str, school, person):
     """Render a template string with school+person context."""
     ctx = build_template_context(school, person)
@@ -118,7 +128,7 @@ def send_to_school(bulk_email, school, person, attachment_data=None):
     """
     email_address = person.email
     subject = render_for_school(bulk_email.subject, school, person)
-    body_html = render_for_school(bulk_email.body_html, school, person) + EMAIL_FOOTER
+    body_html = make_urls_absolute(render_for_school(bulk_email.body_html, school, person)) + EMAIL_FOOTER
 
     recipient = BulkEmailRecipient(
         bulk_email=bulk_email,
