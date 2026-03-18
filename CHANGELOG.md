@@ -6,6 +6,10 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ## 18. marts 2026
 
+### Nyt forbrugsoverblik på skolernes side
+
+Kursuspladser-oversigten på skolernes side er redesignet. Den hedder nu "Forbrug af kursuspladser" og viser en samlet oversigt over forbrug og priser pr. skoleår. Hvert skoleår er et sammenfoldeligt afsnit med oplysninger om medlemskab, gratis pladser, forankringsplads og tilkøbte pladser med automatisk prisberegning. Det igangværende skoleår er udfoldet som standard. Forankringspladsblokken viser om den gratis forankringsplads er brugt eller ej.
+
 ### Fakturamodulet er fjernet
 Fakturaregistrering i databasen er fjernet. Fakturering håndteres fremover uden for databasen.
 
