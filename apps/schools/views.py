@@ -179,8 +179,7 @@ class SchoolListView(SortableMixin, ListView):
                         enrolled_at__isnull=False,
                         active_from__isnull=False,
                         active_from__lt=start_date,
-                        opted_out_at__isnull=True,
-                    )
+                    ).filter(Q(opted_out_at__isnull=True) | Q(opted_out_at__gt=start_date))
                 elif status_filter == "frameldt":
                     queryset = queryset.filter(
                         opted_out_at__isnull=False,

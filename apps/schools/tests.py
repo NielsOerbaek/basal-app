@@ -3293,7 +3293,8 @@ class YearAwareStatusFilterTest(TestCase):
         names = self._names(self._get({"year": "2024/25", "status_filter": "tilmeldt_fortsaetter"}))
         self.assertIn("Fortsætter", names)
         self.assertNotIn("Ny", names)
-        self.assertNotIn("Frameldt", names)
+        # "Frameldt" school opted out mid-year (2024-11-01) so it IS a fortsætter at year start
+        self.assertIn("Frameldt", names)
 
     def test_tilmeldt_fortsaetter_excludes_school_optout_on_start_date(self):
         """School that opted out exactly on start_date is not a fortsætter (strict __gt boundary)."""
@@ -3306,6 +3307,18 @@ class YearAwareStatusFilterTest(TestCase):
         names = self._names(self._get({"year": "2024/25", "status_filter": "tilmeldt_fortsaetter"}))
         self.assertNotIn("Optout On Start", names)
         school_boundary.delete()
+
+    def test_tilmeldt_fortsaetter_includes_school_optout_during_year(self):
+        """A continuing school that opted out mid-year still appears as fortsætter."""
+        school = School.objects.create(
+            name="Optout During Year",
+            enrolled_at=date(2023, 1, 1),
+            active_from=date(2023, 8, 1),  # before 2024/25 start
+            opted_out_at=date(2024, 11, 1),  # mid-year opt-out
+        )
+        names = self._names(self._get({"year": "2024/25", "status_filter": "tilmeldt_fortsaetter"}))
+        self.assertIn("Optout During Year", names)
+        school.delete()
 
     def test_frameldt_in_year(self):
         names = self._names(self._get({"year": "2024/25", "status_filter": "frameldt"}))
