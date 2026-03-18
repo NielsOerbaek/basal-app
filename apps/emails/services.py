@@ -260,7 +260,7 @@ def get_school_enrollment_context(school, contact_name):
     }
 
 
-def send_school_enrollment_confirmation(school, contact_email, contact_name):
+def send_school_enrollment_confirmation(school, contact_email, contact_name, attachments=None):
     """
     Send enrollment confirmation email to school contact using EmailTemplate.
 
@@ -268,6 +268,7 @@ def send_school_enrollment_confirmation(school, contact_email, contact_name):
         school: School instance with credentials
         contact_email: Email address of contact person
         contact_name: Name of contact person
+        attachments: Optional list of dicts with 'filename', 'content' (bytes)
 
     Returns:
         True if successful, False otherwise
@@ -296,19 +297,22 @@ def send_school_enrollment_confirmation(school, contact_email, contact_name):
         logger.info(f"[EMAIL] BCC: {bcc_email}")
         logger.info(f"[EMAIL] Subject: {subject}")
         logger.info(f"[EMAIL] Body: {body_html[:200]}...")
+        if attachments:
+            logger.info(f"[EMAIL] Attachments: {[a['filename'] for a in attachments]}")
         return True
 
     try:
         resend.api_key = settings.RESEND_API_KEY
-        resend.Emails.send(
-            {
-                "from": settings.DEFAULT_FROM_EMAIL,
-                "to": [contact_email],
-                "bcc": [bcc_email],
-                "subject": subject,
-                "html": body_html,
-            }
-        )
+        email_params = {
+            "from": settings.DEFAULT_FROM_EMAIL,
+            "to": [contact_email],
+            "bcc": [bcc_email],
+            "subject": subject,
+            "html": body_html,
+        }
+        if attachments:
+            email_params["attachments"] = attachments
+        resend.Emails.send(email_params)
         return True
     except Exception as e:
         logger.error(f"Failed to send enrollment confirmation: {e}")
