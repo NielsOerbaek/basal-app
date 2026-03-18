@@ -37,7 +37,7 @@
     <small>
         <i class="bi bi-exclamation-triangle me-1"></i>
         <strong>Manglende oplysninger:</strong>
-        {% if not school.postnummer %}Postnummer{% endif %}{% if not school.postnummer and not school.by %}, {% endif %}{% if not school.by %}By{% endif %}{% if not school.ean_nummer and not school.postnummer or not school.ean_nummer and not school.by %}, {% endif %}{% if not school.ean_nummer %}EAN-nummer{% endif %}
+        {% if not school.postnummer %}Postnummer{% endif %}{% if not school.postnummer and not school.by %}, {% endif %}{% if not school.by %}By{% endif %}{% if not school.ean_nummer and not school.postnummer or not school.ean_nummer and not school.by %}, {% endif %}{% if not school.ean_nummer %}EAN/CVR-nummer{% endif %}
         <a href="{% url 'schools:update' school.pk %}" class="alert-link ms-2">Udfyld nu</a>
     </small>
     <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Luk" style="padding: 0.5rem;"></button>
@@ -57,7 +57,7 @@
                     <dt class="col-sm-4">Kommune</dt>
                     <dd class="col-sm-8">{{ school.kommune }}</dd>
                     {% if school.ean_nummer %}
-                    <dt class="col-sm-4">EAN-nummer</dt>
+                    <dt class="col-sm-4">EAN/CVR-nummer</dt>
                     <dd class="col-sm-8">{{ school.ean_nummer }}</dd>
                     {% endif %}
                     {% if school.kommunen_betaler %}

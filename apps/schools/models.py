@@ -80,7 +80,7 @@ class School(models.Model):
     postnummer = models.CharField(max_length=4, blank=True, verbose_name="Postnummer")
     by = models.CharField(max_length=100, blank=True, verbose_name="By")
     kommune = models.CharField(max_length=100, verbose_name="Kommune")
-    ean_nummer = models.CharField(max_length=13, blank=True, verbose_name="EAN-nummer")
+    ean_nummer = models.CharField(max_length=13, blank=True, verbose_name="EAN/CVR-nummer")
 
     # Billing fields (when municipality pays)
     kommunen_betaler = models.BooleanField(default=False, verbose_name="Kommunen betaler")
