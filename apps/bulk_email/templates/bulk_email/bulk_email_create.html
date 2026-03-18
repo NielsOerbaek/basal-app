@@ -111,7 +111,7 @@
 
             {# Dry run #}
             <button type="button" id="dry-run-btn" class="btn btn-outline-secondary mb-3">
-                Tør-kørsel
+                Test-kørsel
             </button>
             <div id="dry-run-panel" class="mb-3" style="display:none;"></div>
 
@@ -339,7 +339,7 @@ document.getElementById("dry-run-btn").addEventListener("click", async () => {
     const data = await fetchDryRun();
     const panel = document.getElementById("dry-run-panel");
     if (!data) {
-        panel.innerHTML = '<div class="alert alert-danger">Kunne ikke hente tør-kørsel.</div>';
+        panel.innerHTML = '<div class="alert alert-danger">Kunne ikke hente test-kørsel.</div>';
         panel.style.display = "block";
         return;
     }
