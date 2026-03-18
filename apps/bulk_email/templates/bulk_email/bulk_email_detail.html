@@ -1,12 +1,12 @@
 {% extends "core/base.html" %}
 
-{% block title %}{{ campaign.subject }}{% endblock %}
+{% block title %}{{ campaign.name|default:campaign.subject }}{% endblock %}
 
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{% url 'bulk_email:list' %}">Masseudsendelse</a></li>
-        <li class="breadcrumb-item active">{{ campaign.subject|truncatechars:40 }}</li>
+        <li class="breadcrumb-item active">{{ campaign.name|default:campaign.subject|truncatechars:40 }}</li>
     </ol>
 </nav>
 {% endblock %}
@@ -14,7 +14,7 @@
 {% block content %}
 <div class="container-fluid py-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h3 mb-0">{{ campaign.subject|truncatechars:60 }}</h1>
+        <h1 class="h3 mb-0">{{ campaign.name|default:campaign.subject|truncatechars:60 }}</h1>
         <a href="{% url 'bulk_email:create' %}?copy_from={{ campaign.pk }}&subject={{ campaign.subject|urlencode }}&recipient_type={{ campaign.recipient_type }}{% for k, v in campaign.filter_params.items %}&{{ k }}={{ v|urlencode }}{% endfor %}"
            class="btn btn-outline-secondary">
             Kopier til ny
@@ -50,6 +50,29 @@
         </div>
     </div>
 
+    {# Email content #}
+    <div class="card mb-4">
+        <div class="card-header fw-semibold">E-mailens indhold</div>
+        <div class="card-body p-0">
+            <div class="bg-light border-bottom px-3 py-2">
+                <span class="text-muted small text-uppercase" style="letter-spacing:0.5px;">Emne</span><br>
+                <strong>{{ campaign.subject }}</strong>
+            </div>
+            <div class="p-3">
+                {{ campaign.body_html|safe }}
+            </div>
+        </div>
+        {% if campaign.attachments.exists %}
+        <div class="card-footer">
+            <span class="text-muted small">Vedhæftninger:</span>
+            {% for att in campaign.attachments.all %}
+                <a href="{% url 'bulk_email:attachment_download' att.pk %}" class="ms-2 small">{{ att.filename }}</a>{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    {# Recipients #}
     <div class="card">
         <div class="card-header">Modtagere ({{ recipients|length }})</div>
         <div class="table-responsive">
