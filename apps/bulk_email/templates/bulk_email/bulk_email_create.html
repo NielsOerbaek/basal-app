@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container-fluid py-3">
     <h1 class="h3 mb-3">
-        {% if copy_source %}Ny udsendelse — kopieret fra #{{ copy_source.pk }}{% else %}Ny udsendelse{% endif %}
+        {% if draft %}Rediger kladde #{{ draft.pk }}{% elif copy_source %}Ny udsendelse — kopieret fra #{{ copy_source.pk }}{% else %}Ny udsendelse{% endif %}
     </h1>
 
     {# ── 1. Modtagere ───────────────────────────────────────── #}
@@ -142,9 +142,13 @@
                 <div id="test-email-result" class="mt-2"></div>
             </div>
 
-            {# Send all #}
-            <div id="send-panel">
-                <button type="button" id="send-all-btn" class="btn btn-danger">
+            {# Save draft + Send all #}
+            <div id="send-panel" class="d-flex align-items-center gap-3">
+                <button type="button" id="save-draft-btn" class="btn btn-outline-secondary">
+                    Gem kladde
+                </button>
+                <span id="draft-status" class="text-muted small"></span>
+                <button type="button" id="send-all-btn" class="btn btn-danger ms-auto">
                     Send til alle
                 </button>
             </div>
@@ -186,7 +190,9 @@ const PREVIEW_URL = "{% url 'bulk_email:preview' %}";
 const DRY_RUN_URL = "{% url 'bulk_email:dry_run' %}";
 const SEND_URL = "{% url 'bulk_email:send' %}";
 const UPLOAD_URL = "{% url 'bulk_email:attachment_upload' %}";
+const SAVE_DRAFT_URL = "{% url 'bulk_email:save_draft' %}";
 const CSRF_TOKEN = "{{ csrf_token }}";
+let currentDraftPk = {{ draft.pk|default:"null" }};
 
 function escapeHtml(s) {
     const el = document.createElement('span');
@@ -195,7 +201,7 @@ function escapeHtml(s) {
 }
 
 // ── Attachment tracking ────────────────────────────────────────────
-const uploadedAttachments = [];
+const uploadedAttachments = JSON.parse('{{ draft_attachments_json|escapejs }}');
 
 document.getElementById("attachment-input").addEventListener("change", async function() {
     for (const file of this.files) {
@@ -420,6 +426,7 @@ document.getElementById("confirm-send-btn").addEventListener("click", async () =
             recipient_type: getRecipientType(),
             filter_params: getFilterParams(),
             attachment_pks: uploadedAttachments.map(a => a.pk),
+            draft_pk: currentDraftPk,
         }),
     });
 
@@ -456,7 +463,41 @@ document.getElementById("confirm-send-btn").addEventListener("click", async () =
     }
 });
 
+// ── Save draft ────────────────────────────────────────────────────
+document.getElementById("save-draft-btn").addEventListener("click", async () => {
+    const statusEl = document.getElementById("draft-status");
+    statusEl.textContent = "Gemmer...";
+    try {
+        const resp = await fetch(SAVE_DRAFT_URL, {
+            method: "POST",
+            headers: {"X-CSRFToken": CSRF_TOKEN, "Content-Type": "application/json"},
+            body: JSON.stringify({
+                draft_pk: currentDraftPk,
+                subject: getSubject(),
+                body_html: getBodyHtml(),
+                recipient_type: getRecipientType(),
+                filter_params: getFilterParams(),
+                attachment_pks: uploadedAttachments.map(a => a.pk),
+            }),
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+            currentDraftPk = data.pk;
+            statusEl.textContent = "Kladde gemt";
+            // Update URL to include draft param so refresh preserves state
+            const url = new URL(window.location);
+            url.searchParams.set("draft", data.pk);
+            window.history.replaceState({}, "", url);
+        } else {
+            statusEl.textContent = "Fejl: " + (data.error || "Ukendt fejl");
+        }
+    } catch (e) {
+        statusEl.textContent = "Fejl ved gem";
+    }
+});
+
 // ── Init ──────────────────────────────────────────────────────────
+renderAttachmentList();
 updateRecipientCounter();
 </script>
 {% endblock %}

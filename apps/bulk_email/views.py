@@ -72,9 +72,23 @@ class BulkEmailCreateView(SchoolFilterMixin, View):
         from apps.bulk_email.forms import BulkEmailComposeForm
 
         initial = {}
-        copy_from_pk = request.GET.get("copy_from")
         copy_source = None
-        if copy_from_pk:
+        draft = None
+
+        # Load draft for editing
+        draft_pk = request.GET.get("draft")
+        if draft_pk:
+            try:
+                draft = BulkEmail.objects.get(pk=draft_pk, sent_at__isnull=True)
+                initial["subject"] = draft.subject
+                initial["body_html"] = draft.body_html
+                initial["recipient_type"] = draft.recipient_type
+            except BulkEmail.DoesNotExist:
+                draft = None
+
+        # Copy from existing campaign
+        copy_from_pk = request.GET.get("copy_from")
+        if not draft and copy_from_pk:
             try:
                 copy_source = BulkEmail.objects.get(pk=copy_from_pk)
                 initial["subject"] = request.GET.get("subject", copy_source.subject)
@@ -87,15 +101,65 @@ class BulkEmailCreateView(SchoolFilterMixin, View):
         schools = list(self.get_school_filter_queryset())
         filter_context = self.get_filter_context()
 
+        # Pre-load draft attachments
+        draft_attachments = []
+        if draft:
+            draft_attachments = list(draft.attachments.values("pk", "filename"))
+
         context = {
             "form": form,
             "schools": schools[:5000],
             "total_matched": len(schools),
             "variable_names": VARIABLE_NAMES,
             "copy_source": copy_source,
+            "draft": draft,
+            "draft_attachments_json": json.dumps(draft_attachments),
             **filter_context,
         }
         return render(request, "bulk_email/bulk_email_create.html", context)
+
+
+@method_decorator(full_admin_required, name="dispatch")
+class BulkEmailDraftSaveView(View):
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+        draft_pk = data.get("draft_pk")
+        subject = data.get("subject", "")
+        body_html = data.get("body_html", "")
+        recipient_type = data.get("recipient_type", BulkEmail.KOORDINATOR)
+        filter_params = data.get("filter_params", {})
+        attachment_pks = data.get("attachment_pks", [])
+
+        if draft_pk:
+            try:
+                draft = BulkEmail.objects.get(pk=draft_pk, sent_at__isnull=True)
+                # Don't update interrupted sends
+                if draft.recipients.exists():
+                    return JsonResponse({"error": "Cannot edit a campaign that has started sending"}, status=409)
+                draft.subject = subject
+                draft.body_html = body_html
+                draft.recipient_type = recipient_type
+                draft.filter_params = filter_params
+                draft.save()
+            except BulkEmail.DoesNotExist:
+                return JsonResponse({"error": "Draft not found"}, status=404)
+        else:
+            draft = BulkEmail.objects.create(
+                subject=subject or "(ingen emne)",
+                body_html=body_html,
+                recipient_type=recipient_type,
+                filter_params=filter_params,
+            )
+
+        # Link attachments
+        if attachment_pks:
+            BulkEmailAttachment.objects.filter(pk__in=attachment_pks, bulk_email__isnull=True).update(bulk_email=draft)
+
+        return JsonResponse({"pk": draft.pk, "saved": True})
 
 
 @method_decorator(full_admin_required, name="dispatch")
@@ -281,13 +345,29 @@ class BulkEmailSendView(SchoolFilterMixin, View):
 
         school_person_pairs = resolve_recipients(schools, recipient_type)
 
-        campaign = BulkEmail.objects.create(
-            subject=subject,
-            body_html=body_html,
-            recipient_type=recipient_type,
-            filter_params=filter_params,
-            sent_by=request.user,
-        )
+        # Use existing draft or create new campaign
+        draft_pk = data.get("draft_pk")
+        if draft_pk:
+            try:
+                campaign = BulkEmail.objects.get(pk=draft_pk, sent_at__isnull=True)
+                if campaign.recipients.exists():
+                    return JsonResponse({"error": "Cannot send an interrupted campaign"}, status=409)
+                campaign.subject = subject
+                campaign.body_html = body_html
+                campaign.recipient_type = recipient_type
+                campaign.filter_params = filter_params
+                campaign.sent_by = request.user
+                campaign.save()
+            except BulkEmail.DoesNotExist:
+                return JsonResponse({"error": "Draft not found"}, status=404)
+        else:
+            campaign = BulkEmail.objects.create(
+                subject=subject,
+                body_html=body_html,
+                recipient_type=recipient_type,
+                filter_params=filter_params,
+                sent_by=request.user,
+            )
 
         if attachment_pks:
             BulkEmailAttachment.objects.filter(pk__in=attachment_pks).update(bulk_email=campaign)

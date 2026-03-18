@@ -33,7 +33,9 @@
                             <a href="{% url 'bulk_email:detail' campaign.pk %}">
                                 {{ campaign.subject|truncatechars:60 }}
                             </a>
-                            {% if campaign.is_interrupted %}
+                            {% if campaign.is_draft %}
+                                <span class="badge bg-secondary ms-1">Kladde</span>
+                            {% elif campaign.is_interrupted %}
                                 <span class="badge bg-warning text-dark ms-1">Afbrudt</span>
                             {% endif %}
                         </td>
@@ -54,6 +56,12 @@
                             {% endif %}
                         </td>
                         <td>
+                            {% if campaign.is_draft %}
+                            <a href="{% url 'bulk_email:create' %}?draft={{ campaign.pk }}{% for k, v in campaign.filter_params.items %}&{{ k }}={{ v|urlencode }}{% endfor %}"
+                               class="btn btn-sm btn-outline-primary">
+                                Rediger
+                            </a>
+                            {% endif %}
                             <a href="{% url 'bulk_email:create' %}?copy_from={{ campaign.pk }}&subject={{ campaign.subject|urlencode }}&recipient_type={{ campaign.recipient_type }}{% for k, v in campaign.filter_params.items %}&{{ k }}={{ v|urlencode }}{% endfor %}"
                                class="btn btn-sm btn-outline-secondary">
                                 Kopier til ny

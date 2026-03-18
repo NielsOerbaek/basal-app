@@ -36,6 +36,11 @@ class BulkEmail(models.Model):
         return self.sent_at is not None
 
     @property
+    def is_draft(self):
+        """True if not yet sent and no recipients (never started sending)."""
+        return self.sent_at is None and not self.recipients.exists()
+
+    @property
     def is_interrupted(self):
         """True if sending started but sent_at was never set."""
         return self.sent_at is None and self.recipients.exists()
