@@ -229,6 +229,7 @@ class BulkEmailDryRunView(View):
         schools = list(view.get_school_filter_queryset())
 
         pairs = resolve_recipients(schools, recipient_type)
+        matched_school_pks = {school.pk for school, _person in pairs}
 
         # Combined template for variable analysis
         combined = subject + " " + body_html
@@ -239,15 +240,23 @@ class BulkEmailDryRunView(View):
                 "school": school.name,
                 "person": person.name,
                 "email": person.email,
+                "kommune": school.kommune or "",
             }
             for school, person in pairs
+        ]
+
+        skipped_data = [
+            {"school": school.name, "kommune": school.kommune or ""}
+            for school in schools
+            if school.pk not in matched_school_pks
         ]
 
         return JsonResponse(
             {
                 "recipients": recipients_data,
                 "total": len(recipients_data),
-                "skipped": len(schools) - len(pairs),
+                "skipped": len(skipped_data),
+                "skipped_schools": skipped_data,
                 "warnings": warnings,
             }
         )
