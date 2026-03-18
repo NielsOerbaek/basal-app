@@ -350,18 +350,37 @@ class SchoolListView(SortableMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Get unique kommuner for filter dropdown
+
+        # Kommuner for filter dropdown
         context["kommuner"] = (
             School.objects.active().exclude(kommune="").values_list("kommune", flat=True).distinct().order_by("kommune")
         )
-        # Get school years that have schools with active_from dates in them
-        from apps.schools.school_years import calculate_school_year_for_date
 
-        active_from_dates = (
-            School.objects.active().filter(active_from__isnull=False).values_list("active_from", flat=True)
-        )
-        year_names = sorted({calculate_school_year_for_date(d) for d in active_from_dates}, reverse=True)
-        context["school_years"] = year_names
+        # All school years from the SchoolYear model (not derived from active_from dates)
+        context["school_years"] = list(SchoolYear.objects.all().order_by("start_date").values_list("name", flat=True))
+
+        # Filter bar state
+        filter_params = ["search", "year", "status_filter", "kommune", "unused_seats"]
+        context["has_active_filters"] = any(self.request.GET.get(p, "").strip() for p in filter_params)
+        selected_year = self.request.GET.get("year", "").strip() or None
+        context["selected_year"] = selected_year
+        context["filter_summary"] = get_filter_summary(self.request)
+
+        # Date range string for the selected year info box (e.g. "1. aug 2024 – 31. jul 2025")
+        context["selected_year_dates"] = None
+        if selected_year:
+            try:
+                from apps.schools.school_years import get_school_year_dates
+
+                _DANISH_MONTHS = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"]
+                sy_start, sy_end = get_school_year_dates(selected_year)
+                context["selected_year_dates"] = (
+                    f"{sy_start.day}. {_DANISH_MONTHS[sy_start.month - 1]} {sy_start.year}"
+                    f" – "
+                    f"{sy_end.day}. {_DANISH_MONTHS[sy_end.month - 1]} {sy_end.year}"
+                )
+            except Exception:
+                pass
 
         # Metrics
         paginator = context.get("paginator")
@@ -369,7 +388,7 @@ class SchoolListView(SortableMixin, ListView):
         context["enrolled_count"] = School.objects.filter(enrolled_at__isnull=False, opted_out_at__isnull=True).count()
         context["ever_enrolled_count"] = School.objects.filter(enrolled_at__isnull=False).count()
 
-        # Build filter explanation for project goals drill-down
+        # Filter explanation for project goals drill-down (preserved as-is)
         status = self.request.GET.get("status")
         school_year = self.request.GET.get("school_year")
         if status and school_year:

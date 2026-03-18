@@ -3348,3 +3348,54 @@ class YearAwareStatusFilterTest(TestCase):
         """tilmeldt_venter has active_from after year end — year pre-filter would wrongly exclude it."""
         names = self._names(self._get({"year": "2024/25", "status_filter": "tilmeldt_venter"}))
         self.assertIn("Ventende", names)
+
+
+class FilterContextTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_superuser("admin3", "admin3@test.com", "pass")
+        SchoolYear.objects.get_or_create(
+            name="2024/25", defaults={"start_date": date(2024, 8, 1), "end_date": date(2025, 7, 31)}
+        )
+        SchoolYear.objects.get_or_create(
+            name="2025/26", defaults={"start_date": date(2025, 8, 1), "end_date": date(2026, 7, 31)}
+        )
+
+    def _get(self, params=None):
+        self.client.force_login(self.user)
+        return self.client.get(reverse("schools:list"), params or {})
+
+    def test_school_years_comes_from_schoolyear_model(self):
+        """school_years context var uses SchoolYear model, not derived from active_from dates."""
+        response = self._get()
+        self.assertIn("school_years", response.context)
+        self.assertIn("2024/25", response.context["school_years"])
+        self.assertIn("2025/26", response.context["school_years"])
+
+    def test_has_active_filters_false_when_no_filters(self):
+        response = self._get()
+        self.assertFalse(response.context["has_active_filters"])
+
+    def test_has_active_filters_true_when_year_set(self):
+        response = self._get({"year": "2024/25"})
+        self.assertTrue(response.context["has_active_filters"])
+
+    def test_has_active_filters_true_when_search_set(self):
+        response = self._get({"search": "test"})
+        self.assertTrue(response.context["has_active_filters"])
+
+    def test_selected_year_none_when_no_year(self):
+        response = self._get()
+        self.assertIsNone(response.context["selected_year"])
+
+    def test_selected_year_set_when_year_param_present(self):
+        response = self._get({"year": "2024/25"})
+        self.assertEqual(response.context["selected_year"], "2024/25")
+
+    def test_filter_summary_empty_when_no_filters(self):
+        response = self._get()
+        self.assertEqual(response.context["filter_summary"], "")
+
+    def test_filter_summary_populated_when_filters_active(self):
+        response = self._get({"year": "2024/25", "status_filter": "tilmeldt_ny"})
+        self.assertEqual(response.context["filter_summary"], "Ny tilmeldt i 2024/25")
