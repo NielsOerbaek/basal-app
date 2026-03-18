@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ("schools", "0031_alter_school_active_from"),
+        ("schools", "0030_remove_seat_purchase"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

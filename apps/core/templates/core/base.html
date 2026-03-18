@@ -92,6 +92,12 @@
                             <i class="bi bi-telephone me-1"></i>Henvendelser
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.app_name == 'bulk_email' %}active{% endif %}"
+                           href="{% url 'bulk_email:list' %}">
+                            <i class="bi bi-envelope-open me-1"></i>Masseudsendelse
+                        </a>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
                             <i class="bi bi-box-arrow-up-right me-1"></i>Tilmelding

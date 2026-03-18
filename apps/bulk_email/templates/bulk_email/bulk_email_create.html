@@ -1,0 +1,462 @@
+{% extends "core/base.html" %}
+
+{% block title %}Ny masseudsendelse{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <h1 class="h3 mb-3">
+        {% if copy_source %}Ny udsendelse — kopieret fra #{{ copy_source.pk }}{% else %}Ny udsendelse{% endif %}
+    </h1>
+
+    {# ── 1. Modtagere ───────────────────────────────────────── #}
+    <div class="card mb-3">
+        <div class="card-header fw-semibold">1. Modtagere</div>
+        <div class="card-body">
+            {% include 'schools/components/school_filter.html' %}
+
+            <div class="mt-3 d-flex align-items-center gap-4">
+                <div>
+                    <label class="form-label fw-semibold mb-1">Modtagertype</label>
+                    <div id="recipient-type-radios">
+                        {% for value, label in form.recipient_type.field.choices %}
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="recipient_type"
+                                   id="rt_{{ value }}" value="{{ value }}"
+                                   {% if form.initial.recipient_type == value or forloop.first and not form.initial.recipient_type %}checked{% endif %}>
+                            <label class="form-check-label" for="rt_{{ value }}">{{ label }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div id="recipient-counter" class="text-muted small">Beregner...</div>
+            </div>
+        </div>
+    </div>
+
+    {# ── 2. Emne & indhold ──────────────────────────────────── #}
+    <div class="card mb-3">
+        <div class="card-header fw-semibold">2. Emne &amp; indhold</div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="id_subject" class="form-label">Emne</label>
+                {{ form.subject }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Indhold</label>
+                {{ form.body_html }}
+            </div>
+
+            {# Variable reference card #}
+            <div class="accordion mb-3" id="varAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed py-2" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#varList">
+                            Tilgængelige variabler
+                        </button>
+                    </h2>
+                    <div id="varList" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <div class="row">
+                                {% for var in variable_names %}
+                                <div class="col-md-4 col-sm-6 mb-1">
+                                    <code class="user-select-all">{{ "{{" }} {{ var }} {{ "}}" }}</code>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Missing variable warnings #}
+            <div id="variable-warnings"></div>
+        </div>
+    </div>
+
+    {# ── 3. Vedhæftninger ───────────────────────────────────── #}
+    <div class="card mb-3">
+        <div class="card-header fw-semibold">3. Vedhæftninger</div>
+        <div class="card-body">
+            <input type="file" id="attachment-input" multiple class="form-control mb-2">
+            <div id="attachment-list"></div>
+        </div>
+    </div>
+
+    {# ── 4. Forhåndsvisning ─────────────────────────────────── #}
+    <div class="card mb-3">
+        <div class="card-header fw-semibold">4. Forhåndsvisning</div>
+        <div class="card-body">
+            <div class="mb-2">
+                <label for="preview-school" class="form-label">Vælg skole til forhåndsvisning</label>
+                <select id="preview-school" class="form-select">
+                    <option value="">— Vælg skole —</option>
+                    {% for school in schools %}
+                    <option value="{{ school.pk }}">{{ school.name }}</option>
+                    {% endfor %}
+                </select>
+                {% if total_matched > schools|length %}
+                <div class="text-muted small mt-1">Viser {{ schools|length }} af {{ total_matched }} matchede skoler.</div>
+                {% endif %}
+            </div>
+            <iframe id="preview-iframe" src="about:blank"
+                    style="width:100%;height:500px;border:1px solid #dee2e6;border-radius:4px;"></iframe>
+        </div>
+    </div>
+
+    {# ── 5. Afsendelse ──────────────────────────────────────── #}
+    <div class="card mb-3">
+        <div class="card-header fw-semibold">5. Afsendelse</div>
+        <div class="card-body">
+
+            {# Dry run #}
+            <button type="button" id="dry-run-btn" class="btn btn-outline-secondary mb-3">
+                Tør-kørsel
+            </button>
+            <div id="dry-run-panel" class="mb-3" style="display:none;"></div>
+
+            {# Test email #}
+            <div class="border rounded p-3 mb-3">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label">Send test-email til</label>
+                        <input type="email" id="test-email-address" class="form-control" placeholder="din@email.dk">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Som om det er fra</label>
+                        <select id="test-email-school" class="form-select">
+                            {% for school in schools %}
+                            <option value="{{ school.pk }}">{{ school.name }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if total_matched > schools|length %}
+                        <div class="text-muted small mt-1">Viser {{ schools|length }} af {{ total_matched }} matchede skoler.</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" id="test-email-btn" class="btn btn-outline-primary w-100">
+                            Send test
+                        </button>
+                    </div>
+                </div>
+                <div id="test-email-result" class="mt-2"></div>
+            </div>
+
+            {# Send all #}
+            <div id="send-panel">
+                <button type="button" id="send-all-btn" class="btn btn-danger">
+                    Send til alle
+                </button>
+            </div>
+
+            {# Progress (hidden until send starts) #}
+            <div id="send-progress" style="display:none;">
+                <div class="progress mb-2" style="height:24px;">
+                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated"
+                         role="progressbar" style="width:0%">0%</div>
+                </div>
+                <div id="send-log" class="border rounded p-2 small" style="max-height:300px;overflow-y:auto;font-family:monospace;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Confirmation modal #}
+<div class="modal fade" id="sendConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bekræft udsendelse</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modal-body-text"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuller</button>
+                <button type="button" class="btn btn-danger" id="confirm-send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const PREVIEW_URL = "{% url 'bulk_email:preview' %}";
+const DRY_RUN_URL = "{% url 'bulk_email:dry_run' %}";
+const SEND_URL = "{% url 'bulk_email:send' %}";
+const UPLOAD_URL = "{% url 'bulk_email:attachment_upload' %}";
+const CSRF_TOKEN = "{{ csrf_token }}";
+
+function escapeHtml(s) {
+    const el = document.createElement('span');
+    el.textContent = s;
+    return el.innerHTML;
+}
+
+// ── Attachment tracking ────────────────────────────────────────────
+const uploadedAttachments = [];
+
+document.getElementById("attachment-input").addEventListener("change", async function() {
+    for (const file of this.files) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const resp = await fetch(UPLOAD_URL, {
+            method: "POST",
+            headers: {"X-CSRFToken": CSRF_TOKEN},
+            body: formData,
+        });
+        const data = await resp.json();
+        uploadedAttachments.push({pk: data.pk, filename: data.filename});
+        renderAttachmentList();
+    }
+    this.value = "";
+});
+
+function renderAttachmentList() {
+    const list = document.getElementById("attachment-list");
+    list.innerHTML = uploadedAttachments.map((a, i) =>
+        `<div class="d-flex align-items-center gap-2 mb-1">
+            <span>${escapeHtml(a.filename)}</span>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAttachment(${i})">&#x2715;</button>
+        </div>`
+    ).join("");
+}
+
+function removeAttachment(index) {
+    uploadedAttachments.splice(index, 1);
+    renderAttachmentList();
+}
+
+// ── Filter params helper ───────────────────────────────────────────
+function getFilterParams() {
+    const params = {};
+    const urlParams = new URLSearchParams(window.location.search);
+    for (const key of ["search", "year", "status_filter", "kommune", "unused_seats"]) {
+        const val = urlParams.get(key) || "";
+        if (val) params[key] = val;
+    }
+    return params;
+}
+
+function getRecipientType() {
+    return document.querySelector('input[name="recipient_type"]:checked')?.value || "koordinator";
+}
+
+function getSubject() {
+    return document.getElementById("id_subject").value;
+}
+
+function getBodyHtml() {
+    if (typeof $ !== "undefined" && $("#id_body_html").summernote) {
+        return $("#id_body_html").summernote("code");
+    }
+    return document.getElementById("id_body_html")?.value || "";
+}
+
+// ── Recipient counter (via dry-run) ───────────────────────────────
+async function updateRecipientCounter() {
+    const data = await fetchDryRun();
+    const counter = document.getElementById("recipient-counter");
+    if (data) {
+        const typeLabel = getRecipientType() === "koordinator" ? "koordinator" : "økonomiansvarlig";
+        counter.textContent = `${data.total} modtagere (${data.skipped} skoler uden ${typeLabel} sprunget over)`;
+        renderWarnings(data.warnings);
+    }
+}
+
+async function fetchDryRun() {
+    try {
+        const resp = await fetch(DRY_RUN_URL, {
+            method: "POST",
+            headers: {"X-CSRFToken": CSRF_TOKEN, "Content-Type": "application/json"},
+            body: JSON.stringify({
+                recipient_type: getRecipientType(),
+                subject: getSubject(),
+                body_html: getBodyHtml(),
+                filter_params: getFilterParams(),
+            }),
+        });
+        return await resp.json();
+    } catch (e) {
+        return null;
+    }
+}
+
+function renderWarnings(warnings) {
+    const el = document.getElementById("variable-warnings");
+    if (!warnings || warnings.length === 0) {
+        el.innerHTML = "";
+        return;
+    }
+    el.innerHTML = `<div class="alert alert-warning mb-0 mt-2"><strong>Manglende felter:</strong><ul class="mb-0 mt-1">` +
+        warnings.map(w => `<li><code>${escapeHtml(w.variable)}</code> mangler på: ${escapeHtml(w.schools.join(", "))}</li>`).join("") +
+        `</ul></div>`;
+}
+
+document.querySelectorAll('input[name="recipient_type"]').forEach(r =>
+    r.addEventListener("change", updateRecipientCounter)
+);
+
+// ── Preview ────────────────────────────────────────────────────────
+let previewDebounce = null;
+
+async function updatePreview() {
+    const schoolPk = document.getElementById("preview-school").value;
+    if (!schoolPk) return;
+    const resp = await fetch(PREVIEW_URL, {
+        method: "POST",
+        headers: {"X-CSRFToken": CSRF_TOKEN, "Content-Type": "application/json"},
+        body: JSON.stringify({
+            school_pk: parseInt(schoolPk),
+            subject: getSubject(),
+            body_html: getBodyHtml(),
+            recipient_type: getRecipientType(),
+        }),
+    });
+    const html = await resp.text();
+    document.getElementById("preview-iframe").srcdoc = html;
+}
+
+document.getElementById("preview-school").addEventListener("change", updatePreview);
+
+document.getElementById("id_subject").addEventListener("input", () => {
+    clearTimeout(previewDebounce);
+    previewDebounce = setTimeout(updatePreview, 800);
+});
+
+if (typeof $ !== "undefined") {
+    $(document).ready(function() {
+        $('#id_body_html').on('summernote.change', function() {
+            clearTimeout(previewDebounce);
+            previewDebounce = setTimeout(updatePreview, 800);
+        });
+    });
+}
+
+// ── Dry-run expand ────────────────────────────────────────────────
+document.getElementById("dry-run-btn").addEventListener("click", async () => {
+    const data = await fetchDryRun();
+    const panel = document.getElementById("dry-run-panel");
+    if (!data) {
+        panel.innerHTML = '<div class="alert alert-danger">Kunne ikke hente tør-kørsel.</div>';
+        panel.style.display = "block";
+        return;
+    }
+    let html = `<div class="table-responsive"><table class="table table-sm table-bordered mb-0">
+        <thead><tr><th>Skole</th><th>Kontakt</th><th>E-mail</th></tr></thead><tbody>`;
+    for (const r of data.recipients) {
+        html += `<tr><td>${escapeHtml(r.school)}</td><td>${escapeHtml(r.person)}</td><td>${escapeHtml(r.email)}</td></tr>`;
+    }
+    html += `</tbody></table></div>
+    <p class="text-muted small mt-1">${data.total} modtagere &middot; ${data.skipped} skoler sprunget over</p>`;
+    panel.innerHTML = html;
+    panel.style.display = "block";
+    renderWarnings(data.warnings);
+});
+
+// ── Test email ────────────────────────────────────────────────────
+document.getElementById("test-email-btn").addEventListener("click", async () => {
+    const email = document.getElementById("test-email-address").value;
+    const schoolPk = document.getElementById("test-email-school").value;
+    const resultEl = document.getElementById("test-email-result");
+    if (!email) {
+        resultEl.innerHTML = '<span class="text-danger">Angiv en e-mailadresse.</span>';
+        return;
+    }
+    const resp = await fetch(SEND_URL, {
+        method: "POST",
+        headers: {"X-CSRFToken": CSRF_TOKEN, "Content-Type": "application/json"},
+        body: JSON.stringify({
+            subject: getSubject(),
+            body_html: getBodyHtml(),
+            recipient_type: getRecipientType(),
+            filter_params: {},
+            attachment_pks: uploadedAttachments.map(a => a.pk),
+            test_email: email,
+            test_school_pk: schoolPk ? parseInt(schoolPk) : null,
+        }),
+    });
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value);
+    }
+    resultEl.innerHTML = '<span class="text-success">Test-email sendt.</span>';
+});
+
+// ── Send all ──────────────────────────────────────────────────────
+document.getElementById("send-all-btn").addEventListener("click", async () => {
+    const data = await fetchDryRun();
+    const count = data ? data.total : "?";
+    const filterSummary = "{{ filter_summary|escapejs }}";
+    const summary = filterSummary ? `${filterSummary}` : "alle matchede skoler";
+    document.getElementById("modal-body-text").textContent =
+        `Du er ved at sende til ${count} modtagere (${summary}). Er du sikker?`;
+    const modal = new bootstrap.Modal(document.getElementById("sendConfirmModal"));
+    modal.show();
+});
+
+document.getElementById("confirm-send-btn").addEventListener("click", async () => {
+    const confirmBtn = document.getElementById("confirm-send-btn");
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "Sender...";
+    bootstrap.Modal.getInstance(document.getElementById("sendConfirmModal")).hide();
+    document.getElementById("send-panel").style.display = "none";
+    document.getElementById("send-progress").style.display = "block";
+
+    const progressBar = document.getElementById("progress-bar");
+    const sendLog = document.getElementById("send-log");
+
+    const resp = await fetch(SEND_URL, {
+        method: "POST",
+        headers: {"X-CSRFToken": CSRF_TOKEN, "Content-Type": "application/json"},
+        body: JSON.stringify({
+            subject: getSubject(),
+            body_html: getBodyHtml(),
+            recipient_type: getRecipientType(),
+            filter_params: getFilterParams(),
+            attachment_pks: uploadedAttachments.map(a => a.pk),
+        }),
+    });
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let total = 0;
+
+    while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, {stream: true});
+        const lines = buffer.split("\n");
+        buffer = lines.pop();
+        for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "start") {
+                total = event.total;
+            } else if (event.type === "progress") {
+                const pct = total > 0 ? Math.round((event.n / total) * 100) : 0;
+                progressBar.style.width = pct + "%";
+                progressBar.textContent = pct + "%";
+                const icon = event.success ? "&#x2713;" : "&#x2717;";
+                sendLog.innerHTML += `<div>${icon} ${escapeHtml(event.school)} &lt;${escapeHtml(event.email)}&gt;${event.error ? " &mdash; " + escapeHtml(event.error) : ""}</div>`;
+                sendLog.scrollTop = sendLog.scrollHeight;
+            } else if (event.type === "done") {
+                progressBar.classList.remove("progress-bar-animated");
+                progressBar.style.width = "100%";
+                progressBar.textContent = "Afsluttet";
+                sendLog.innerHTML += `<div class="mt-2 fw-bold">${event.sent} sendt &middot; ${event.failed} fejlede &middot; ${event.skipped} sprunget over &mdash; <a href="${event.detail_url}">Se detaljer</a></div>`;
+            }
+        }
+    }
+});
+
+// ── Init ──────────────────────────────────────────────────────────
+updateRecipientCounter();
+</script>
+{% endblock %}

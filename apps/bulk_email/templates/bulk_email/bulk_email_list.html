@@ -1,0 +1,72 @@
+{% extends "core/base.html" %}
+
+{% block title %}Masseudsendelse{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h3 mb-0">Masseudsendelse</h1>
+        <a href="{% url 'bulk_email:create' %}" class="btn btn-primary">
+            + Ny udsendelse
+        </a>
+    </div>
+
+    {% if campaigns %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Emne</th>
+                        <th>Modtagertype</th>
+                        <th>Filter</th>
+                        <th>Sendt</th>
+                        <th>Af</th>
+                        <th>Modtagere</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for campaign in campaigns %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'bulk_email:detail' campaign.pk %}">
+                                {{ campaign.subject|truncatechars:60 }}
+                            </a>
+                            {% if campaign.is_interrupted %}
+                                <span class="badge bg-warning text-dark ms-1">Afbrudt</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ campaign.get_recipient_type_display }}</td>
+                        <td class="text-muted small">{{ campaign.get_filter_summary_display|default:"—" }}</td>
+                        <td>
+                            {% if campaign.sent_at %}
+                                {{ campaign.sent_at|date:"d/m/Y H:i" }}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ campaign.sent_by|default:"—" }}</td>
+                        <td>
+                            {{ campaign.recipient_count }}
+                            {% if campaign.failure_count %}
+                                <span class="text-danger">({{ campaign.failure_count }} fejl)</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'bulk_email:create' %}?copy_from={{ campaign.pk }}&subject={{ campaign.subject|urlencode }}&recipient_type={{ campaign.recipient_type }}{% for k, v in campaign.filter_params.items %}&{{ k }}={{ v|urlencode }}{% endfor %}"
+                               class="btn btn-sm btn-outline-secondary">
+                                Kopier til ny
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-muted">Ingen udsendelser endnu.</p>
+    {% endif %}
+</div>
+{% endblock %}

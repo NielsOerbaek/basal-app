@@ -18,6 +18,7 @@ from apps.courses.models import CourseSignUp
 from apps.schools.consumption import get_consumption_overview
 
 from .forms import EnrollmentDatesForm, PersonForm, SchoolCommentForm, SchoolFileForm, SchoolForm
+from .mixins import SchoolFilterMixin
 from .models import Person, School, SchoolComment, SchoolFile, SchoolYear
 
 
@@ -62,65 +63,8 @@ class KommuneDetailView(ListView):
         return context
 
 
-_STATUS_LABELS_NO_YEAR = {
-    "tilmeldt": "Alle tilmeldte",
-    "tilmeldt_ny": "Ny tilmeldt (indeværende år)",
-    "tilmeldt_fortsaetter": "Fortsætter (indeværende år)",
-    "tilmeldt_venter": "Tilmeldt fra næste år",
-    "frameldt": "Frameldt",
-    "ikke_tilmeldt": "Ikke tilmeldt",
-    "har_tilmeldinger_ikke_basal": "Har kurstilmeldinger (ikke tilmeldt i Basal)",
-}
-
-_STATUS_LABELS_WITH_YEAR = {
-    "alle_tilmeldte": "Alle tilmeldte i {year}",
-    "tilmeldt_ny": "Ny tilmeldt i {year}",
-    "tilmeldt_fortsaetter": "Fortsætter i {year}",
-    "alle_ikke_tilmeldte": "Alle ikke-tilmeldte i {year}",
-    "frameldt": "Frameldt i {year}",
-    "tilmeldt_venter": "Ventende til {year}",
-    "ikke_tilmeldt": "Ikke tilmeldt i {year}",
-}
-
-
-def get_filter_summary(request):
-    """Build a human-readable summary of active filters for display in the collapsed bar."""
-    parts = []
-    search = request.GET.get("search", "").strip()
-    year = request.GET.get("year", "").strip()
-    status_filter = request.GET.get("status_filter", "").strip()
-    kommune = request.GET.get("kommune", "").strip()
-    unused_seats = request.GET.get("unused_seats", "").strip()
-
-    if search:
-        parts.append(f'Søgning: "{search}"')
-
-    if year and status_filter:
-        template = _STATUS_LABELS_WITH_YEAR.get(status_filter)
-        if template:
-            parts.append(template.format(year=year))
-        else:
-            parts.append(f"Skoleår: {year}")
-    elif year:
-        parts.append(f"Skoleår: {year}")
-    elif status_filter:
-        label = _STATUS_LABELS_NO_YEAR.get(status_filter)
-        if label:
-            parts.append(label)
-
-    if kommune:
-        parts.append(f"Kommune: {kommune}")
-
-    if unused_seats == "yes":
-        parts.append("Har ubrugte pladser")
-    elif unused_seats == "no":
-        parts.append("Ingen ubrugte pladser")
-
-    return " · ".join(parts)
-
-
 @method_decorator(staff_required, name="dispatch")
-class SchoolListView(SortableMixin, ListView):
+class SchoolListView(SchoolFilterMixin, SortableMixin, ListView):
     model = School
     template_name = "schools/school_list.html"
     context_object_name = "schools"
@@ -357,40 +301,8 @@ class SchoolListView(SortableMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Kommuner for filter dropdown
-        context["kommuner"] = (
-            School.objects.active().exclude(kommune="").values_list("kommune", flat=True).distinct().order_by("kommune")
-        )
-
-        # All school years from the SchoolYear model (not derived from active_from dates)
-        context["school_years"] = list(
-            SchoolYear.objects.filter(name__gte="2022/23", name__lte="2028/29")
-            .order_by("start_date")
-            .values_list("name", flat=True)
-        )
-
-        # Filter bar state
-        filter_params = ["search", "year", "status_filter", "kommune", "unused_seats"]
-        context["has_active_filters"] = any(self.request.GET.get(p, "").strip() for p in filter_params)
-        selected_year = self.request.GET.get("year", "").strip() or None
-        context["selected_year"] = selected_year
-        context["filter_summary"] = get_filter_summary(self.request)
-
-        # Date range string for the selected year info box (e.g. "1. aug 2024 – 31. jul 2025")
-        context["selected_year_dates"] = None
-        if selected_year:
-            try:
-                from apps.schools.school_years import get_school_year_dates
-
-                _DANISH_MONTHS = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"]
-                sy_start, sy_end = get_school_year_dates(selected_year)
-                context["selected_year_dates"] = (
-                    f"{sy_start.day}. {_DANISH_MONTHS[sy_start.month - 1]} {sy_start.year}"
-                    f" – "
-                    f"{sy_end.day}. {_DANISH_MONTHS[sy_end.month - 1]} {sy_end.year}"
-                )
-            except Exception:
-                pass
+        # Filter context from SchoolFilterMixin (kommuner, school_years, filter_summary, etc.)
+        context.update(self.get_filter_context())
 
         # Metrics
         paginator = context.get("paginator")
