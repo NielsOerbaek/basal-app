@@ -117,82 +117,107 @@
             {% endif %}
 
             <div class="card mb-4">
-                <div class="card-header"><i class="bi bi-ticket-perforated me-2"></i>Kursuspladser</div>
-                <div class="card-body">
-                    {% if is_waiting_for_first_year %}
-                    <div class="text-center py-3">
-                        <div class="mb-2">
-                            <i class="bi bi-clock text-info fs-3"></i>
+                <div class="card-header"><i class="bi bi-ticket-perforated me-2"></i>Forbrug af kursuspladser</div>
+                <div class="card-body p-0">
+                    {% if consumption_overview %}
+                        {% for year in consumption_overview.years %}
+                        <div class="border-bottom {% if year.is_greyed %}opacity-50{% endif %}">
+                            <button class="btn btn-link w-100 text-start text-decoration-none px-3 py-2 d-flex justify-content-between align-items-center"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#year-{{ year.year_name|slugify }}"
+                                    aria-expanded="{% if year.is_collapsed %}false{% else %}true{% endif %}">
+                                <span class="fw-semibold">
+                                    {{ year.year_name }}
+                                    {% if year.is_first_year %}<span class="badge bg-light text-dark ms-1 fw-normal">Første år</span>{% endif %}
+                                    {% if year.is_current %}<span class="badge bg-primary ms-1 fw-normal">Nuværende</span>{% endif %}
+                                    {% if year.is_greyed %}<span class="badge bg-secondary ms-1 fw-normal small">Ikke åbnet endnu</span>{% endif %}
+                                </span>
+                                <i class="bi bi-chevron-down small text-muted"></i>
+                            </button>
+                            <div id="year-{{ year.year_name|slugify }}"
+                                 class="collapse {% if not year.is_collapsed %}show{% endif %} px-3 pb-3">
+                                <table class="table table-sm table-borderless mb-0">
+                                    <tbody>
+                                        <tr>
+                                            <td class="text-muted ps-0">Medlemskab</td>
+                                            <td class="text-end">
+                                                {% if year.membership_price is not None %}
+                                                    {% if year.membership_price == 0 %}
+                                                        <span class="text-success">Gratis</span>
+                                                    {% else %}
+                                                        {{ year.membership_price|floatformat:0 }} kr.
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% if year.is_first_year %}
+                                        <tr>
+                                            <td class="text-muted ps-0">Gratis pladser</td>
+                                            <td class="text-end">{{ year.free_seats_used }}/{{ year.free_seats_total }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if year.forankringsplads_in_year %}
+                                        <tr>
+                                            <td class="text-muted ps-0">Forankringsplads</td>
+                                            <td class="text-end"><span class="text-success">Gratis</span></td>
+                                        </tr>
+                                        {% endif %}
+                                        <tr>
+                                            <td class="text-muted ps-0">Tilkøbte pladser</td>
+                                            <td class="text-end">{{ year.purchased_seats }}</td>
+                                        </tr>
+                                        {% if year.seats_price > 0 %}
+                                        <tr class="fw-semibold border-top">
+                                            <td class="text-muted ps-0">Pris kursuspladser</td>
+                                            <td class="text-end">{{ year.seats_price|floatformat:0 }} kr.</td>
+                                        </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                        <p class="mb-1">Jeres skole er tilmeldt fra <strong>{{ first_year_seats.year }}</strong></p>
-                        <p class="text-muted mb-0">3 kursuspladser bliver tilgængelige når skoleåret starter.</p>
-                    </div>
+                        {% endfor %}
+
+                        {% with fp=consumption_overview.forankringsplads %}
+                        {% if fp.is_applicable %}
+                        <div class="border-bottom bg-light">
+                            <button class="btn btn-link w-100 text-start text-decoration-none px-3 py-2 d-flex justify-content-between align-items-center"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#forankringsplads-block"
+                                    aria-expanded="{% if fp.is_expanded %}true{% else %}false{% endif %}">
+                                <span class="fw-semibold">
+                                    Forankringsplads
+                                    <span class="badge {% if fp.used == 0 %}bg-success{% else %}bg-secondary{% endif %} ms-1 fw-normal">
+                                        {{ fp.used }}/{{ fp.total }}
+                                    </span>
+                                </span>
+                                <i class="bi bi-chevron-down small text-muted"></i>
+                            </button>
+                            <div id="forankringsplads-block"
+                                 class="collapse {% if fp.is_expanded %}show{% endif %} px-3 pb-3">
+                                <p class="small text-muted mb-1">
+                                    Efter første tilmeldte skoleår får I 1 ekstra gratis kursusplads til at forankre projektet på skolen.
+                                    Denne plads kan bruges frem t.o.m. skoleåret {{ fp.valid_until_year }}.
+                                </p>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="fs-5 fw-bold {% if fp.used == 0 %}text-success{% else %}text-muted{% endif %}">
+                                        {{ fp.used }}/{{ fp.total }}
+                                    </div>
+                                    <div class="small text-muted">
+                                        {% if fp.used == 0 %}Ikke brugt endnu{% else %}Brugt{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
 
                     {% else %}
-
-                    {# First year bucket #}
-                    <div class="{% if is_in_first_year %}{% else %}opacity-50{% endif %} mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="mb-0">
-                                Første år{% if first_year_seats.year %} ({{ first_year_seats.year }}){% endif %}
-                            </h6>
-                            {% if is_in_first_year %}
-                            <span class="badge bg-primary">Nuværende</span>
-                            {% elif first_year_seats.year %}
-                            <span class="badge bg-secondary">Afsluttet</span>
-                            {% endif %}
-                        </div>
-                        <div class="row text-center">
-                            <div class="col-4">
-                                <div class="fs-4 fw-bold text-primary">{{ first_year_seats.free }}</div>
-                                <small class="text-muted">Pladser</small>
-                            </div>
-                            <div class="col-4">
-                                <div class="fs-4 fw-bold text-secondary">{{ first_year_seats.used }}</div>
-                                <small class="text-muted">Brugt</small>
-                            </div>
-                            <div class="col-4">
-                                <div class="fs-4 fw-bold {% if first_year_seats.remaining > 0 %}text-success{% else %}text-muted{% endif %}">{{ first_year_seats.remaining }}</div>
-                                <small class="text-muted">{% if is_in_first_year %}Ledige{% else %}Ubrugt{% endif %}</small>
-                            </div>
-                        </div>
-                        {% if not is_in_first_year and first_year_seats.remaining > 0 %}
-                        <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Ubrugte pladser er bortfaldet</small>
-                        {% endif %}
-                    </div>
-
-                    <hr>
-
-                    {# Fortsætter bucket #}
-                    <div class="{% if not is_in_first_year %}{% else %}opacity-50{% endif %}">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="mb-0">Fortsætter</h6>
-                            {% if not is_in_first_year and school.has_fortsaetterplads %}
-                            <span class="badge bg-primary">Nuværende</span>
-                            {% endif %}
-                        </div>
-                        <div class="row text-center">
-                            <div class="col-4">
-                                <div class="fs-4 fw-bold text-primary">{{ fortsaetter_seats.free }}</div>
-                                <small class="text-muted">Pladser</small>
-                            </div>
-                            <div class="col-4">
-                                <div class="fs-4 fw-bold text-secondary">{{ fortsaetter_seats.used }}</div>
-                                <small class="text-muted">Brugt</small>
-                            </div>
-                            <div class="col-4">
-                                <div class="fs-4 fw-bold {% if fortsaetter_seats.remaining > 0 %}text-success{% else %}text-muted{% endif %}">{{ fortsaetter_seats.remaining }}</div>
-                                <small class="text-muted">Ledige</small>
-                            </div>
-                        </div>
-                        {% if is_in_first_year %}
-                        <small class="text-muted d-block mt-2">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Efter første år får I 1 ekstra plads til at forankre projektet på skolen.
-                        </small>
-                        {% endif %}
-                    </div>
-
+                    <div class="p-3 text-muted">Ingen forbrugsdata tilgængeligt.</div>
                     {% endif %}
                 </div>
             </div>
