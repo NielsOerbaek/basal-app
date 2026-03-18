@@ -1,13 +1,60 @@
 <!DOCTYPE html>
-<html>
+<html lang="da">
 <head>
     <meta charset="utf-8">
     <title>{{ subject }}</title>
     <style>
-        body { font-family: sans-serif; max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0;
+            background: #f5f5f5;
+            color: #333;
+        }
+        .email-wrapper {
+            background: #fff;
+            margin: 20px auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .email-subject {
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            padding: 12px 20px;
+        }
+        .email-subject-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #888;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+        .email-subject-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        .email-body {
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .email-body p { margin: 0 0 1em; }
+        .email-body a { color: #0d6efd; }
+        .email-body img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
-    {{ body_html|safe }}
+    <div class="email-wrapper">
+        <div class="email-subject">
+            <div class="email-subject-label">Emne</div>
+            <div class="email-subject-text">{{ subject }}</div>
+        </div>
+        <div class="email-body">
+            {{ body_html|safe }}
+        </div>
+    </div>
 </body>
 </html>
