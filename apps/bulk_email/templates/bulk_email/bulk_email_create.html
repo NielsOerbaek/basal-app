@@ -60,7 +60,7 @@
                             <div class="row">
                                 {% for var in variable_names %}
                                 <div class="col-md-4 col-sm-6 mb-1">
-                                    <code class="user-select-all">{{ "{{" }} {{ var }} {{ "}}" }}</code>
+                                    <code class="user-select-all">{% templatetag openvariable %} {{ var }} {% templatetag closevariable %}</code>
                                 </div>
                                 {% endfor %}
                             </div>
