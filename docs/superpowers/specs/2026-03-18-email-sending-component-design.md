@@ -23,11 +23,11 @@ There is no way to send bulk emails to a filtered subset of schools from the adm
 
 ## Architecture
 
-A new Django app `apps/bulk_email/` with its own URL namespace mounted at `/masseudsendelse/`. A new top-level nav entry "Masseudsendelse" is added to the admin navigation.
+A new Django app `apps/bulk_email/` with its own URL namespace mounted at `/masseudsendelse/`. A new top-level nav entry "Masseudsendelse" is added to the admin navigation. All views require staff login (same `@login_required` + `is_staff` guard used elsewhere).
 
-The sending mechanism uses Django's `StreamingHttpResponse` with Server-Sent Events (SSE) to stream per-recipient progress back to the browser in real time. This avoids gunicorn timeouts for large recipient sets without requiring a task queue.
+The sending mechanism uses Django's `StreamingHttpResponse` with Server-Sent Events (SSE) to stream per-recipient progress back to the browser in real time. This avoids gunicorn timeouts for large recipient sets without requiring a task queue. Since the send endpoint accepts POST, the browser cannot use the native `EventSource` API (GET-only). The frontend uses `fetch()` with `ReadableStream` instead, which supports POST and streams chunks as they arrive. Gunicorn must use gthread workers for `StreamingHttpResponse` to flush chunks incrementally rather than buffering the full response — the Dockerfile CMD gains `--worker-class gthread --threads 4`.
 
-The school filter reuses the `school_filter.html` component being developed in the `better-school-filter-7ac` branch. This branch must be merged before or alongside this feature.
+The school filter reuses the `school_filter.html` component being developed in the `better-school-filter-7ac` branch. This branch must be merged before or alongside this feature. The filter component reads from `request.GET` and requires the parent view to supply these context variables: `kommuner`, `school_years`, `filter_summary`, `has_active_filters`, `selected_year`. `BulkEmailCreateView` must produce all of them — this logic is extracted into a `SchoolFilterMixin` shared with `SchoolListView`.
 
 ---
 
@@ -42,7 +42,7 @@ One record per send campaign.
 | `subject` | CharField | Supports `{{ variable }}` syntax |
 | `body_html` | TextField | HTML, Summernote-edited, supports `{{ variable }}` syntax |
 | `recipient_type` | CharField (choices) | `koordinator` or `oekonomisk_ansvarlig` |
-| `filter_params` | JSONField | Snapshot of GET params at send time: `search`, `year`, `status_filter`, `kommune`, `unused_seats` |
+| `filter_params` | JSONField | Snapshot of GET params at send time: `search`, `year`, `status_filter`, `kommune`, `unused_seats` — these are the exact param names emitted by `school_filter.html` (confirmed against `better-school-filter-7ac` spec) |
 | `sent_at` | DateTimeField (null) | Null until actually sent |
 | `sent_by` | ForeignKey(User, null) | Set at send time |
 | `created_at` | DateTimeField (auto) | |
@@ -55,7 +55,7 @@ One record per attached file. FK to `BulkEmail`.
 | Field | Type | Notes |
 |---|---|---|
 | `bulk_email` | ForeignKey(BulkEmail) | `related_name='attachments'` |
-| `file` | FileField | Uploaded to `bulk_email_attachments/` |
+| `file` | FileField | Uploaded to `bulk_email_attachments/` — served only to authenticated staff; not publicly accessible via `MEDIA_URL` |
 | `filename` | CharField | Display name for the attachment |
 
 ### `BulkEmailRecipient`
@@ -80,13 +80,26 @@ The recipient snapshot decouples the historical record from future Person/School
 | URL | View | Method | Purpose |
 |---|---|---|---|
 | `/masseudsendelse/` | `BulkEmailListView` | GET | Campaign history list |
-| `/masseudsendelse/ny/` | `BulkEmailCreateView` | GET, POST | Composer — create and configure |
+| `/masseudsendelse/ny/` | `BulkEmailCreateView` | GET | Composer — render form |
 | `/masseudsendelse/<pk>/` | `BulkEmailDetailView` | GET | Campaign detail + recipient table |
-| `/masseudsendelse/preview/` | `BulkEmailPreviewView` | GET (AJAX) | Returns rendered email HTML for a given school |
-| `/masseudsendelse/dry-run/` | `BulkEmailDryRunView` | GET (AJAX) | Returns recipient list + missing-field warnings |
-| `/masseudsendelse/send/` | `BulkEmailSendView` | POST (SSE) | Streams send progress |
+| `/masseudsendelse/preview/` | `BulkEmailPreviewView` | POST (AJAX) | Returns rendered email HTML for a given school + current body/subject |
+| `/masseudsendelse/dry-run/` | `BulkEmailDryRunView` | POST (AJAX) | Returns recipient list + missing-field warnings for current filter state |
+| `/masseudsendelse/send/` | `BulkEmailSendView` | POST (SSE) | Creates BulkEmail, streams send progress, sets sent_at on completion |
+| `/masseudsendelse/attachments/<pk>/` | `BulkEmailAttachmentView` | GET | Protected attachment download — staff-only |
 
-**Copy to new:** The list and detail views include a "Kopier til ny" button linking to `/masseudsendelse/ny/?copy_from=<pk>`. The composer GET handler pre-populates subject, body_html, recipient_type, and filter_params from the referenced campaign.
+**Copy to new:** The list and detail views include a "Kopier til ny" button. Clicking it redirects to `/masseudsendelse/ny/` with all filter params and composer fields expanded as individual GET params — e.g. `/masseudsendelse/ny/?copy_from=12&search=aarhus&year=2024/25&status_filter=tilmeldt_ny&recipient_type=koordinator`. The `copy_from` param is used only for page title context ("Kopieret fra udsendelse #12"); the actual pre-population comes from the expanded individual params. This means the school filter component's standard GET-param-driven UI renders with the copied state without any special handling in the template.
+
+**`BulkEmail` lifecycle:**
+1. No `BulkEmail` row exists while the user fills in the composer.
+2. When the user confirms "Send til alle", the browser POSTs to `/masseudsendelse/send/`.
+3. The send view creates the `BulkEmail` row (with `sent_at=null`) and begins streaming.
+4. `BulkEmailRecipient` rows are written one by one as sends complete.
+5. When all recipients are processed, `sent_at` is set and the stream emits the `done` event.
+6. If the stream is interrupted (server crash, browser close) the `BulkEmail` row remains with `sent_at=null` and partial recipients. These appear in the list view as "Afbrudt" and are shown at the top of the history list. The double-send guard prevents re-sending an interrupted campaign.
+
+**Attachment upload:** Files are uploaded separately via a small `POST /masseudsendelse/preview/` does not preview attachments — it only renders the HTML body for a given school. Attachments are uploaded via a dedicated AJAX upload call to `POST /masseudsendelse/ny/upload/` which returns an attachment PK; the form collects these PKs and sends them to the main send endpoint. Uploaded-but-unsent attachment files (orphaned if user navigates away without sending) are cleaned up by a periodic management command.
+
+**Attachment access:** `BulkEmailAttachment.file` URLs are never exposed directly. The detail view links to `/masseudsendelse/attachments/<pk>/`, which checks `request.user.is_staff` and streams the file.
 
 **Double-send guard:** Once `sent_at` is set on a `BulkEmail`, the record is read-only. The send endpoint rejects POSTs to already-sent campaigns.
 
@@ -112,15 +125,16 @@ The recipient snapshot decouples the historical record from future Person/School
 
 ### 3. Vedhæftninger
 
-- Multi-file `<input type="file" multiple>`
-- List of uploaded attachments with individual remove buttons
-- Files are uploaded and saved as `BulkEmailAttachment` records on form POST
+- Multi-file `<input type="file" multiple>` — each file is uploaded immediately via AJAX to `POST /masseudsendelse/ny/upload/` on selection; returns an attachment PK
+- List of uploaded attachments with individual remove buttons (AJAX delete)
+- The form tracks attachment PKs as hidden inputs; these are submitted with "Send til alle"
 
 ### 4. Forhåndsvisning
 
 - School picker `<select>` — populated from the current matched school set
 - `<iframe>` showing the rendered email for the selected school
-- Refreshes automatically when the selected school changes or when subject/body changes (debounced 800ms), via AJAX to the preview endpoint
+- Refreshes automatically when the selected school changes or when subject/body changes (debounced 800ms), via POST AJAX to the preview endpoint with `school_pk`, `subject`, and `body_html` in the request body
+- Attachments are not shown in the preview (HTML body only)
 
 ### 5. Afsendelse
 
@@ -158,7 +172,11 @@ Available variables:
 | `{{ skoleside_link }}` | Full URL to the school's personal page |
 | `{{ tilmeldings_adgangskode }}` | `school.signup_password` |
 
+The remaining `fakturering_*` fields (`fakturering_adresse`, `fakturering_postnummer`, `fakturering_by`) are intentionally omitted — billing address fields are not expected to appear in outbound school communications.
+
 Missing-field warnings are computed before send and on dry-run by iterating all resolved recipients and checking each referenced variable.
+
+**Security note:** Template rendering uses `Template(body_html).render(Context({...}))` with a sandboxed `Context` (not `RequestContext`). This prevents arbitrary Python execution but still allows Django template tags (`{% ... %}`). This is accepted for an admin-only tool with staff access. The template engine is not further restricted.
 
 ---
 
@@ -174,7 +192,7 @@ Protocol:
 
 Each `BulkEmailRecipient` is written to the database immediately after its send attempt. Failures do not abort the stream — sending continues for remaining recipients.
 
-The frontend listens via `EventSource` and updates the progress bar and log incrementally.
+The frontend uses `fetch()` with `ReadableStream` (not `EventSource`, which is GET-only) to POST to the send endpoint and consume the stream incrementally. Each `data: {...}\n\n` chunk is parsed as JSON and used to update the progress bar and live log.
 
 ---
 
@@ -183,7 +201,7 @@ The frontend listens via `EventSource` and updates the progress bar and log incr
 **List view (`/masseudsendelse/`):**
 - Table: sent_at, subject (truncated), recipient_type, filter summary, sent_by, recipient count, failure count
 - "Kopier til ny" button per row
-- Unsent drafts (sent_at=null) shown at top if any exist
+- Interrupted sends (sent_at=null, has recipients) shown at top with "Afbrudt" status badge
 
 **Detail view (`/masseudsendelse/<pk>/):**
 - Header: subject, sent_at, sent_by, recipient_type, filter summary (from stored filter_params)
@@ -198,24 +216,28 @@ The frontend listens via `EventSource` and updates the progress bar and log incr
 - **Individual send failures:** logged to `BulkEmailRecipient.error_message`, stream continues
 - **Missing contact type:** schools without the selected contact type are silently skipped during send (counted separately in the final summary: _"3 skoler sprunget over — ingen koordinator"_)
 - **Missing template variables:** warning shown pre-send, not a blocker
-- **Dev mode guard:** existing `if not settings.RESEND_API_KEY:` pattern applies — logs to console instead of sending, `BulkEmailRecipient.success=True` with a dev-mode note
+- **Dev mode guard:** existing `if not settings.RESEND_API_KEY:` pattern applies — logs to console instead of sending. `BulkEmailRecipient` is written with `success=True` and `error_message="[DEV MODE - not actually sent]"` (consistent with `EmailLog` pattern in `services.py`).
 - **Domain allowlist:** existing `EMAIL_ALLOWED_DOMAINS` check in `services.py` applies to each recipient
 
 ---
 
 ## Audit
 
-`BulkEmail` is registered in `apps/audit/apps.py`:
+`BulkEmail` is registered in `apps/audit/apps.py` inside the `AuditConfig.ready()` method, following the existing pattern:
 
 ```python
-from apps.bulk_email.models import BulkEmail
-
-register_for_audit(BulkEmail, AuditCfg(
-    excluded_fields=['id', 'created_at', 'updated_at', 'body_html'],
-))
+class AuditConfig(AppConfig):
+    def ready(self):
+        # ... existing registrations ...
+        from apps.bulk_email.models import BulkEmail
+        register_for_audit(BulkEmail, AuditCfg(
+            excluded_fields=['id', 'created_at', 'updated_at', 'body_html'],
+        ))
 ```
 
-`body_html` is excluded from audit tracking (too large, not useful as a diff).
+`body_html` is excluded from audit tracking (too large, not useful as a diff). Note: since `BulkEmail` is not linked to a single school, no `get_school` lambda is needed.
+
+`BulkEmailAttachment` and `BulkEmailRecipient` are intentionally not registered in audit — attachment adds/removes are visible in the campaign detail view, and recipient rows are append-only write-once records. Auditing them would produce noise without value.
 
 ---
 
@@ -229,21 +251,25 @@ register_for_audit(BulkEmail, AuditCfg(
 | `apps/bulk_email/urls.py` | URL patterns |
 | `apps/bulk_email/forms.py` | `BulkEmailForm` with Summernote widget |
 | `apps/bulk_email/apps.py` | AppConfig |
+| `apps/schools/views.py` | Extract `SchoolFilterMixin` from `SchoolListView` for reuse |
 | `apps/bulk_email/templates/bulk_email/bulk_email_list.html` | Campaign history |
 | `apps/bulk_email/templates/bulk_email/bulk_email_create.html` | Composer page |
 | `apps/bulk_email/templates/bulk_email/bulk_email_detail.html` | Campaign detail |
 | `apps/bulk_email/templates/bulk_email/bulk_email_preview.html` | Rendered email HTML (for iframe) |
+| `apps/bulk_email/views.py` | Also: attachment upload AJAX + protected download view |
 | `apps/audit/apps.py` | Register `BulkEmail` |
 | `config/settings/base.py` | Add `bulk_email` to `INSTALLED_APPS` |
 | `config/urls.py` | Mount `/masseudsendelse/` |
 | `templates/core/base.html` | Add "Masseudsendelse" nav link |
+| `Dockerfile` | Add `--worker-class gthread --threads 4` to gunicorn CMD |
 
 ---
 
 ## Dependencies
 
-- `better-school-filter-7ac` branch must be merged first (provides `school_filter.html` component and the updated `SchoolListView` filter logic)
+- `better-school-filter-7ac` branch must be merged first (provides `school_filter.html` component, updated `SchoolListView` filter logic, and the `SchoolFilterMixin` to be extracted)
 - No new Python packages required (SSE via `StreamingHttpResponse`, Summernote already installed)
+- Dockerfile CMD updated to add `--worker-class gthread --threads 4` for gunicorn streaming support
 
 ---
 
