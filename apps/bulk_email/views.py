@@ -89,7 +89,7 @@ class BulkEmailCreateView(SchoolFilterMixin, View):
 
         context = {
             "form": form,
-            "schools": schools[:200],
+            "schools": schools[:1000],
             "total_matched": len(schools),
             "variable_names": VARIABLE_NAMES,
             "copy_source": copy_source,
@@ -150,11 +150,9 @@ class BulkEmailDryRunView(View):
         filter_params = payload.get("filter_params", {})
 
         # Build a fake request to use the mixin filter logic
-        from urllib.parse import urlencode
-
-        from django.http import QueryDict
-
-        fake_qs = QueryDict(urlencode(filter_params))
+        fake_qs = QueryDict(mutable=True)
+        for k, v in filter_params.items():
+            fake_qs[k] = str(v)
 
         class _FakeRequest:
             GET = fake_qs
@@ -194,7 +192,10 @@ class BulkEmailDryRunView(View):
 @method_decorator(staff_required, name="dispatch")
 class BulkEmailSendView(SchoolFilterMixin, View):
     def post(self, request):
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
 
         subject = data.get("subject", "")
         body_html = data.get("body_html", "")
@@ -202,8 +203,25 @@ class BulkEmailSendView(SchoolFilterMixin, View):
         filter_params = data.get("filter_params", {})
         attachment_pks = data.get("attachment_pks", [])
 
-        # Test email path: send directly to one address without creating a BulkEmail record
+        # Double-send guard: reject if a similar campaign was created in the last 60 seconds
         test_email = data.get("test_email")
+        if not test_email:
+            from datetime import timedelta
+
+            cutoff = timezone.now() - timedelta(seconds=60)
+            if BulkEmail.objects.filter(
+                subject=subject,
+                recipient_type=recipient_type,
+                filter_params=filter_params,
+                sent_by=request.user,
+                created_at__gte=cutoff,
+            ).exists():
+                return JsonResponse(
+                    {"error": "En identisk udsendelse blev oprettet for nylig. Vent venligst."},
+                    status=409,
+                )
+
+        # Test email path: send directly to one address without creating a BulkEmail record
         if test_email:
             test_school_pk = data.get("test_school_pk")
             if test_school_pk:
@@ -253,9 +271,9 @@ class BulkEmailSendView(SchoolFilterMixin, View):
             return response
 
         # Normal send path
-        from urllib.parse import urlencode
-
-        fake_get = QueryDict(urlencode(filter_params), mutable=True)
+        fake_get = QueryDict(mutable=True)
+        for k, v in filter_params.items():
+            fake_get[k] = str(v)
         original_get = request.GET
         request.GET = fake_get
         schools = list(self.get_school_filter_queryset())
@@ -274,6 +292,12 @@ class BulkEmailSendView(SchoolFilterMixin, View):
         if attachment_pks:
             BulkEmailAttachment.objects.filter(pk__in=attachment_pks).update(bulk_email=campaign)
 
+        # Pre-load attachment data once before the streaming loop
+        attachment_data = []
+        for att in campaign.attachments.all():
+            with att.file.open("rb") as f:
+                attachment_data.append({"filename": att.filename, "content": list(f.read())})
+
         def event_stream():
             sent = 0
             failed = 0
@@ -282,7 +306,7 @@ class BulkEmailSendView(SchoolFilterMixin, View):
             yield f"data: {json.dumps({'type': 'start', 'total': len(school_person_pairs), 'skipped': skipped})}\n\n"
 
             for n, (school, person) in enumerate(school_person_pairs, start=1):
-                recipient = send_to_school(campaign, school, person)
+                recipient = send_to_school(campaign, school, person, attachment_data=attachment_data)
                 if recipient.success:
                     sent += 1
                 else:

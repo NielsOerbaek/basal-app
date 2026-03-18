@@ -91,6 +91,8 @@ def resolve_recipients(schools, recipient_type):
     """
     For each school, find the matching contact person.
 
+    Note: schools should have prefetch_related("people") applied for performance.
+
     Returns:
         List of (school, person) tuples — schools with no matching contact are omitted.
     """
@@ -106,10 +108,13 @@ def resolve_recipients(schools, recipient_type):
     return result
 
 
-def send_to_school(bulk_email, school, person):
+def send_to_school(bulk_email, school, person, attachment_data=None):
     """
     Send a single bulk email to one school/person. Writes and returns a BulkEmailRecipient.
     Does NOT abort on failure — caller should continue iterating.
+
+    If attachment_data is provided (list of {"filename", "content"} dicts), it is used
+    directly instead of re-reading files from disk — avoids repeated I/O in bulk loops.
     """
     email_address = person.email
     subject = render_for_school(bulk_email.subject, school, person)
@@ -139,10 +144,13 @@ def send_to_school(bulk_email, school, person):
 
     try:
         resend.api_key = settings.RESEND_API_KEY
-        attachments = []
-        for attachment in bulk_email.attachments.all():
-            with attachment.file.open("rb") as f:
-                attachments.append({"filename": attachment.filename, "content": list(f.read())})
+        if attachment_data is not None:
+            attachments = attachment_data
+        else:
+            attachments = []
+            for attachment in bulk_email.attachments.all():
+                with attachment.file.open("rb") as f:
+                    attachments.append({"filename": attachment.filename, "content": list(f.read())})
 
         params = {
             "from": settings.DEFAULT_FROM_EMAIL,
