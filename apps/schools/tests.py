@@ -5,7 +5,8 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from apps.courses.models import Course
+from apps.courses.models import Course, CourseSignUp
+from apps.schools.consumption import get_consumption_overview
 
 from .models import Invoice, Person, School, SchoolComment, SchoolYear, TitelChoice
 
@@ -3465,3 +3466,160 @@ class CalculateSeatPriceTest(TestCase):
         from apps.schools.consumption import calculate_seat_price
 
         self.assertEqual(calculate_seat_price(5), 5 * 7195)
+
+
+def make_school(name="Test", active_from=None, enrolled_at=None):
+    return School.objects.create(
+        name=name,
+        adresse="Testvej 1",
+        kommune="København",
+        enrolled_at=enrolled_at or active_from or date(2024, 8, 1),
+        active_from=active_from or date(2024, 8, 1),
+    )
+
+
+def make_school_year(start_year):
+    return SchoolYear.objects.get_or_create(
+        name=f"{start_year}/{str(start_year+1)[2:]}",
+        defaults={
+            "start_date": date(start_year, 8, 1),
+            "end_date": date(start_year + 1, 7, 31),
+        },
+    )[0]
+
+
+def make_course(start_date, is_published=True):
+    from apps.courses.models import Course
+
+    return Course.objects.create(
+        start_date=start_date,
+        end_date=start_date,
+        is_published=is_published,
+    )
+
+
+def make_signup(school, course):
+    return CourseSignUp.objects.create(
+        school=school,
+        course=course,
+        participant_name="Test Person",
+    )
+
+
+class ConsumptionOverviewTest(TestCase):
+    def setUp(self):
+        self.sy2024 = make_school_year(2024)
+        self.sy2025 = make_school_year(2025)
+        self.sy2026 = make_school_year(2026)
+
+    def test_returns_none_for_unenrolled_school(self):
+        school = School.objects.create(name="Unenrolled", adresse="X", kommune="X")
+        result = get_consumption_overview(school, today=date(2025, 3, 1))
+        self.assertIsNone(result)
+
+    def test_first_year_school_no_signups(self):
+        school = make_school(active_from=date(2024, 8, 1))
+        result = get_consumption_overview(school, today=date(2025, 3, 1))
+        self.assertIsNotNone(result)
+        year_names = [y["year_name"] for y in result["years"]]
+        self.assertIn("2024/25", year_names)
+        self.assertIn("2025/26", year_names)
+
+    def test_first_year_free_seats(self):
+        school = make_school(active_from=date(2024, 8, 1))
+        course = make_course(date(2024, 10, 1))
+        make_signup(school, course)
+        make_signup(school, course)
+        result = get_consumption_overview(school, today=date(2025, 3, 1))
+        first = next(y for y in result["years"] if y["year_name"] == "2024/25")
+        self.assertEqual(first["free_seats_total"], 3)
+        self.assertEqual(first["free_seats_used"], 2)
+        self.assertEqual(first["purchased_seats"], 0)
+        self.assertEqual(first["seats_price"], 0)
+        self.assertEqual(first["membership_price"], 0)
+
+    def test_first_year_purchased_seats_when_exceeding_3(self):
+        school = make_school(active_from=date(2024, 8, 1))
+        course = make_course(date(2024, 10, 1))
+        for _ in range(4):
+            make_signup(school, course)
+        result = get_consumption_overview(school, today=date(2025, 3, 1))
+        first = next(y for y in result["years"] if y["year_name"] == "2024/25")
+        self.assertEqual(first["free_seats_used"], 3)
+        self.assertEqual(first["purchased_seats"], 1)
+        self.assertEqual(first["seats_price"], 7995)
+
+    def test_forankringsplads_not_applicable_in_first_year(self):
+        school = make_school(active_from=date(2024, 8, 1))
+        result = get_consumption_overview(school, today=date(2024, 10, 1))
+        self.assertFalse(result["forankringsplads"]["is_applicable"])
+
+    def test_forankringsplads_applicable_after_first_year(self):
+        school = make_school(active_from=date(2024, 8, 1))
+        result = get_consumption_overview(school, today=date(2025, 9, 1))
+        self.assertTrue(result["forankringsplads"]["is_applicable"])
+
+    def test_forankringsplads_consumed_by_first_post_year1_signup(self):
+        school = make_school(active_from=date(2024, 8, 1))
+        course_y2 = make_course(date(2025, 10, 1))
+        make_signup(school, course_y2)
+        make_signup(school, course_y2)
+        result = get_consumption_overview(school, today=date(2026, 3, 1))
+        fp = result["forankringsplads"]
+        self.assertEqual(fp["used"], 1)
+        y2 = next(y for y in result["years"] if y["year_name"] == "2025/26")
+        self.assertEqual(y2["forankringsplads_in_year"], 1)
+        self.assertEqual(y2["purchased_seats"], 1)
+        self.assertEqual(y2["seats_price"], 7995)
+
+    def test_membership_price_year1_is_zero(self):
+        school = make_school(active_from=date(2024, 8, 1))
+        result = get_consumption_overview(school, today=date(2025, 3, 1))
+        first = next(y for y in result["years"] if y["year_name"] == "2024/25")
+        self.assertEqual(first["membership_price"], 0)
+
+    def test_membership_price_year2_is_1450(self):
+        school = make_school(active_from=date(2024, 8, 1))
+        result = get_consumption_overview(school, today=date(2025, 9, 1))
+        y2 = next(y for y in result["years"] if y["year_name"] == "2025/26")
+        self.assertEqual(y2["membership_price"], 1450)
+
+    def test_membership_price_next_year_hidden_before_june2(self):
+        school = make_school(active_from=date(2024, 8, 1))
+        result = get_consumption_overview(school, today=date(2026, 5, 1))
+        y3 = next((y for y in result["years"] if y["year_name"] == "2026/27"), None)
+        if y3:
+            self.assertIsNone(y3["membership_price"])
+
+    def test_membership_price_next_year_shown_after_june2(self):
+        school = make_school(active_from=date(2024, 8, 1))
+        result = get_consumption_overview(school, today=date(2026, 6, 3))
+        y3 = next((y for y in result["years"] if y["year_name"] == "2026/27"), None)
+        if y3:
+            self.assertEqual(y3["membership_price"], 1450)
+
+    def test_current_year_is_expanded(self):
+        school = make_school(active_from=date(2024, 8, 1))
+        result = get_consumption_overview(school, today=date(2025, 3, 1))
+        current = next(y for y in result["years"] if y["is_current"])
+        self.assertFalse(current["is_collapsed"])
+
+    def test_past_year_is_collapsed(self):
+        school = make_school(active_from=date(2024, 8, 1))
+        result = get_consumption_overview(school, today=date(2025, 9, 1))
+        past = next(y for y in result["years"] if y["year_name"] == "2024/25")
+        self.assertTrue(past["is_collapsed"])
+
+    def test_year_active_when_published_course_exists(self):
+        school = make_school(active_from=date(2024, 8, 1))
+        make_course(date(2025, 10, 1), is_published=True)
+        result = get_consumption_overview(school, today=date(2025, 3, 1))
+        y2 = next(y for y in result["years"] if y["year_name"] == "2025/26")
+        self.assertTrue(y2["is_active"])
+        self.assertFalse(y2["is_greyed"])
+
+    def test_next_year_greyed_when_no_published_courses(self):
+        school = make_school(active_from=date(2024, 8, 1))
+        result = get_consumption_overview(school, today=date(2025, 3, 1))
+        next_year = next(y for y in result["years"] if y["is_next"])
+        self.assertTrue(next_year["is_greyed"])
