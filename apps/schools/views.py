@@ -15,6 +15,7 @@ from apps.core.export import export_queryset_to_excel
 from apps.core.mixins import SortableMixin
 from apps.courses.forms import CourseSignUpParticipantForm
 from apps.courses.models import CourseSignUp
+from apps.schools.consumption import get_consumption_overview
 
 from .forms import EnrollmentDatesForm, InvoiceForm, PersonForm, SchoolCommentForm, SchoolFileForm, SchoolForm
 from .models import Invoice, Person, School, SchoolComment, SchoolFile, SchoolYear
@@ -442,6 +443,7 @@ class SchoolDetailView(DetailView):
         # Seat calculation context
         context["first_year_seats"] = self.object.get_first_year_seats()
         context["fortsaetter_seats"] = self.object.get_fortsaetter_seats()
+        context["consumption_overview"] = get_consumption_overview(self.object)
 
         # Determine which bucket is "current"
         if self.object.active_from:
@@ -1244,6 +1246,7 @@ class SchoolPublicView(DetailView):
         # Seat calculation context
         context["first_year_seats"] = school.get_first_year_seats()
         context["fortsaetter_seats"] = school.get_fortsaetter_seats()
+        context["consumption_overview"] = get_consumption_overview(school)
 
         if school.active_from:
             from apps.schools.models import SchoolYear
