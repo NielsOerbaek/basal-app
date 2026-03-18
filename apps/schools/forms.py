@@ -5,7 +5,7 @@ from crispy_forms.layout import HTML, Column, Div, Layout, Row, Submit
 from django import forms
 
 from .constants import DANISH_KOMMUNER
-from .models import Invoice, Person, School, SchoolComment, SchoolFile
+from .models import Person, School, SchoolComment, SchoolFile
 from .school_years import (
     calculate_school_year_for_date,
     format_school_year,
@@ -144,70 +144,6 @@ class SchoolCommentForm(forms.ModelForm):
             "comment",
             Submit("submit", "Gem kommentar", css_class="btn btn-primary"),
         )
-
-
-class InvoiceForm(forms.ModelForm):
-    class Meta:
-        model = Invoice
-        fields = ["school_year", "invoice_number", "amount", "date", "status", "comment"]
-        widgets = {
-            "date": forms.DateInput(attrs={"type": "date"}),
-            "comment": forms.Textarea(attrs={"rows": 2}),
-            "school_year": forms.Select(attrs={"class": "form-select"}),
-        }
-
-    def __init__(self, *args, school=None, initial_school_year=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.school = school
-        self.helper = FormHelper()
-        self.helper.layout = Layout(
-            "school_year",
-            Row(
-                Column("invoice_number", css_class="col-md-6"),
-                Column("amount", css_class="col-md-6"),
-            ),
-            Row(
-                Column("date", css_class="col-md-6"),
-                Column("status", css_class="col-md-6"),
-            ),
-            "comment",
-            Submit("submit", "Gem faktura", css_class="btn btn-primary"),
-        )
-        # Limit school_year choices to years the school is enrolled in, up to next year
-        if school:
-            from .models import SchoolYear
-
-            # Get current school year to determine cutoff
-            current_year = SchoolYear.objects.get_current()
-            enrolled_years = school.get_enrolled_years().order_by("-start_date")
-
-            if current_year:
-                # Only show up to 1 year after current (the "next" year)
-                next_year_end = current_year.end_date.replace(year=current_year.end_date.year + 1)
-                enrolled_years = enrolled_years.filter(start_date__lte=next_year_end)
-
-            self.fields["school_year"].queryset = enrolled_years
-
-        # Set initial school_year if provided
-        if initial_school_year:
-            self.fields["school_year"].initial = initial_school_year
-
-    def clean(self):
-        cleaned_data = super().clean()
-        invoice_number = cleaned_data.get("invoice_number")
-        school_year = cleaned_data.get("school_year")
-
-        if invoice_number and school_year:
-            # Check for duplicate invoice_number + school_year (exclude current instance if editing)
-            qs = Invoice.objects.filter(invoice_number=invoice_number, school_year=school_year)
-            if self.instance.pk:
-                qs = qs.exclude(pk=self.instance.pk)
-            if qs.exists():
-                raise forms.ValidationError(
-                    f'Der findes allerede en faktura med nummer "{invoice_number}" for skoleåret {school_year.name}.'
-                )
-
-        return cleaned_data
 
 
 class SchoolFileForm(forms.ModelForm):

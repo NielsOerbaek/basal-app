@@ -14,12 +14,6 @@ class TitelChoice(models.TextChoices):
     ANDET = "andet", "Andet"
 
 
-class InvoiceStatus(models.TextChoices):
-    PLANNED = "planned", "Planlagt"
-    SENT = "sent", "Sendt"
-    PAID = "paid", "Betalt"
-
-
 class SchoolYearManager(models.Manager):
     def get_current(self):
         """Hent det aktuelle skoleår baseret på dags dato."""
@@ -531,40 +525,6 @@ class SchoolComment(models.Model):
 
     def __str__(self):
         return f"{self.school.name} - {self.created_at.strftime('%Y-%m-%d')}"
-
-
-class Invoice(models.Model):
-    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="invoices")
-    school_year = models.ForeignKey(
-        SchoolYear,
-        on_delete=models.PROTECT,
-        related_name="invoices",
-        verbose_name="Skoleår",
-        null=True,
-        blank=True,
-    )
-    invoice_number = models.CharField(max_length=50, verbose_name="Fakturanummer")
-    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Beløb")
-    status = models.CharField(
-        max_length=10, choices=InvoiceStatus.choices, default=InvoiceStatus.PLANNED, verbose_name="Status"
-    )
-    date = models.DateField(default=date.today, verbose_name="Dato")
-    comment = models.TextField(blank=True, verbose_name="Kommentar")
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-date"]
-        verbose_name = "Faktura"
-        verbose_name_plural = "Fakturaer"
-        constraints = [
-            models.UniqueConstraint(
-                fields=["invoice_number", "school_year"],
-                name="unique_invoice_per_school_year",
-            ),
-        ]
-
-    def __str__(self):
-        return f"{self.invoice_number} - {self.school.name}"
 
 
 class SchoolFile(models.Model):

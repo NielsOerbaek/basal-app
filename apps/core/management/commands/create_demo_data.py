@@ -31,9 +31,6 @@ class Command(BaseCommand):
             Course.objects.all().delete()
             SchoolComment.objects.all().delete()
             Person.objects.all().delete()
-            from apps.schools.models import Invoice
-
-            Invoice.objects.all().delete()
             School.objects.all().delete()
             self.stdout.write(self.style.SUCCESS("Eksisterende data slettet"))
 

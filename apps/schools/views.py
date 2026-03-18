@@ -16,8 +16,8 @@ from apps.core.mixins import SortableMixin
 from apps.courses.forms import CourseSignUpParticipantForm
 from apps.courses.models import CourseSignUp
 
-from .forms import EnrollmentDatesForm, InvoiceForm, PersonForm, SchoolCommentForm, SchoolFileForm, SchoolForm
-from .models import Invoice, Person, School, SchoolComment, SchoolFile, SchoolYear
+from .forms import EnrollmentDatesForm, PersonForm, SchoolCommentForm, SchoolFileForm, SchoolForm
+from .models import Person, School, SchoolComment, SchoolFile, SchoolYear
 
 
 @method_decorator(staff_required, name="dispatch")
@@ -434,7 +434,6 @@ class SchoolDetailView(DetailView):
         )
         context["kontaktpersoner"] = self.object.people.all()
         context["school_comments"] = self.object.school_comments.select_related("created_by").all()
-        context["invoices"] = self.object.invoices.all()
         context["enrollment_history"] = self.object.get_enrollment_history()
         context["person_form"] = PersonForm()
         context["comment_form"] = SchoolCommentForm()
@@ -564,8 +563,6 @@ class SchoolHardDeleteView(View):
         person_count = school.people.count()
         comment_count = school.school_comments.count()
         contact_count = school.contact_history.count()
-        invoice_count = school.invoices.count()
-
         warning_parts = []
         if signup_count:
             warning_parts.append(f"{signup_count} kursustilmelding{'er' if signup_count != 1 else ''}")
@@ -575,9 +572,6 @@ class SchoolHardDeleteView(View):
             warning_parts.append(f"{comment_count} kommentar{'er' if comment_count != 1 else ''}")
         if contact_count:
             warning_parts.append(f"{contact_count} henvendelse{'r' if contact_count != 1 else ''}")
-        if invoice_count:
-            warning_parts.append(f"{invoice_count} faktura{'er' if invoice_count != 1 else ''}")
-
         if warning_parts:
             warning = f"Dette vil permanent slette: {', '.join(warning_parts)}. Handlingen kan ikke fortrydes!"
         else:
@@ -896,145 +890,6 @@ class SchoolCommentDeleteView(View):
         return JsonResponse(
             {"success": True, "redirect": str(reverse_lazy("schools:detail", kwargs={"pk": school_pk}))}
         )
-
-
-@method_decorator(staff_required, name="dispatch")
-class InvoiceCreateView(View):
-    def get(self, request, school_pk):
-        school = get_object_or_404(School, pk=school_pk)
-        # Check for preselected school_year from query param
-        initial_school_year = None
-        school_year_pk = request.GET.get("school_year")
-        if school_year_pk:
-            initial_school_year = SchoolYear.objects.filter(pk=school_year_pk).first()
-        form = InvoiceForm(school=school, initial_school_year=initial_school_year)
-        return render(
-            request,
-            "schools/invoice_form.html",
-            {
-                "school": school,
-                "form": form,
-            },
-        )
-
-    def post(self, request, school_pk):
-        school = get_object_or_404(School, pk=school_pk)
-        form = InvoiceForm(request.POST, school=school)
-        if form.is_valid():
-            invoice = form.save(commit=False)
-            invoice.school = school
-            invoice.save()
-            messages.success(request, f'Faktura "{invoice.invoice_number}" tilføjet.')
-            return redirect("schools:detail", pk=school.pk)
-        return render(
-            request,
-            "schools/invoice_form.html",
-            {
-                "school": school,
-                "form": form,
-            },
-        )
-
-
-@method_decorator(staff_required, name="dispatch")
-class InvoiceDeleteView(View):
-    def get(self, request, pk):
-        invoice = get_object_or_404(Invoice, pk=pk)
-        return render(
-            request,
-            "core/components/confirm_delete_modal.html",
-            {
-                "title": "Slet faktura",
-                "message": format_html(
-                    "Er du sikker på, at du vil slette faktura <strong>{}</strong>?", invoice.invoice_number
-                ),
-                "delete_url": reverse_lazy("schools:invoice-delete", kwargs={"pk": pk}),
-            },
-        )
-
-    def post(self, request, pk):
-        invoice = get_object_or_404(Invoice, pk=pk)
-        school_pk = invoice.school.pk
-        invoice_number = invoice.invoice_number
-        invoice.delete()
-        messages.success(request, f'Faktura "{invoice_number}" er blevet slettet.')
-        return JsonResponse(
-            {"success": True, "redirect": str(reverse_lazy("schools:detail", kwargs={"pk": school_pk}))}
-        )
-
-
-@method_decorator(staff_required, name="dispatch")
-class MissingInvoicesView(ListView):
-    template_name = "schools/missing_invoices.html"
-    context_object_name = "missing_invoices"
-
-    def _get_relevant_years(self):
-        """Get current and previous school years (max 2)."""
-        # Get the most recent school year that has started
-        from datetime import date
-
-        today = date.today()
-        return SchoolYear.objects.filter(start_date__lte=today).order_by("-start_date")[:2]
-
-    def get_queryset(self):
-        relevant_years = self._get_relevant_years()
-
-        # For hvert skoleår, find skoler der mangler faktura
-        # Fortsætter invoices are per school year
-        # Extra seats invoices are NOT per school year - only one needed ever
-        missing = []
-
-        for school_year in relevant_years:
-            enrolled_schools = school_year.get_enrolled_schools()
-            for school in enrolled_schools:
-                # Check existing invoices for this school year
-                invoices_for_year = school.invoices.filter(school_year=school_year)
-
-                # Determine if school needs fortsætter invoice (per school year)
-                is_fortsaetter = school.active_from and school.active_from < school_year.start_date
-
-                # Check if fortsætter invoice exists for this year
-                has_fortsaetter_invoice = invoices_for_year.exclude(comment__icontains="ekstra").exists()
-
-                # Add missing fortsætter invoice
-                if is_fortsaetter and not has_fortsaetter_invoice:
-                    missing.append(
-                        {
-                            "school": school,
-                            "school_year": school_year,
-                            "invoice_type": "fortsaetter",
-                            "extra_seats": 0,
-                        }
-                    )
-
-        # Check for extra seats separately (not per school year)
-        # Only show once per school, for the current year
-        current_year = relevant_years.first() if relevant_years else None
-        if current_year:
-            for school in current_year.get_enrolled_schools():
-                extra_seats = max(0, school.used_seats - school.total_seats)
-                if extra_seats > 0:
-                    # Check if ANY extra seats invoice exists (across all years)
-                    has_extra_seats_invoice = school.invoices.filter(comment__icontains="ekstra").exists()
-
-                    if not has_extra_seats_invoice:
-                        missing.append(
-                            {
-                                "school": school,
-                                "school_year": current_year,
-                                "invoice_type": "extra_seats",
-                                "extra_seats": extra_seats,
-                            }
-                        )
-
-        # Sort alphabetically by school name, then by school year (descending)
-        missing.sort(key=lambda x: (x["school"].name, -x["school_year"].start_date.toordinal()))
-        return missing
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["school_years"] = self._get_relevant_years()
-        return context
 
 
 @method_decorator(staff_required, name="dispatch")
