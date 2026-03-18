@@ -247,7 +247,7 @@ class AuditConfig(AppConfig):
 |---|---|
 | `apps/bulk_email/__init__.py` | New app |
 | `apps/bulk_email/models.py` | `BulkEmail`, `BulkEmailAttachment`, `BulkEmailRecipient` |
-| `apps/bulk_email/views.py` | All five views + SSE send |
+| `apps/bulk_email/views.py` | All views: list, create, detail, preview, dry-run, SSE send, attachment upload + protected download |
 | `apps/bulk_email/urls.py` | URL patterns |
 | `apps/bulk_email/forms.py` | `BulkEmailForm` with Summernote widget |
 | `apps/bulk_email/apps.py` | AppConfig |
@@ -256,7 +256,6 @@ class AuditConfig(AppConfig):
 | `apps/bulk_email/templates/bulk_email/bulk_email_create.html` | Composer page |
 | `apps/bulk_email/templates/bulk_email/bulk_email_detail.html` | Campaign detail |
 | `apps/bulk_email/templates/bulk_email/bulk_email_preview.html` | Rendered email HTML (for iframe) |
-| `apps/bulk_email/views.py` | Also: attachment upload AJAX + protected download view |
 | `apps/audit/apps.py` | Register `BulkEmail` |
 | `config/settings/base.py` | Add `bulk_email` to `INSTALLED_APPS` |
 | `config/urls.py` | Mount `/masseudsendelse/` |
