@@ -89,7 +89,7 @@ class BulkEmailCreateView(SchoolFilterMixin, View):
 
         context = {
             "form": form,
-            "schools": schools[:1000],
+            "schools": schools[:5000],
             "total_matched": len(schools),
             "variable_names": VARIABLE_NAMES,
             "copy_source": copy_source,
