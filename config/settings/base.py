@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "apps.emails",
     "apps.signups",
     "apps.goals",
+    "apps.bulk_email",
 ]
 
 MIDDLEWARE = [
