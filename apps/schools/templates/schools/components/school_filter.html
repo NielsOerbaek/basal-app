@@ -1,0 +1,229 @@
+{# school_filter.html — reusable collapsible filter component for the schools list #}
+{# Context variables required: school_years, kommuner, has_active_filters, selected_year, #}
+{# selected_year_dates, filter_summary, request #}
+
+{# ── Collapsible toggle bar ── #}
+<div class="card mb-3">
+  <div class="card-body py-2 px-3 d-flex align-items-center gap-2" style="cursor: pointer;"
+       data-bs-toggle="collapse" data-bs-target="#schoolFilterCollapse"
+       aria-expanded="{% if has_active_filters %}true{% else %}false{% endif %}"
+       aria-controls="schoolFilterCollapse">
+
+    {# Toggle icon — rotates via CSS when expanded #}
+    <span class="school-filter-toggle-icon text-muted" style="font-size: 0.8rem; transition: transform 0.2s;">▼</span>
+
+    <span class="fw-semibold me-2">Filtre</span>
+
+    {# Filter summary text #}
+    {% if filter_summary %}
+      <span class="text-primary small">{{ filter_summary }}</span>
+    {% else %}
+      <span class="text-muted fst-italic small">Ingen aktive filtre</span>
+    {% endif %}
+
+    {# Clear-filters button — only shown when filters are active #}
+    {% if has_active_filters %}
+      <a href="?{% if request.GET.sort %}sort={{ request.GET.sort }}&{% endif %}{% if request.GET.order %}order={{ request.GET.order }}{% endif %}"
+         class="btn btn-sm btn-outline-secondary ms-auto"
+         onclick="event.stopPropagation();"
+         title="Ryd alle filtre">
+        &times; Ryd filtre
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+{# ── Collapsible filter form ── #}
+<div id="schoolFilterCollapse" class="collapse{% if has_active_filters %} show{% endif %}">
+  <div class="card mb-4">
+    <div class="card-body">
+
+      <form method="get" id="school-filter-form">
+
+        {# Preserve sort and order state #}
+        {% if request.GET.sort %}
+          <input type="hidden" name="sort" value="{{ request.GET.sort }}">
+        {% endif %}
+        {% if request.GET.order %}
+          <input type="hidden" name="order" value="{{ request.GET.order }}">
+        {% endif %}
+
+        {# ── 1. Fritekstsøgning ── #}
+        <div class="mb-3">
+          <label for="filter-search" class="form-label fw-semibold">Fritekstsøgning</label>
+          <input
+            type="text"
+            id="filter-search"
+            name="search"
+            value="{{ request.GET.search }}"
+            class="form-control"
+            placeholder="Søg efter skolenavn, adresse, kommune eller kontakt…"
+            {% if request.GET.search %}style="border-color: #0d6efd; background: #f0f6ff;"{% endif %}
+          >
+          <div class="form-text text-muted">Søger i skolenavn, adresse, kommune og tilknyttede kontaktpersoner.</div>
+        </div>
+
+        {# ── 2. Skoleår ── #}
+        <div class="mb-3">
+          <label for="filter-year" class="form-label fw-semibold">Skoleår</label>
+          <select
+            id="filter-year"
+            name="year"
+            class="form-select school-filter-autosubmit"
+            {% if request.GET.year %}style="border-color: #0d6efd; background: #f0f6ff;"{% endif %}
+          >
+            <option value="">— Alle skoleår —</option>
+            {% for sy in school_years %}
+              <option value="{{ sy }}" {% if request.GET.year == sy %}selected{% endif %}>{{ sy }}</option>
+            {% endfor %}
+          </select>
+          <div class="form-text text-muted">Filtrér skoler baseret på deres aktivitet i et bestemt skoleår. Tomt = alle skoleår.</div>
+        </div>
+
+        {# ── 3. Info box (only when a year is selected) ── #}
+        {% if selected_year %}
+          <div class="alert alert-info py-2 mb-3 small">
+            ℹ️ Skoleåret <strong>{{ selected_year }}</strong> er valgt{% if selected_year_dates %} ({{ selected_year_dates }}){% endif %}.
+            Statusfilteret herunder viser skolernes situation <strong>i dette specifikke år</strong>.
+          </div>
+        {% endif %}
+
+        {# ── 4. Status ── #}
+        <div class="mb-3">
+          <label for="filter-status" class="form-label fw-semibold">
+            {% if selected_year %}Status i {{ selected_year }}{% else %}Status{% endif %}
+          </label>
+          <select
+            id="filter-status"
+            name="status_filter"
+            class="form-select school-filter-autosubmit"
+            {% if request.GET.status_filter %}style="border-color: #0d6efd; background: #f0f6ff;"{% endif %}
+          >
+            {% if selected_year %}
+              {# Year-specific status options #}
+              <option value="">— Alle i {{ selected_year }} —</option>
+              <option value="tilmeldt_ny" {% if request.GET.status_filter == 'tilmeldt_ny' %}selected{% endif %}>Ny tilmeldt i {{ selected_year }}</option>
+              <option value="tilmeldt_fortsaetter" {% if request.GET.status_filter == 'tilmeldt_fortsaetter' %}selected{% endif %}>Fortsætter i {{ selected_year }}</option>
+              <option value="frameldt" {% if request.GET.status_filter == 'frameldt' %}selected{% endif %}>Frameldt i {{ selected_year }}</option>
+              <option value="tilmeldt_venter" {% if request.GET.status_filter == 'tilmeldt_venter' %}selected{% endif %}>Ventende til {{ selected_year }}</option>
+              <option value="ikke_tilmeldt" {% if request.GET.status_filter == 'ikke_tilmeldt' %}selected{% endif %}>Ikke tilmeldt i {{ selected_year }}</option>
+            {% else %}
+              {# Generic status options (no year selected) #}
+              <option value="">— Alle (status) —</option>
+              <option value="tilmeldt" {% if request.GET.status_filter == 'tilmeldt' %}selected{% endif %}>Alle tilmeldte</option>
+              <option value="tilmeldt_ny" {% if request.GET.status_filter == 'tilmeldt_ny' %}selected{% endif %}>Ny tilmeldt (indeværende år)</option>
+              <option value="tilmeldt_fortsaetter" {% if request.GET.status_filter == 'tilmeldt_fortsaetter' %}selected{% endif %}>Fortsætter (indeværende år)</option>
+              <option value="tilmeldt_venter" {% if request.GET.status_filter == 'tilmeldt_venter' %}selected{% endif %}>Tilmeldt fra næste år</option>
+              <option value="frameldt" {% if request.GET.status_filter == 'frameldt' %}selected{% endif %}>Frameldt</option>
+              <option value="ikke_tilmeldt" {% if request.GET.status_filter == 'ikke_tilmeldt' %}selected{% endif %}>Ikke tilmeldt</option>
+              <option value="har_tilmeldinger_ikke_basal" {% if request.GET.status_filter == 'har_tilmeldinger_ikke_basal' %}selected{% endif %}>Har kurstilmeldinger (ikke tilmeldt i Basal)</option>
+            {% endif %}
+          </select>
+          <div class="form-text text-muted">
+            {% if selected_year %}
+              <strong>Ny:</strong> Aktiv fra faldt inden for dette år.
+              <strong>Fortsætter:</strong> var aktiv fra et tidligere år.
+              <strong>Frameldt:</strong> meldte sig ud i løbet af {{ selected_year }}.
+              <strong>Ventende:</strong> tilmeldt, men Aktiv fra er efter {{ selected_year }}.
+            {% else %}
+              Skolens tilmeldingsstatus. Vælg et skoleår ovenfor for at se status i forhold til et specifikt år.
+            {% endif %}
+          </div>
+        </div>
+
+        {# ── 5. Kommune ── #}
+        <div class="mb-3">
+          <label for="filter-kommune" class="form-label fw-semibold">Kommune</label>
+          <select
+            id="filter-kommune"
+            name="kommune"
+            class="form-select school-filter-autosubmit"
+            {% if request.GET.kommune %}style="border-color: #0d6efd; background: #f0f6ff;"{% endif %}
+          >
+            <option value="">— Alle kommuner —</option>
+            {% for k in kommuner %}
+              <option value="{{ k }}" {% if request.GET.kommune == k %}selected{% endif %}>{{ k }}</option>
+            {% endfor %}
+          </select>
+          <div class="form-text text-muted">Filtrér til skoler i én bestemt kommune.</div>
+        </div>
+
+        {# ── 6. Ubrugte pladser ── #}
+        <div class="mb-3">
+          <label for="filter-unused-seats" class="form-label fw-semibold">Ubrugte pladser</label>
+          <select
+            id="filter-unused-seats"
+            name="unused_seats"
+            class="form-select school-filter-autosubmit"
+            {% if request.GET.unused_seats %}style="border-color: #0d6efd; background: #f0f6ff;"{% endif %}
+          >
+            <option value="">— Alle —</option>
+            <option value="yes" {% if request.GET.unused_seats == 'yes' %}selected{% endif %}>Har ubrugte pladser</option>
+            <option value="no" {% if request.GET.unused_seats == 'no' %}selected{% endif %}>Ingen ubrugte pladser</option>
+          </select>
+          <div class="form-text text-muted">
+            Baseret på resterende gratis pladser i indeværende skoleår.
+            <strong>Første år:</strong> 3 pladser. <strong>Fortsætter:</strong> 1 plads.
+          </div>
+        </div>
+
+        {# ── Submit + clear row ── #}
+        <div class="d-flex align-items-center gap-3">
+          <button type="submit" class="btn btn-primary" id="school-filter-submit-btn">
+            <span id="school-filter-submit-icon"><i class="bi bi-search me-1"></i></span>
+            <span id="school-filter-submit-text">Søg</span>
+          </button>
+          <a href="?{% if request.GET.sort %}sort={{ request.GET.sort }}&{% endif %}{% if request.GET.order %}order={{ request.GET.order }}{% endif %}"
+             class="text-muted small">
+            Ryd alle filtre
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+{# ── Component JavaScript ── #}
+<script>
+(function () {
+  'use strict';
+
+  const form = document.getElementById('school-filter-form');
+  if (!form) return;
+
+  // Auto-submit selects on change
+  form.querySelectorAll('select.school-filter-autosubmit').forEach(function (sel) {
+    sel.addEventListener('change', function () {
+      form.submit();
+    });
+  });
+
+  // Show loading state on form submit
+  form.addEventListener('submit', function () {
+    const btn = document.getElementById('school-filter-submit-btn');
+    const icon = document.getElementById('school-filter-submit-icon');
+    const text = document.getElementById('school-filter-submit-text');
+    if (btn) btn.disabled = true;
+    if (icon) icon.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>';
+    if (text) text.textContent = 'Søger…';
+  });
+
+  // Keep toggle icon in sync with collapse state
+  const collapseEl = document.getElementById('schoolFilterCollapse');
+  const toggleBar = document.querySelector('[data-bs-target="#schoolFilterCollapse"] .school-filter-toggle-icon');
+
+  function syncToggleIcon(expanded) {
+    if (!toggleBar) return;
+    toggleBar.textContent = expanded ? '▲' : '▼';
+  }
+
+  if (collapseEl) {
+    // Set initial state
+    syncToggleIcon(collapseEl.classList.contains('show'));
+
+    collapseEl.addEventListener('show.bs.collapse', function () { syncToggleIcon(true); });
+    collapseEl.addEventListener('hide.bs.collapse', function () { syncToggleIcon(false); });
+  }
+}());
+</script>
