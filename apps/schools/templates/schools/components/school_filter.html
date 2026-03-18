@@ -23,7 +23,7 @@
 
     {# Clear-filters button — only shown when filters are active #}
     {% if has_active_filters %}
-      <a href="?{% if request.GET.sort %}sort={{ request.GET.sort }}&{% endif %}{% if request.GET.order %}order={{ request.GET.order }}{% endif %}"
+      <a href="?{% if request.GET.sort %}sort={{ request.GET.sort }}&{% endif %}{% if request.GET.order %}order={{ request.GET.order }}&{% endif %}{% if request.GET.draft %}draft={{ request.GET.draft }}&{% endif %}{% if request.GET.copy_from %}copy_from={{ request.GET.copy_from }}{% endif %}"
          class="btn btn-sm btn-outline-secondary ms-auto"
          onclick="event.stopPropagation();"
          title="Ryd alle filtre">
@@ -46,6 +46,13 @@
         {% endif %}
         {% if request.GET.order %}
           <input type="hidden" name="order" value="{{ request.GET.order }}">
+        {% endif %}
+        {# Preserve draft and copy_from state (bulk email composer) #}
+        {% if request.GET.draft %}
+          <input type="hidden" name="draft" value="{{ request.GET.draft }}">
+        {% endif %}
+        {% if request.GET.copy_from %}
+          <input type="hidden" name="copy_from" value="{{ request.GET.copy_from }}">
         {% endif %}
 
         {# ── 1. Fritekstsøgning ── #}
@@ -178,7 +185,7 @@
             <span id="school-filter-submit-icon"><i class="bi bi-search me-1"></i></span>
             <span id="school-filter-submit-text">Søg</span>
           </button>
-          <a href="?{% if request.GET.sort %}sort={{ request.GET.sort }}&{% endif %}{% if request.GET.order %}order={{ request.GET.order }}{% endif %}"
+          <a href="?{% if request.GET.sort %}sort={{ request.GET.sort }}&{% endif %}{% if request.GET.order %}order={{ request.GET.order }}&{% endif %}{% if request.GET.draft %}draft={{ request.GET.draft }}&{% endif %}{% if request.GET.copy_from %}copy_from={{ request.GET.copy_from }}{% endif %}"
              class="text-muted small">
             Ryd alle filtre
           </a>
