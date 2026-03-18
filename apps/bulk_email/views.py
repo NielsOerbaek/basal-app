@@ -20,7 +20,7 @@ from apps.bulk_email.services import (
     resolve_recipients,
     send_to_school,
 )
-from apps.core.decorators import staff_required
+from apps.core.decorators import full_admin_required
 from apps.emails.services import EMAIL_FOOTER, check_email_domain_allowed
 from apps.schools.mixins import SchoolFilterMixin
 from apps.schools.models import Person, School
@@ -28,7 +28,7 @@ from apps.schools.models import Person, School
 logger = logging.getLogger(__name__)
 
 
-@method_decorator(staff_required, name="dispatch")
+@method_decorator(full_admin_required, name="dispatch")
 class BulkEmailListView(ListView):
     model = BulkEmail
     template_name = "bulk_email/bulk_email_list.html"
@@ -48,7 +48,7 @@ class BulkEmailListView(ListView):
         return context
 
 
-@method_decorator(staff_required, name="dispatch")
+@method_decorator(full_admin_required, name="dispatch")
 class BulkEmailDetailView(DetailView):
     model = BulkEmail
     template_name = "bulk_email/bulk_email_detail.html"
@@ -66,7 +66,7 @@ class BulkEmailDetailView(DetailView):
         return context
 
 
-@method_decorator(staff_required, name="dispatch")
+@method_decorator(full_admin_required, name="dispatch")
 class BulkEmailCreateView(SchoolFilterMixin, View):
     def get(self, request):
         from apps.bulk_email.forms import BulkEmailComposeForm
@@ -98,7 +98,7 @@ class BulkEmailCreateView(SchoolFilterMixin, View):
         return render(request, "bulk_email/bulk_email_create.html", context)
 
 
-@method_decorator(staff_required, name="dispatch")
+@method_decorator(full_admin_required, name="dispatch")
 class BulkEmailPreviewView(View):
     def post(self, request):
         try:
@@ -136,7 +136,7 @@ class BulkEmailPreviewView(View):
         )
 
 
-@method_decorator(staff_required, name="dispatch")
+@method_decorator(full_admin_required, name="dispatch")
 class BulkEmailDryRunView(View):
     def post(self, request):
         try:
@@ -189,7 +189,7 @@ class BulkEmailDryRunView(View):
         )
 
 
-@method_decorator(staff_required, name="dispatch")
+@method_decorator(full_admin_required, name="dispatch")
 class BulkEmailSendView(SchoolFilterMixin, View):
     def post(self, request):
         try:
@@ -334,7 +334,7 @@ class BulkEmailSendView(SchoolFilterMixin, View):
         return response
 
 
-@method_decorator(staff_required, name="dispatch")
+@method_decorator(full_admin_required, name="dispatch")
 class BulkEmailAttachmentUploadView(View):
     def post(self, request):
         f = request.FILES.get("file")
@@ -347,7 +347,7 @@ class BulkEmailAttachmentUploadView(View):
         return JsonResponse({"pk": attachment.pk, "filename": attachment.filename})
 
 
-@method_decorator(staff_required, name="dispatch")
+@method_decorator(full_admin_required, name="dispatch")
 class BulkEmailAttachmentDownloadView(View):
     def get(self, request, pk):
         attachment = get_object_or_404(BulkEmailAttachment, pk=pk)

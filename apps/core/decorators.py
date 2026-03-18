@@ -65,3 +65,17 @@ def can_manage_signups(user):
     if user.is_superuser:
         return True
     return user.groups.filter(name="Tilmeldingsadministrator").exists()
+
+
+def full_admin_required(view_func):
+    """
+    Decorator that requires the user to be a full administrator (superuser).
+    """
+
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_superuser:
+            raise PermissionDenied
+        return view_func(request, *args, **kwargs)
+
+    return login_required(_wrapped_view)
