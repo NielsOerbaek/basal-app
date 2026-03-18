@@ -3065,3 +3065,337 @@ class DeleteEnrollmentHistoryViewTest(TestCase):
         url = reverse("schools:delete-enrollment-history", kwargs={"pk": other_school.pk, "log_id": self.log_entry.pk})
         response = self.client.post(url)
         self.assertEqual(response.status_code, 404)
+
+
+class FilterSummaryTest(TestCase):
+    def _make_request(self, params):
+        from django.test import RequestFactory
+
+        return RequestFactory().get("/schools/", params)
+
+    def test_no_filters_returns_empty_string(self):
+        from apps.schools.views import get_filter_summary
+
+        assert get_filter_summary(self._make_request({})) == ""
+
+    def test_search_only(self):
+        from apps.schools.views import get_filter_summary
+
+        assert get_filter_summary(self._make_request({"search": "Viborg"})) == 'Søgning: "Viborg"'
+
+    def test_year_only(self):
+        from apps.schools.views import get_filter_summary
+
+        assert get_filter_summary(self._make_request({"year": "2024/25"})) == "Skoleår: 2024/25"
+
+    def test_year_with_status_ny(self):
+        from apps.schools.views import get_filter_summary
+
+        assert (
+            get_filter_summary(self._make_request({"year": "2024/25", "status_filter": "tilmeldt_ny"}))
+            == "Ny tilmeldt i 2024/25"
+        )
+
+    def test_year_with_status_fortsaetter(self):
+        from apps.schools.views import get_filter_summary
+
+        assert (
+            get_filter_summary(self._make_request({"year": "2024/25", "status_filter": "tilmeldt_fortsaetter"}))
+            == "Fortsætter i 2024/25"
+        )
+
+    def test_year_with_status_frameldt(self):
+        from apps.schools.views import get_filter_summary
+
+        assert (
+            get_filter_summary(self._make_request({"year": "2024/25", "status_filter": "frameldt"}))
+            == "Frameldt i 2024/25"
+        )
+
+    def test_year_with_status_venter(self):
+        from apps.schools.views import get_filter_summary
+
+        assert (
+            get_filter_summary(self._make_request({"year": "2024/25", "status_filter": "tilmeldt_venter"}))
+            == "Ventende til 2024/25"
+        )
+
+    def test_year_with_status_ikke_tilmeldt(self):
+        from apps.schools.views import get_filter_summary
+
+        assert (
+            get_filter_summary(self._make_request({"year": "2024/25", "status_filter": "ikke_tilmeldt"}))
+            == "Ikke tilmeldt i 2024/25"
+        )
+
+    def test_no_year_frameldt(self):
+        from apps.schools.views import get_filter_summary
+
+        assert get_filter_summary(self._make_request({"status_filter": "frameldt"})) == "Frameldt"
+
+    def test_no_year_tilmeldt_ny(self):
+        from apps.schools.views import get_filter_summary
+
+        assert (
+            get_filter_summary(self._make_request({"status_filter": "tilmeldt_ny"})) == "Ny tilmeldt (indeværende år)"
+        )
+
+    def test_kommune(self):
+        from apps.schools.views import get_filter_summary
+
+        assert get_filter_summary(self._make_request({"kommune": "Aarhus"})) == "Kommune: Aarhus"
+
+    def test_unused_seats_yes(self):
+        from apps.schools.views import get_filter_summary
+
+        assert get_filter_summary(self._make_request({"unused_seats": "yes"})) == "Har ubrugte pladser"
+
+    def test_unused_seats_no(self):
+        from apps.schools.views import get_filter_summary
+
+        assert get_filter_summary(self._make_request({"unused_seats": "no"})) == "Ingen ubrugte pladser"
+
+    def test_multiple_filters_combined(self):
+        from apps.schools.views import get_filter_summary
+
+        result = get_filter_summary(
+            self._make_request({"year": "2024/25", "status_filter": "tilmeldt_ny", "kommune": "Aarhus"})
+        )
+        assert result == "Ny tilmeldt i 2024/25 · Kommune: Aarhus"
+
+    def test_empty_search_not_included(self):
+        from apps.schools.views import get_filter_summary
+
+        assert get_filter_summary(self._make_request({"search": ""})) == ""
+
+
+class YearFilterTest(TestCase):
+    """Test that the year filter shows all schools active during a year, not just new ones."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_superuser("yearfilter_admin", "yearfilter_admin@test.com", "pass")
+        cls.sy_2024, _ = SchoolYear.objects.get_or_create(
+            name="2024/25", defaults={"start_date": date(2024, 8, 1), "end_date": date(2025, 7, 31)}
+        )
+        cls.sy_2025, _ = SchoolYear.objects.get_or_create(
+            name="2025/26", defaults={"start_date": date(2025, 8, 1), "end_date": date(2026, 7, 31)}
+        )
+        # New in 2024/25 — active_from within 2024/25
+        cls.school_ny = School.objects.create(
+            name="Ny Skole", enrolled_at=date(2024, 6, 1), active_from=date(2024, 8, 1)
+        )
+        # Continuation in 2024/25 — active_from before 2024/25
+        cls.school_fortsaetter = School.objects.create(
+            name="Fortsætter Skole", enrolled_at=date(2023, 6, 1), active_from=date(2023, 8, 1)
+        )
+        # Opted out during 2024/25
+        cls.school_frameldt_during = School.objects.create(
+            name="Frameldt Under År",
+            enrolled_at=date(2023, 6, 1),
+            active_from=date(2023, 8, 1),
+            opted_out_at=date(2024, 11, 1),
+        )
+        # Opted out exactly at start of 2025/26 (i.e. last active in 2024/25)
+        cls.school_optout_boundary = School.objects.create(
+            name="Optout Boundary",
+            enrolled_at=date(2023, 6, 1),
+            active_from=date(2023, 8, 1),
+            opted_out_at=date(2025, 8, 1),
+        )
+        # Waiting — active_from after 2024/25 end (starts 2025/26)
+        cls.school_venter = School.objects.create(
+            name="Ventende Skole", enrolled_at=date(2024, 6, 1), active_from=date(2025, 8, 1)
+        )
+        # Not enrolled
+        cls.school_not_enrolled = School.objects.create(name="Ikke Tilmeldt")
+
+    def _get(self, params):
+        self.client.force_login(self.user)
+        return self.client.get(reverse("schools:list"), params)
+
+    def test_year_filter_includes_ny_schools(self):
+        response = self._get({"year": "2024/25"})
+        names = [s.name for s in response.context["schools"]]
+        self.assertIn("Ny Skole", names)
+
+    def test_year_filter_includes_fortsaetter_schools(self):
+        """Old behavior excluded continuing schools — new behavior must include them."""
+        response = self._get({"year": "2024/25"})
+        names = [s.name for s in response.context["schools"]]
+        self.assertIn("Fortsætter Skole", names)
+
+    def test_year_filter_includes_frameldt_during_year(self):
+        """Schools that opted out during the year were enrolled at its start."""
+        response = self._get({"year": "2024/25"})
+        names = [s.name for s in response.context["schools"]]
+        self.assertIn("Frameldt Under År", names)
+
+    def test_year_filter_excludes_school_optout_at_start_of_next_year_from_that_next_year(self):
+        """School with opted_out_at=2025-08-01 should not appear in 2025/26."""
+        response = self._get({"year": "2025/26"})
+        names = [s.name for s in response.context["schools"]]
+        self.assertNotIn("Optout Boundary", names)
+
+    def test_year_filter_includes_optout_boundary_school_in_2024_25(self):
+        """School with opted_out_at=2025-08-01 was enrolled during 2024/25."""
+        response = self._get({"year": "2024/25"})
+        names = [s.name for s in response.context["schools"]]
+        self.assertIn("Optout Boundary", names)
+
+    def test_year_filter_excludes_waiting_school(self):
+        """School waiting to start in 2025/26 should not appear in 2024/25 results."""
+        response = self._get({"year": "2024/25"})
+        names = [s.name for s in response.context["schools"]]
+        self.assertNotIn("Ventende Skole", names)
+
+    def test_year_filter_excludes_not_enrolled(self):
+        response = self._get({"year": "2024/25"})
+        names = [s.name for s in response.context["schools"]]
+        self.assertNotIn("Ikke Tilmeldt", names)
+
+
+class YearAwareStatusFilterTest(TestCase):
+    """Test that status_filter + year selects the correct sub-set within a year."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_superuser("yearstatus_admin", "yearstatus_admin@test.com", "pass")
+        cls.sy_2024, _ = SchoolYear.objects.get_or_create(
+            name="2024/25", defaults={"start_date": date(2024, 8, 1), "end_date": date(2025, 7, 31)}
+        )
+        cls.school_ny = School.objects.create(name="Ny", enrolled_at=date(2024, 6, 1), active_from=date(2024, 8, 1))
+        cls.school_fortsaetter = School.objects.create(
+            name="Fortsætter", enrolled_at=date(2023, 6, 1), active_from=date(2023, 8, 1)
+        )
+        cls.school_frameldt = School.objects.create(
+            name="Frameldt", enrolled_at=date(2023, 6, 1), active_from=date(2023, 8, 1), opted_out_at=date(2024, 11, 1)
+        )
+        cls.school_venter = School.objects.create(
+            name="Ventende", enrolled_at=date(2024, 6, 1), active_from=date(2025, 8, 1)
+        )
+
+    def _get(self, params):
+        self.client.force_login(self.user)
+        return self.client.get(reverse("schools:list"), params)
+
+    def _names(self, response):
+        return [s.name for s in response.context["schools"]]
+
+    def test_tilmeldt_ny_in_year(self):
+        names = self._names(self._get({"year": "2024/25", "status_filter": "tilmeldt_ny"}))
+        self.assertIn("Ny", names)
+        self.assertNotIn("Fortsætter", names)
+        self.assertNotIn("Frameldt", names)
+        self.assertNotIn("Ventende", names)
+
+    def test_tilmeldt_fortsaetter_in_year(self):
+        names = self._names(self._get({"year": "2024/25", "status_filter": "tilmeldt_fortsaetter"}))
+        self.assertIn("Fortsætter", names)
+        self.assertNotIn("Ny", names)
+        # "Frameldt" school opted out mid-year (2024-11-01) so it IS a fortsætter at year start
+        self.assertIn("Frameldt", names)
+
+    def test_tilmeldt_fortsaetter_excludes_school_optout_on_start_date(self):
+        """School that opted out exactly on start_date is not a fortsætter (strict __gt boundary)."""
+        school_boundary = School.objects.create(
+            name="Optout On Start",
+            enrolled_at=date(2023, 6, 1),
+            active_from=date(2023, 8, 1),
+            opted_out_at=date(2024, 8, 1),  # exactly start of 2024/25
+        )
+        names = self._names(self._get({"year": "2024/25", "status_filter": "tilmeldt_fortsaetter"}))
+        self.assertNotIn("Optout On Start", names)
+        school_boundary.delete()
+
+    def test_tilmeldt_fortsaetter_includes_school_optout_during_year(self):
+        """A continuing school that opted out mid-year still appears as fortsætter."""
+        school = School.objects.create(
+            name="Optout During Year",
+            enrolled_at=date(2023, 1, 1),
+            active_from=date(2023, 8, 1),  # before 2024/25 start
+            opted_out_at=date(2024, 11, 1),  # mid-year opt-out
+        )
+        names = self._names(self._get({"year": "2024/25", "status_filter": "tilmeldt_fortsaetter"}))
+        self.assertIn("Optout During Year", names)
+        school.delete()
+
+    def test_frameldt_in_year(self):
+        names = self._names(self._get({"year": "2024/25", "status_filter": "frameldt"}))
+        self.assertIn("Frameldt", names)
+        self.assertNotIn("Ny", names)
+        self.assertNotIn("Fortsætter", names)
+
+    def test_frameldt_includes_school_optout_on_end_date(self):
+        """School that opted out exactly on end_date is still frameldt i [year] (inclusive upper bound)."""
+        school_end = School.objects.create(
+            name="Optout On End",
+            enrolled_at=date(2023, 6, 1),
+            active_from=date(2023, 8, 1),
+            opted_out_at=date(2025, 7, 31),  # exactly end of 2024/25
+        )
+        names = self._names(self._get({"year": "2024/25", "status_filter": "frameldt"}))
+        self.assertIn("Optout On End", names)
+        school_end.delete()
+
+    def test_venter_in_year(self):
+        names = self._names(self._get({"year": "2024/25", "status_filter": "tilmeldt_venter"}))
+        self.assertIn("Ventende", names)
+        self.assertNotIn("Ny", names)
+        self.assertNotIn("Fortsætter", names)
+
+    def test_year_status_does_not_apply_year_prefilter(self):
+        """tilmeldt_venter has active_from after year end — year pre-filter would wrongly exclude it."""
+        names = self._names(self._get({"year": "2024/25", "status_filter": "tilmeldt_venter"}))
+        self.assertIn("Ventende", names)
+
+
+class FilterContextTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_superuser("admin3", "admin3@test.com", "pass")
+        SchoolYear.objects.get_or_create(
+            name="2024/25", defaults={"start_date": date(2024, 8, 1), "end_date": date(2025, 7, 31)}
+        )
+        SchoolYear.objects.get_or_create(
+            name="2025/26", defaults={"start_date": date(2025, 8, 1), "end_date": date(2026, 7, 31)}
+        )
+
+    def _get(self, params=None):
+        self.client.force_login(self.user)
+        return self.client.get(reverse("schools:list"), params or {})
+
+    def test_school_years_comes_from_schoolyear_model(self):
+        """school_years context var uses SchoolYear model, not derived from active_from dates."""
+        response = self._get()
+        self.assertIn("school_years", response.context)
+        self.assertIn("2024/25", response.context["school_years"])
+        self.assertIn("2025/26", response.context["school_years"])
+
+    def test_has_active_filters_false_when_no_filters(self):
+        response = self._get()
+        self.assertFalse(response.context["has_active_filters"])
+
+    def test_has_active_filters_true_when_year_set(self):
+        response = self._get({"year": "2024/25"})
+        self.assertTrue(response.context["has_active_filters"])
+
+    def test_has_active_filters_true_when_search_set(self):
+        response = self._get({"search": "test"})
+        self.assertTrue(response.context["has_active_filters"])
+
+    def test_selected_year_none_when_no_year(self):
+        response = self._get()
+        self.assertIsNone(response.context["selected_year"])
+
+    def test_selected_year_set_when_year_param_present(self):
+        response = self._get({"year": "2024/25"})
+        self.assertEqual(response.context["selected_year"], "2024/25")
+
+    def test_filter_summary_empty_when_no_filters(self):
+        response = self._get()
+        self.assertEqual(response.context["filter_summary"], "")
+
+    def test_filter_summary_populated_when_filters_active(self):
+        response = self._get({"year": "2024/25", "status_filter": "tilmeldt_ny"})
+        self.assertEqual(response.context["filter_summary"], "Ny tilmeldt i 2024/25")
