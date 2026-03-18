@@ -6,6 +6,10 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ## 18. marts 2026
 
+### Nyt forbrugsoverblik på skolernes side
+
+Kursuspladser-oversigten på skolernes side er redesignet. Den hedder nu "Forbrug af kursuspladser" og viser en samlet oversigt over forbrug og priser pr. skoleår. Hvert skoleår er et sammenfoldeligt afsnit med oplysninger om medlemskab, gratis pladser, forankringsplads og tilkøbte pladser med automatisk prisberegning. Det igangværende skoleår er udfoldet som standard. Forankringspladsblokken viser om den gratis forankringsplads er brugt eller ej.
+
 ### Skolelisten har fået en ny filterpanel
 Filterpanelet i skolelisten er omdesignet: det er nu skjult som standard og kan foldes ud. Når filtre er aktive, vises en kort dansk opsummering i stedet for de individuelle filterfelter. Filteret tager nu hensyn til det valgte skoleår, så fx status (tilmeldt/frameldt/afventer) vurderes i forhold til det pågældende skoleår frem for det nuværende.
 
