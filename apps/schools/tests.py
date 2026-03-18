@@ -3349,6 +3349,26 @@ class YearAwareStatusFilterTest(TestCase):
         names = self._names(self._get({"year": "2024/25", "status_filter": "tilmeldt_venter"}))
         self.assertIn("Ventende", names)
 
+    def test_alle_tilmeldte_includes_ny_and_fortsaetter(self):
+        names = self._names(self._get({"year": "2024/25", "status_filter": "alle_tilmeldte"}))
+        self.assertIn("Ny", names)
+        self.assertIn("Fortsætter", names)
+        self.assertNotIn("Ventende", names)
+
+    def test_alle_tilmeldte_excludes_frameldt(self):
+        names = self._names(self._get({"year": "2024/25", "status_filter": "alle_tilmeldte"}))
+        self.assertNotIn("Frameldt", names)
+
+    def test_alle_ikke_tilmeldte_includes_frameldt_and_venter(self):
+        names = self._names(self._get({"year": "2024/25", "status_filter": "alle_ikke_tilmeldte"}))
+        self.assertIn("Frameldt", names)
+        self.assertIn("Ventende", names)
+
+    def test_alle_ikke_tilmeldte_excludes_ny_and_fortsaetter(self):
+        names = self._names(self._get({"year": "2024/25", "status_filter": "alle_ikke_tilmeldte"}))
+        self.assertNotIn("Ny", names)
+        self.assertNotIn("Fortsætter", names)
+
 
 class FilterContextTest(TestCase):
     @classmethod
@@ -3371,6 +3391,20 @@ class FilterContextTest(TestCase):
         self.assertIn("school_years", response.context)
         self.assertIn("2024/25", response.context["school_years"])
         self.assertIn("2025/26", response.context["school_years"])
+
+    def test_school_years_limited_to_2022_2029_range(self):
+        """school_years only shows 2022/23–2028/29; years outside that range are excluded."""
+        SchoolYear.objects.get_or_create(
+            name="2019/20", defaults={"start_date": date(2019, 8, 1), "end_date": date(2020, 7, 31)}
+        )
+        SchoolYear.objects.get_or_create(
+            name="2030/31", defaults={"start_date": date(2030, 8, 1), "end_date": date(2031, 7, 31)}
+        )
+        response = self._get()
+        years = response.context["school_years"]
+        self.assertNotIn("2019/20", years)
+        self.assertNotIn("2030/31", years)
+        self.assertIn("2024/25", years)
 
     def test_has_active_filters_false_when_no_filters(self):
         response = self._get()

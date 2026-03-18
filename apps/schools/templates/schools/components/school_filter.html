@@ -102,11 +102,13 @@
             {% if selected_year %}
               {# Year-specific status options #}
               <option value="">— Alle i {{ selected_year }} —</option>
-              <option value="tilmeldt_ny" {% if request.GET.status_filter == 'tilmeldt_ny' %}selected{% endif %}>Ny tilmeldt i {{ selected_year }}</option>
-              <option value="tilmeldt_fortsaetter" {% if request.GET.status_filter == 'tilmeldt_fortsaetter' %}selected{% endif %}>Fortsætter i {{ selected_year }}</option>
-              <option value="frameldt" {% if request.GET.status_filter == 'frameldt' %}selected{% endif %}>Frameldt i {{ selected_year }}</option>
-              <option value="tilmeldt_venter" {% if request.GET.status_filter == 'tilmeldt_venter' %}selected{% endif %}>Ventende til {{ selected_year }}</option>
-              <option value="ikke_tilmeldt" {% if request.GET.status_filter == 'ikke_tilmeldt' %}selected{% endif %}>Ikke tilmeldt i {{ selected_year }}</option>
+              <option value="alle_tilmeldte" {% if request.GET.status_filter == 'alle_tilmeldte' %}selected{% endif %}>Alle tilmeldte i {{ selected_year }}</option>
+              <option value="tilmeldt_ny" {% if request.GET.status_filter == 'tilmeldt_ny' %}selected{% endif %}>↳ Ny tilmeldt i {{ selected_year }}</option>
+              <option value="tilmeldt_fortsaetter" {% if request.GET.status_filter == 'tilmeldt_fortsaetter' %}selected{% endif %}>↳ Fortsætter i {{ selected_year }}</option>
+              <option value="alle_ikke_tilmeldte" {% if request.GET.status_filter == 'alle_ikke_tilmeldte' %}selected{% endif %}>Alle ikke-tilmeldte i {{ selected_year }}</option>
+              <option value="frameldt" {% if request.GET.status_filter == 'frameldt' %}selected{% endif %}>↳ Frameldt i {{ selected_year }}</option>
+              <option value="tilmeldt_venter" {% if request.GET.status_filter == 'tilmeldt_venter' %}selected{% endif %}>↳ Ventende til {{ selected_year }}</option>
+              <option value="ikke_tilmeldt" {% if request.GET.status_filter == 'ikke_tilmeldt' %}selected{% endif %}>↳ Aldrig tilmeldt i {{ selected_year }}</option>
             {% else %}
               {# Generic status options (no year selected) #}
               <option value="">— Alle (status) —</option>
@@ -121,10 +123,13 @@
           </select>
           <div class="form-text text-muted">
             {% if selected_year %}
+              <strong>Alle tilmeldte:</strong> ny + fortsætter (ikke frameldte eller ventende).
+              <strong>Alle ikke-tilmeldte:</strong> frameldte, ventende og aldrig tilmeldte.
               <strong>Ny:</strong> Aktiv fra faldt inden for dette år.
-              <strong>Fortsætter:</strong> var aktiv fra et tidligere år.
+              <strong>Fortsætter:</strong> Aktiv fra var i et tidligere år.
               <strong>Frameldt:</strong> meldte sig ud i løbet af {{ selected_year }}.
               <strong>Ventende:</strong> tilmeldt, men Aktiv fra er efter {{ selected_year }}.
+              <strong>Aldrig tilmeldt:</strong> ikke tilmeldt i dette år.
             {% else %}
               Skolens tilmeldingsstatus. Vælg et skoleår ovenfor for at se status i forhold til et specifikt år.
             {% endif %}

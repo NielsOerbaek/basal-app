@@ -72,8 +72,10 @@ _STATUS_LABELS_NO_YEAR = {
 }
 
 _STATUS_LABELS_WITH_YEAR = {
+    "alle_tilmeldte": "Alle tilmeldte i {year}",
     "tilmeldt_ny": "Ny tilmeldt i {year}",
     "tilmeldt_fortsaetter": "Fortsætter i {year}",
+    "alle_ikke_tilmeldte": "Alle ikke-tilmeldte i {year}",
     "frameldt": "Frameldt i {year}",
     "tilmeldt_venter": "Ventende til {year}",
     "ikke_tilmeldt": "Ikke tilmeldt i {year}",
@@ -166,7 +168,23 @@ class SchoolListView(SortableMixin, ListView):
                 start_date = end_date = None
 
             if start_date:
-                if status_filter == "tilmeldt_ny":
+                if status_filter == "alle_tilmeldte":
+                    # Ny + fortsætter: enrolled and active during the year, not opted out
+                    queryset = queryset.filter(
+                        enrolled_at__isnull=False,
+                        active_from__isnull=False,
+                        active_from__lte=end_date,
+                        opted_out_at__isnull=True,
+                    )
+                elif status_filter == "alle_ikke_tilmeldte":
+                    # Frameldt + ventende + aldrig tilmeldt
+                    queryset = queryset.filter(
+                        Q(enrolled_at__isnull=True)
+                        | Q(active_from__isnull=True)
+                        | Q(active_from__gt=end_date)
+                        | Q(opted_out_at__isnull=False)
+                    )
+                elif status_filter == "tilmeldt_ny":
                     queryset = queryset.filter(
                         enrolled_at__isnull=False,
                         active_from__isnull=False,
@@ -268,19 +286,6 @@ class SchoolListView(SortableMixin, ListView):
         if kommune_filter:
             queryset = queryset.filter(kommune=kommune_filter)
 
-        # School year status filter (for project goals drill-down)
-        status_filter = self.request.GET.get("status")
-        school_year_filter = self.request.GET.get("school_year")
-        if status_filter and school_year_filter:
-            # Use the model's get_status_for_year for consistent filtering
-            from apps.schools.school_years import normalize_school_year
-
-            year_str = normalize_school_year(school_year_filter)
-            if status_filter == "new":
-                queryset = [s for s in queryset if s.get_status_for_year(year_str)[0] == "tilmeldt_ny"]
-            elif status_filter == "anchoring":
-                queryset = [s for s in queryset if s.get_status_for_year(year_str)[0] == "tilmeldt_fortsaetter"]
-
         # Unused seats filter
         unused_filter = self.request.GET.get("unused_seats")
         if unused_filter == "yes":
@@ -357,7 +362,11 @@ class SchoolListView(SortableMixin, ListView):
         )
 
         # All school years from the SchoolYear model (not derived from active_from dates)
-        context["school_years"] = list(SchoolYear.objects.all().order_by("start_date").values_list("name", flat=True))
+        context["school_years"] = list(
+            SchoolYear.objects.filter(name__gte="2022/23", name__lte="2028/29")
+            .order_by("start_date")
+            .values_list("name", flat=True)
+        )
 
         # Filter bar state
         filter_params = ["search", "year", "status_filter", "kommune", "unused_seats"]
@@ -387,18 +396,6 @@ class SchoolListView(SortableMixin, ListView):
         context["filtered_count"] = paginator.count if paginator else len(context.get("schools", []))
         context["enrolled_count"] = School.objects.filter(enrolled_at__isnull=False, opted_out_at__isnull=True).count()
         context["ever_enrolled_count"] = School.objects.filter(enrolled_at__isnull=False).count()
-
-        # Filter explanation for project goals drill-down (preserved as-is)
-        status = self.request.GET.get("status")
-        school_year = self.request.GET.get("school_year")
-        if status and school_year:
-            from apps.schools.school_years import normalize_school_year
-
-            year_display = normalize_school_year(school_year)
-            if status == "new":
-                context["filter_explanation"] = f"Viser skoler der blev tilmeldt i skoleåret {year_display}"
-            elif status == "anchoring":
-                context["filter_explanation"] = f"Viser fortsætterskoler i skoleåret {year_display}"
 
         return context
 

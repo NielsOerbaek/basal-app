@@ -357,7 +357,7 @@ class GoalsDrillDownIntegrationTests(TestCase):
         self.assertEqual(metrics["new_schools"], 3)
 
         # Follow the drill-down link
-        response = self.client.get(f"{self.schools_url}?status=new&school_year=2024-25")
+        response = self.client.get(f"{self.schools_url}?year=2024/25&status_filter=tilmeldt_ny")
         self.assertEqual(response.status_code, 200)
 
         # The response context should contain exactly the 3 new schools
@@ -411,7 +411,7 @@ class GoalsDrillDownIntegrationTests(TestCase):
         self.assertEqual(metrics["anchoring"], 2)
 
         # Follow the drill-down link
-        response = self.client.get(f"{self.schools_url}?status=anchoring&school_year=2025-26")
+        response = self.client.get(f"{self.schools_url}?year=2025/26&status_filter=tilmeldt_fortsaetter")
         self.assertEqual(response.status_code, 200)
 
         schools_in_response = list(response.context["object_list"])
@@ -452,13 +452,13 @@ class GoalsDrillDownIntegrationTests(TestCase):
         self.assertEqual(metrics_2025_26["anchoring"], 1)
 
         # Verify drill-down for new schools in 2025/26
-        response_new = self.client.get(f"{self.schools_url}?status=new&school_year=2025-26")
+        response_new = self.client.get(f"{self.schools_url}?year=2025/26&status_filter=tilmeldt_ny")
         new_schools = list(response_new.context["object_list"])
         self.assertEqual(len(new_schools), 1)
         self.assertEqual(new_schools[0].name, "Aug 1 School")
 
         # Verify drill-down for anchoring schools in 2025/26
-        response_anchoring = self.client.get(f"{self.schools_url}?status=anchoring&school_year=2025-26")
+        response_anchoring = self.client.get(f"{self.schools_url}?year=2025/26&status_filter=tilmeldt_fortsaetter")
         anchoring_schools = list(response_anchoring.context["object_list"])
         self.assertEqual(len(anchoring_schools), 1)
         self.assertEqual(anchoring_schools[0].name, "Jul 31 School")
@@ -477,8 +477,8 @@ class GoalsDrillDownIntegrationTests(TestCase):
 
         # All these URL formats should return the same school
         url_formats = [
-            f"{self.schools_url}?status=new&school_year=2024-25",
-            f"{self.schools_url}?status=new&school_year=2024-2025",
+            f"{self.schools_url}?year=2024/25&status_filter=tilmeldt_ny",
+            f"{self.schools_url}?year=2024/25&status_filter=tilmeldt_ny",
         ]
 
         for url in url_formats:
@@ -514,7 +514,7 @@ class GoalsDrillDownIntegrationTests(TestCase):
         metrics = get_metrics_for_year("2025/26")
         self.assertEqual(metrics["anchoring"], 1)
 
-        response = self.client.get(f"{self.schools_url}?status=anchoring&school_year=2025-26")
+        response = self.client.get(f"{self.schools_url}?year=2025/26&status_filter=tilmeldt_fortsaetter")
         schools = list(response.context["object_list"])
         self.assertEqual(len(schools), 1)
         self.assertEqual(schools[0].name, "Still Active")
