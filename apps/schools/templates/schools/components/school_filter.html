@@ -6,7 +6,7 @@
 <div class="card mb-3">
   <div class="card-body py-2 px-3 d-flex align-items-center gap-2" style="cursor: pointer;"
        data-bs-toggle="collapse" data-bs-target="#schoolFilterCollapse"
-       aria-expanded="{% if has_active_filters %}true{% else %}false{% endif %}"
+       aria-expanded="false"
        aria-controls="schoolFilterCollapse">
 
     {# Toggle icon — rotates via CSS when expanded #}
@@ -34,7 +34,7 @@
 </div>
 
 {# ── Collapsible filter form ── #}
-<div id="schoolFilterCollapse" class="collapse{% if has_active_filters %} show{% endif %}">
+<div id="schoolFilterCollapse" class="collapse">
   <div class="card mb-4">
     <div class="card-body">
 
