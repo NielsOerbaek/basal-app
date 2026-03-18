@@ -4,6 +4,16 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 18. marts 2026
+
+### Skolelisten har fået en ny filterpanel
+Filterpanelet i skolelisten er omdesignet: det er nu skjult som standard og kan foldes ud. Når filtre er aktive, vises en kort dansk opsummering i stedet for de individuelle filterfelter. Filteret tager nu hensyn til det valgte skoleår, så fx status (tilmeldt/frameldt/afventer) vurderes i forhold til det pågældende skoleår frem for det nuværende.
+
+### Skoler der har frameldt sig tæller nu med i "fortsætter"-filteret
+Skoler der er frameldt i løbet af et skoleår medtages nu korrekt i filteret for fortsættende skoler i det pågældende år.
+
+---
+
 ## 11. marts 2026
 
 ### Aktivitetsloggen kan nu filtreres på dato og medarbejder

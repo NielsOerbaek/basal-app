@@ -72,3 +72,6 @@ deploy.sh
 
 # Deploy artifacts
 BUILD_INFO
+
+# Local notes
+todo.md
