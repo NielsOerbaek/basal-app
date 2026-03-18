@@ -32,7 +32,7 @@
     </div>
 </div>
 
-{% if school.is_enrolled and not school.postnummer or school.is_enrolled and not school.by or school.is_enrolled and not school.ean_nummer %}
+{% if school.is_enrolled and not school.postnummer or school.is_enrolled and not school.by or school.is_enrolled and not school.ean_nummer and not school.kommunen_betaler %}
 <div class="alert alert-warning alert-dismissible fade show py-2 mb-3" role="alert">
     <small>
         <i class="bi bi-exclamation-triangle me-1"></i>
@@ -314,13 +314,6 @@
 
                 {% else %}
 
-                {% if school.exceeds_seat_allocation %}
-                <div class="alert alert-warning mb-3">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong>Skolen bruger flere pladser end tildelt.</strong>
-                    De bruger {{ school.used_seats }} pladser men har {{ school.total_seats }} tildelt.
-                </div>
-                {% endif %}
 
                 {# First year bucket #}
                 <div class="{% if is_in_first_year %}{% else %}opacity-50{% endif %} mb-3">
