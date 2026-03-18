@@ -13,6 +13,7 @@ class AuditConfig(AppConfig):
         from apps.courses.models import Course, CourseSignUp, CourseMaterial
         from apps.contacts.models import ContactTime
         from apps.signups.models import SignupPage, SignupFormField, SeatInfoContent
+        from apps.bulk_email.models import BulkEmail
 
         # School and related models
         register_for_audit(
@@ -92,3 +93,11 @@ class AuditConfig(AppConfig):
         register_for_audit(SignupFormField, AuditCfg())
 
         register_for_audit(SeatInfoContent, AuditCfg())
+
+        # Bulk email
+        register_for_audit(
+            BulkEmail,
+            AuditCfg(
+                excluded_fields=["id", "created_at", "updated_at", "body_html"],
+            ),
+        )
