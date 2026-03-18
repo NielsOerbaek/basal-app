@@ -492,7 +492,8 @@ class SchoolSignupView(View):
                 is_oekonomisk_ansvarlig=True,
             )
 
-            # Auto-attach any signup form attachments as school files
+            # Auto-attach any signup form attachments as school files + email
+            email_attachments = []
             if page:
                 import re
 
@@ -503,15 +504,23 @@ class SchoolSignupView(View):
                 for field_config in page.form_fields.all():
                     if field_config.attachment:
                         filename = field_config.attachment.name.split("/")[-1]
+                        file_content = field_config.attachment.read()
+                        field_config.attachment.seek(0)
                         description = re.sub(r"<[^>]+>", "", field_config.label).strip()
                         SchoolFile.objects.create(
                             school=school,
-                            file=ContentFile(field_config.attachment.read(), name=filename),
+                            file=ContentFile(file_content, name=filename),
                             description=description,
                         )
+                        email_attachments.append({"filename": filename, "content": list(file_content)})
 
-            # Send confirmation email
-            send_school_enrollment_confirmation(school, koordinator_email, koordinator_name)
+            # Send confirmation email (with signup form attachments if any)
+            send_school_enrollment_confirmation(
+                school,
+                koordinator_email,
+                koordinator_name,
+                attachments=email_attachments or None,
+            )
 
             # Store enrollment info in session for success page
             request.session["school_signup_active_from"] = default_active_from.isoformat()
