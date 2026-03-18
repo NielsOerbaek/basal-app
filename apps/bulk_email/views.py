@@ -128,6 +128,7 @@ class BulkEmailDraftSaveView(View):
             return JsonResponse({"error": "Invalid JSON"}, status=400)
 
         draft_pk = data.get("draft_pk")
+        name = data.get("name", "")
         subject = data.get("subject", "")
         body_html = data.get("body_html", "")
         recipient_type = data.get("recipient_type", BulkEmail.KOORDINATOR)
@@ -140,6 +141,7 @@ class BulkEmailDraftSaveView(View):
                 # Don't update interrupted sends
                 if draft.recipients.exists():
                     return JsonResponse({"error": "Cannot edit a campaign that has started sending"}, status=409)
+                draft.name = name
                 draft.subject = subject
                 draft.body_html = body_html
                 draft.recipient_type = recipient_type
@@ -149,7 +151,8 @@ class BulkEmailDraftSaveView(View):
                 return JsonResponse({"error": "Draft not found"}, status=404)
         else:
             draft = BulkEmail.objects.create(
-                subject=subject or "(ingen emne)",
+                name=name or "(unavngivet)",
+                subject=subject,
                 body_html=body_html,
                 recipient_type=recipient_type,
                 filter_params=filter_params,
@@ -270,6 +273,7 @@ class BulkEmailSendView(SchoolFilterMixin, View):
         except (json.JSONDecodeError, ValueError):
             return JsonResponse({"error": "Invalid JSON"}, status=400)
 
+        name = data.get("name", "")
         subject = data.get("subject", "")
         body_html = data.get("body_html", "")
         recipient_type = data.get("recipient_type", BulkEmail.KOORDINATOR)
@@ -361,6 +365,7 @@ class BulkEmailSendView(SchoolFilterMixin, View):
                 campaign = BulkEmail.objects.get(pk=draft_pk, sent_at__isnull=True)
                 if campaign.recipients.exists():
                     return JsonResponse({"error": "Cannot send an interrupted campaign"}, status=409)
+                campaign.name = name
                 campaign.subject = subject
                 campaign.body_html = body_html
                 campaign.recipient_type = recipient_type
@@ -371,6 +376,7 @@ class BulkEmailSendView(SchoolFilterMixin, View):
                 return JsonResponse({"error": "Draft not found"}, status=404)
         else:
             campaign = BulkEmail.objects.create(
+                name=name,
                 subject=subject,
                 body_html=body_html,
                 recipient_type=recipient_type,

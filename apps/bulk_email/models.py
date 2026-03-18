@@ -14,6 +14,7 @@ class BulkEmail(models.Model):
         (OEKONOMISK_ANSVARLIG, "Økonomiansvarlig"),
     ]
 
+    name = models.CharField(max_length=255, blank=True, default="")
     subject = models.CharField(max_length=500)
     body_html = models.TextField()
     recipient_type = models.CharField(max_length=30, choices=RECIPIENT_TYPE_CHOICES)
@@ -29,7 +30,8 @@ class BulkEmail(models.Model):
         verbose_name_plural = "Masseudsendelser"
 
     def __str__(self):
-        return f"{self.subject} ({self.sent_at or 'ikke sendt'})"
+        label = self.name or self.subject
+        return f"{label} ({self.sent_at or 'ikke sendt'})"
 
     @property
     def is_sent(self):

@@ -17,7 +17,7 @@
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Emne</th>
+                        <th>Navn</th>
                         <th>Modtagertype</th>
                         <th>Filter</th>
                         <th>Sendt</th>
@@ -31,7 +31,7 @@
                     <tr>
                         <td>
                             <a href="{% url 'bulk_email:detail' campaign.pk %}">
-                                {{ campaign.subject|truncatechars:60 }}
+                                {{ campaign.name|default:campaign.subject|truncatechars:60 }}
                             </a>
                             {% if campaign.is_draft %}
                                 <span class="badge bg-secondary ms-1">Kladde</span>
@@ -69,7 +69,7 @@
                             <button type="button" class="btn btn-sm btn-outline-danger"
                                     data-bs-toggle="modal" data-bs-target="#deleteModal"
                                     data-delete-url="{% url 'bulk_email:delete' campaign.pk %}"
-                                    data-delete-subject="{{ campaign.subject|truncatechars:40 }}">
+                                    data-delete-subject="{{ campaign.name|default:campaign.subject|truncatechars:40 }}">
                                 Slet
                             </button>
                         </td>
