@@ -284,6 +284,8 @@ class CheckSchoolSeatsView(View):
         if school.signup_token:
             school_public_url = reverse("school-public", args=[school.signup_token])
 
+        missing_ean = not school.ean_nummer and not school.kommunen_betaler
+
         course_id = request.GET.get("course_id")
         if course_id:
             from apps.courses.models import Course
@@ -316,6 +318,7 @@ class CheckSchoolSeatsView(View):
                     "seat_content": seat_content,
                     "koordinator": koordinator_info,
                     "school_public_url": school_public_url,
+                    "missing_ean": missing_ean,
                 }
             )
 
@@ -326,6 +329,7 @@ class CheckSchoolSeatsView(View):
                 "remaining_seats": school.remaining_seats,
                 "koordinator": koordinator_info,
                 "school_public_url": school_public_url,
+                "missing_ean": missing_ean,
             }
         )
 

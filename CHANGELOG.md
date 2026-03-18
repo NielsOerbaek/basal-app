@@ -6,6 +6,12 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ## 18. marts 2026
 
+### EAN/CVR-nummer kræves ved kursustilmelding
+Skoler skal nu have udfyldt EAN/CVR-nummer, før de kan tilmelde sig et kursus. Hvis nummeret mangler, vises en advarsel med link til skolens side, og tilmeldingsknappen er deaktiveret. Undtaget er skoler, hvor kommunen betaler.
+
+### Link til skoletilmelding på kursustilmeldingssiden
+Kursustilmeldingssiden har nu et link "Ikke tilmeldt endnu? Tilmeld din skole til Basal" i bunden, så skoler der ikke er tilmeldt nemt kan finde tilmeldingssiden.
+
 ### Samarbejdsvilkår ved skoletilmelding
 Skoletilmeldingsformularen understøtter nu accept af samarbejdsvilkår via et afkrydsningsfelt med vedhæftet PDF (konfigureres i admin). Når en skole tilmelder sig, bliver vedhæftede dokumenter automatisk gemt som filer på skolen.
 

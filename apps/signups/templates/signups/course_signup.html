@@ -73,6 +73,12 @@
     {# Course and school selection via crispy #}
     {% crispy form %}
 
+    <div id="ean-warning" class="alert alert-danger" style="display: none;">
+        <strong><i class="bi bi-exclamation-triangle me-2"></i>EAN/CVR-nummer mangler</strong>
+        <p class="mb-2">Jeres skole mangler et EAN/CVR-nummer. Det skal udfyldes, før I kan tilmelde jer et kursus.</p>
+        <a id="ean-warning-link" href="#" target="_blank" class="btn btn-sm btn-outline-danger">Udfyld EAN/CVR-nummer på skolens side</a>
+    </div>
+
     <div id="koordinator-info" class="small text-muted border rounded p-2 mb-3" style="display: none;">
         <i class="bi bi-person-badge me-1"></i><strong>Koordinator:</strong>
         <span id="koordinator-name"></span>
@@ -145,6 +151,14 @@
 </div><!-- end signup-form-container -->
 {% endblock %}
 
+{% block signup_footer %}
+<p class="text-center mt-3">
+    <a href="{% url 'signup:school' %}" class="text-muted">Ikke tilmeldt endnu? Tilmeld din skole til Basal</a>
+    &nbsp;|&nbsp;
+    <a href="{% url 'login' %}" class="text-muted">Medarbejder login</a>
+</p>
+{% endblock %}
+
 {% block signup_extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -169,12 +183,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const koordinatorName = document.getElementById('koordinator-name');
     const koordinatorContact = document.getElementById('koordinator-contact');
     const koordinatorLink = document.getElementById('koordinator-link');
+    const eanWarning = document.getElementById('ean-warning');
+    const eanWarningLink = document.getElementById('ean-warning-link');
 
     let participantIndex = 1;
     let schoolAvailableSeats = null;
     let courseAvailableSeatsCount = null;
     let seatContent = null;
     let seatData = null;
+    let missingEan = false;
 
     function getParticipantCount() {
         return participantsContainer.querySelectorAll('.participant-entry').length;
@@ -207,6 +224,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateCourseSeatsDisplay() {
+        if (missingEan) return;  // EAN warning takes priority
+
         const participantCount = getParticipantCount();
 
         if (courseAvailableSeatsCount === null) {
@@ -316,6 +335,23 @@ document.addEventListener('DOMContentLoaded', function() {
         newEntry.querySelector('input[name^="participant_name"]').focus();
     }
 
+    function updateEanWarning(data) {
+        missingEan = data && data.missing_ean;
+        if (missingEan) {
+            if (data.school_public_url) {
+                eanWarningLink.href = data.school_public_url;
+                eanWarningLink.style.display = '';
+            } else {
+                eanWarningLink.style.display = 'none';
+            }
+            eanWarning.style.display = 'block';
+            submitBtn.disabled = true;
+            addParticipantBtn.disabled = true;
+        } else {
+            eanWarning.style.display = 'none';
+        }
+    }
+
     function updateKoordinatorDisplay(data) {
         if (data && data.koordinator) {
             const k = data.koordinator;
@@ -344,6 +380,7 @@ document.addEventListener('DOMContentLoaded', function() {
             seatData = null;
             seatContent = null;
             updateKoordinatorDisplay(null);
+            updateEanWarning(null);
             return;
         }
 
@@ -352,11 +389,11 @@ document.addEventListener('DOMContentLoaded', function() {
             seatsWarning.style.display = 'none';
             seatData = null;
             seatContent = null;
-            // Still fetch koordinator info even without course
+            // Still fetch koordinator and EAN info even without course
             fetch('{% url "signup:check-school-seats" %}?school_id=' + schoolSelect.value)
                 .then(response => response.json())
-                .then(data => updateKoordinatorDisplay(data))
-                .catch(() => updateKoordinatorDisplay(null));
+                .then(data => { updateKoordinatorDisplay(data); updateEanWarning(data); })
+                .catch(() => { updateKoordinatorDisplay(null); updateEanWarning(null); });
             return;
         }
 
@@ -367,6 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 seatContent = data.seat_content || {};
                 updateSeatInfoDisplay();
                 updateKoordinatorDisplay(data);
+                updateEanWarning(data);
             })
             .catch(() => {
                 seatInfoBox.style.display = 'none';
@@ -374,6 +412,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 seatData = null;
                 seatContent = null;
                 updateKoordinatorDisplay(null);
+                updateEanWarning(null);
             });
     }
 
