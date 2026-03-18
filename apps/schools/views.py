@@ -150,80 +150,124 @@ class SchoolListView(SortableMixin, ListView):
                 | Q(people__email__icontains=search)
             ).distinct()
 
-        # Enrollment status filter
+        # Enrollment status filter (year-aware)
         status_filter = self.request.GET.get("status_filter")
-        if status_filter == "tilmeldt":
-            # All enrolled (both new and anchoring)
-            queryset = queryset.filter(enrolled_at__isnull=False, opted_out_at__isnull=True)
-        elif status_filter == "tilmeldt_ny":
-            # Active in the current school year (on or after start, but not after end)
-            from apps.schools.school_years import get_current_school_year
+        year_filter = self.request.GET.get("year")
 
-            current_sy = get_current_school_year()
-            queryset = queryset.filter(
-                enrolled_at__isnull=False,
-                active_from__isnull=False,
-                active_from__gte=current_sy.start_date,
-                active_from__lte=current_sy.end_date,
-                opted_out_at__isnull=True,
-            )
-        elif status_filter == "tilmeldt_fortsaetter":
-            # Active before the current school year (fortsætter)
-            from apps.schools.school_years import get_current_school_year
+        if year_filter and status_filter:
+            # Year + status: status query encodes year dates directly.
+            # Do NOT apply the year pre-filter separately — it would wrongly
+            # exclude tilmeldt_venter schools (active_from > end_date).
+            from apps.schools.school_years import get_school_year_dates
 
-            current_sy = get_current_school_year()
-            queryset = queryset.filter(
-                enrolled_at__isnull=False,
-                active_from__isnull=False,
-                active_from__lt=current_sy.start_date,
-                opted_out_at__isnull=True,
-            )
-        elif status_filter == "tilmeldt_venter":
-            # Enrolled but not active until next school year
-            from apps.schools.school_years import get_current_school_year
+            try:
+                start_date, end_date = get_school_year_dates(year_filter)
+            except Exception:
+                start_date = end_date = None
 
-            current_sy = get_current_school_year()
-            queryset = queryset.filter(
-                enrolled_at__isnull=False,
-                active_from__isnull=False,
-                active_from__gt=current_sy.end_date,
-                opted_out_at__isnull=True,
-            )
-        elif status_filter == "ikke_tilmeldt":
-            # Never enrolled
-            queryset = queryset.filter(enrolled_at__isnull=True)
-        elif status_filter == "frameldt":
-            # Previously enrolled but opted out
-            queryset = queryset.filter(opted_out_at__isnull=False)
-        elif status_filter == "har_tilmeldinger_ikke_basal":
-            # Schools with course signups but not enrolled in Basal
-            from apps.courses.models import CourseSignUp
+            if start_date:
+                if status_filter == "tilmeldt_ny":
+                    queryset = queryset.filter(
+                        enrolled_at__isnull=False,
+                        active_from__isnull=False,
+                        active_from__gte=start_date,
+                        active_from__lte=end_date,
+                        opted_out_at__isnull=True,
+                    )
+                elif status_filter == "tilmeldt_fortsaetter":
+                    queryset = queryset.filter(
+                        enrolled_at__isnull=False,
+                        active_from__isnull=False,
+                        active_from__lt=start_date,
+                        opted_out_at__isnull=True,
+                    )
+                elif status_filter == "frameldt":
+                    queryset = queryset.filter(
+                        opted_out_at__isnull=False,
+                        opted_out_at__gte=start_date,
+                        opted_out_at__lte=end_date,
+                    )
+                elif status_filter == "tilmeldt_venter":
+                    queryset = queryset.filter(
+                        enrolled_at__isnull=False,
+                        active_from__isnull=False,
+                        active_from__gt=end_date,
+                        opted_out_at__isnull=True,
+                    )
+                elif status_filter == "ikke_tilmeldt":
+                    # Complex condition: fall back to Python after a pre-filter
+                    queryset = queryset.filter(
+                        Q(enrolled_at__isnull=True) | Q(active_from__isnull=True) | Q(opted_out_at__lte=start_date)
+                    )
+                    queryset = [s for s in queryset if s.get_status_for_year(year_filter)[0] == "ikke_tilmeldt"]
 
-            # Get school IDs that have any signups
-            schools_with_signups = (
-                CourseSignUp.objects.filter(school__isnull=False).values_list("school_id", flat=True).distinct()
-            )
+        elif status_filter:
+            # No year selected — use current-year semantics (unchanged behaviour)
+            if status_filter == "tilmeldt":
+                queryset = queryset.filter(enrolled_at__isnull=False, opted_out_at__isnull=True)
+            elif status_filter == "tilmeldt_ny":
+                from apps.schools.school_years import get_current_school_year
 
-            # Filter to schools not currently enrolled (never enrolled OR opted out)
-            queryset = queryset.filter(pk__in=schools_with_signups).filter(
-                Q(enrolled_at__isnull=True) | Q(opted_out_at__isnull=False)
-            )
+                current_sy = get_current_school_year()
+                queryset = queryset.filter(
+                    enrolled_at__isnull=False,
+                    active_from__isnull=False,
+                    active_from__gte=current_sy.start_date,
+                    active_from__lte=current_sy.end_date,
+                    opted_out_at__isnull=True,
+                )
+            elif status_filter == "tilmeldt_fortsaetter":
+                from apps.schools.school_years import get_current_school_year
+
+                current_sy = get_current_school_year()
+                queryset = queryset.filter(
+                    enrolled_at__isnull=False,
+                    active_from__isnull=False,
+                    active_from__lt=current_sy.start_date,
+                    opted_out_at__isnull=True,
+                )
+            elif status_filter == "tilmeldt_venter":
+                from apps.schools.school_years import get_current_school_year
+
+                current_sy = get_current_school_year()
+                queryset = queryset.filter(
+                    enrolled_at__isnull=False,
+                    active_from__isnull=False,
+                    active_from__gt=current_sy.end_date,
+                    opted_out_at__isnull=True,
+                )
+            elif status_filter == "ikke_tilmeldt":
+                queryset = queryset.filter(enrolled_at__isnull=True)
+            elif status_filter == "frameldt":
+                queryset = queryset.filter(opted_out_at__isnull=False)
+            elif status_filter == "har_tilmeldinger_ikke_basal":
+                from apps.courses.models import CourseSignUp
+
+                schools_with_signups = (
+                    CourseSignUp.objects.filter(school__isnull=False).values_list("school_id", flat=True).distinct()
+                )
+                queryset = queryset.filter(pk__in=schools_with_signups).filter(
+                    Q(enrolled_at__isnull=True) | Q(opted_out_at__isnull=False)
+                )
+
+        elif year_filter:
+            # Year only (no status) — show all schools enrolled at any point during the year
+            from apps.schools.school_years import get_school_year_dates
+
+            try:
+                start_date, end_date = get_school_year_dates(year_filter)
+                queryset = queryset.filter(
+                    enrolled_at__isnull=False,
+                    active_from__isnull=False,
+                    active_from__lte=end_date,
+                ).filter(Q(opted_out_at__isnull=True) | Q(opted_out_at__gt=start_date))
+            except Exception:
+                pass
 
         # Kommune filter
         kommune_filter = self.request.GET.get("kommune")
         if kommune_filter:
             queryset = queryset.filter(kommune=kommune_filter)
-
-        # School year filter
-        year_filter = self.request.GET.get("year")
-        if year_filter:
-            from apps.schools.school_years import get_school_year_dates
-
-            try:
-                start_date, end_date = get_school_year_dates(year_filter)
-                queryset = queryset.filter(active_from__gte=start_date, active_from__lte=end_date)
-            except Exception:
-                pass
 
         # School year status filter (for project goals drill-down)
         status_filter = self.request.GET.get("status")
