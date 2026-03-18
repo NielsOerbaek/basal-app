@@ -213,7 +213,11 @@ class SchoolFilterMixin:
         kommuner = (
             School.objects.active().exclude(kommune="").values_list("kommune", flat=True).distinct().order_by("kommune")
         )
-        school_years = SchoolYear.objects.all().order_by("start_date").values_list("name", flat=True)
+        school_years = (
+            SchoolYear.objects.filter(name__gte="2022/23", name__lte="2028/29")
+            .order_by("start_date")
+            .values_list("name", flat=True)
+        )
         has_active_filters = any(self.request.GET.get(p) for p in FILTER_PARAMS)
         selected_year = self.request.GET.get("year", "").strip() or None
 
