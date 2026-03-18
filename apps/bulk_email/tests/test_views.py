@@ -2,7 +2,7 @@ import json
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from apps.bulk_email.models import BulkEmail, BulkEmailAttachment, BulkEmailRecipient
@@ -214,3 +214,155 @@ class DryRunViewTest(TestCase):
         )
         data = json.loads(response.content)
         self.assertTrue(any("ean_nummer" in w["variable"] for w in data["warnings"]))
+
+
+@override_settings(RESEND_API_KEY=None)
+class SendViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = make_staff("staff6")
+        self.client.login(username="staff6", password="pw")
+        self.school = School.objects.create(
+            name="Send Skole",
+            kommune="Odense",
+            enrolled_at="2024-08-01",
+            active_from="2024-08-01",
+            signup_token="tok6",
+            signup_password="pw6",
+        )
+        Person.objects.create(school=self.school, name="KC", email="kc@s.dk", is_koordinator=True)
+
+    def _consume_stream(self, response):
+        events = []
+        for chunk in response.streaming_content:
+            chunk_str = chunk.decode()
+            for line in chunk_str.split("\n"):
+                if line.startswith("data: "):
+                    events.append(json.loads(line[6:]))
+        return events
+
+    def test_send_creates_bulk_email_record(self):
+        response = self.client.post(
+            reverse("bulk_email:send"),
+            json.dumps(
+                {
+                    "subject": "Test",
+                    "body_html": "<p>Test</p>",
+                    "recipient_type": BulkEmail.KOORDINATOR,
+                    "filter_params": {"kommune": "Odense"},
+                    "attachment_pks": [],
+                }
+            ),
+            content_type="application/json",
+        )
+        list(response.streaming_content)
+        self.assertEqual(BulkEmail.objects.count(), 1)
+
+    def test_send_creates_recipient_records(self):
+        response = self.client.post(
+            reverse("bulk_email:send"),
+            json.dumps(
+                {
+                    "subject": "Test",
+                    "body_html": "<p>Test</p>",
+                    "recipient_type": BulkEmail.KOORDINATOR,
+                    "filter_params": {"kommune": "Odense"},
+                    "attachment_pks": [],
+                }
+            ),
+            content_type="application/json",
+        )
+        list(response.streaming_content)
+        self.assertEqual(BulkEmailRecipient.objects.count(), 1)
+
+    def test_send_sets_sent_at(self):
+        response = self.client.post(
+            reverse("bulk_email:send"),
+            json.dumps(
+                {
+                    "subject": "Test",
+                    "body_html": "<p>Test</p>",
+                    "recipient_type": BulkEmail.KOORDINATOR,
+                    "filter_params": {"kommune": "Odense"},
+                    "attachment_pks": [],
+                }
+            ),
+            content_type="application/json",
+        )
+        list(response.streaming_content)
+        campaign = BulkEmail.objects.first()
+        self.assertIsNotNone(campaign.sent_at)
+
+    def test_send_emits_done_event(self):
+        response = self.client.post(
+            reverse("bulk_email:send"),
+            json.dumps(
+                {
+                    "subject": "Test",
+                    "body_html": "<p>Test</p>",
+                    "recipient_type": BulkEmail.KOORDINATOR,
+                    "filter_params": {"kommune": "Odense"},
+                    "attachment_pks": [],
+                }
+            ),
+            content_type="application/json",
+        )
+        events = self._consume_stream(response)
+        types = [e["type"] for e in events]
+        self.assertIn("done", types)
+
+
+@override_settings(RESEND_API_KEY=None)
+class TestEmailSendTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = make_staff("staff7")
+        self.client.login(username="staff7", password="pw")
+        self.school = School.objects.create(name="Test Afsender Skole", signup_token="tok7", signup_password="pw7")
+
+    def _consume_stream(self, response):
+        events = []
+        for chunk in response.streaming_content:
+            for line in chunk.decode().split("\n"):
+                if line.startswith("data: "):
+                    events.append(json.loads(line[6:]))
+        return events
+
+    def test_test_email_does_not_create_bulk_email_record(self):
+        response = self.client.post(
+            reverse("bulk_email:send"),
+            json.dumps(
+                {
+                    "subject": "Test",
+                    "body_html": "<p>x</p>",
+                    "recipient_type": BulkEmail.KOORDINATOR,
+                    "filter_params": {},
+                    "attachment_pks": [],
+                    "test_email": "test@example.com",
+                    "test_school_pk": self.school.pk,
+                }
+            ),
+            content_type="application/json",
+        )
+        list(response.streaming_content)
+        self.assertEqual(BulkEmail.objects.count(), 0)
+
+    def test_test_email_emits_done_event(self):
+        response = self.client.post(
+            reverse("bulk_email:send"),
+            json.dumps(
+                {
+                    "subject": "Test",
+                    "body_html": "<p>x</p>",
+                    "recipient_type": BulkEmail.KOORDINATOR,
+                    "filter_params": {},
+                    "attachment_pks": [],
+                    "test_email": "test@example.com",
+                    "test_school_pk": self.school.pk,
+                }
+            ),
+            content_type="application/json",
+        )
+        events = self._consume_stream(response)
+        types = [e["type"] for e in events]
+        self.assertIn("done", types)

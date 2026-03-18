@@ -1,18 +1,29 @@
 import json
 import logging
 
+import resend
+from django.conf import settings
 from django.db.models import F
-from django.http import FileResponse, JsonResponse
+from django.http import FileResponse, JsonResponse, QueryDict, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import DetailView, ListView
 
 from apps.bulk_email.models import BulkEmail, BulkEmailAttachment
-from apps.bulk_email.services import find_missing_variables, render_for_school, resolve_recipients
+from apps.bulk_email.services import (
+    VARIABLE_NAMES,
+    find_missing_variables,
+    render_for_school,
+    resolve_recipients,
+    send_to_school,
+)
 from apps.core.decorators import staff_required
+from apps.emails.services import EMAIL_FOOTER, check_email_domain_allowed
 from apps.schools.mixins import SchoolFilterMixin
-from apps.schools.models import School
+from apps.schools.models import Person, School
 
 logger = logging.getLogger(__name__)
 
@@ -56,11 +67,35 @@ class BulkEmailDetailView(DetailView):
 
 
 @method_decorator(staff_required, name="dispatch")
-class BulkEmailCreateView(View):
+class BulkEmailCreateView(SchoolFilterMixin, View):
     def get(self, request):
-        from django.http import HttpResponse
+        from apps.bulk_email.forms import BulkEmailComposeForm
 
-        return HttpResponse("create placeholder")
+        initial = {}
+        copy_from_pk = request.GET.get("copy_from")
+        copy_source = None
+        if copy_from_pk:
+            try:
+                copy_source = BulkEmail.objects.get(pk=copy_from_pk)
+                initial["subject"] = request.GET.get("subject", copy_source.subject)
+                initial["body_html"] = copy_source.body_html
+                initial["recipient_type"] = request.GET.get("recipient_type", copy_source.recipient_type)
+            except BulkEmail.DoesNotExist:
+                pass
+
+        form = BulkEmailComposeForm(initial=initial)
+        schools = list(self.get_school_filter_queryset())
+        filter_context = self.get_filter_context()
+
+        context = {
+            "form": form,
+            "schools": schools[:200],
+            "total_matched": len(schools),
+            "variable_names": VARIABLE_NAMES,
+            "copy_source": copy_source,
+            **filter_context,
+        }
+        return render(request, "bulk_email/bulk_email_create.html", context)
 
 
 @method_decorator(staff_required, name="dispatch")
@@ -157,11 +192,122 @@ class BulkEmailDryRunView(View):
 
 
 @method_decorator(staff_required, name="dispatch")
-class BulkEmailSendView(View):
+class BulkEmailSendView(SchoolFilterMixin, View):
     def post(self, request):
-        from django.http import HttpResponse
+        data = json.loads(request.body)
 
-        return HttpResponse("send placeholder")
+        subject = data.get("subject", "")
+        body_html = data.get("body_html", "")
+        recipient_type = data.get("recipient_type", BulkEmail.KOORDINATOR)
+        filter_params = data.get("filter_params", {})
+        attachment_pks = data.get("attachment_pks", [])
+
+        # Test email path: send directly to one address without creating a BulkEmail record
+        test_email = data.get("test_email")
+        if test_email:
+            test_school_pk = data.get("test_school_pk")
+            if test_school_pk:
+                try:
+                    school = School.objects.prefetch_related("people").get(pk=test_school_pk)
+                    person = school.people.filter(email__gt="").first()
+                except School.DoesNotExist:
+                    school = School(name="Test", signup_token="", signup_password="")
+                    person = None
+            else:
+                school = School(name="Test", signup_token="", signup_password="")
+                person = None
+
+            fake_person = Person(name="Test", email=test_email)
+            rendered_subject = render_for_school(subject, school, person or fake_person)
+            rendered_body = render_for_school(body_html, school, person or fake_person) + EMAIL_FOOTER
+
+            def test_stream():
+                success = True
+                error = ""
+                if not check_email_domain_allowed(test_email):
+                    success = False
+                    error = "[BLOCKED] Domain not in EMAIL_ALLOWED_DOMAINS"
+                elif not getattr(settings, "RESEND_API_KEY", None):
+                    logger.info(f"[TEST EMAIL] DEV MODE — To: {test_email}")
+                else:
+                    try:
+                        resend.api_key = settings.RESEND_API_KEY
+                        resend.Emails.send(
+                            {
+                                "from": settings.DEFAULT_FROM_EMAIL,
+                                "to": [test_email],
+                                "subject": rendered_subject,
+                                "html": rendered_body,
+                            }
+                        )
+                    except Exception as e:
+                        success = False
+                        error = str(e)[:200]
+                yield f"data: {json.dumps({'type': 'start', 'total': 1, 'skipped': 0})}\n\n"
+                yield f"data: {json.dumps({'type': 'progress', 'n': 1, 'total': 1, 'school': school.name, 'email': test_email, 'success': success, 'error': error})}\n\n"
+                yield f"data: {json.dumps({'type': 'done', 'sent': 1 if success else 0, 'failed': 0 if success else 1, 'skipped': 0, 'detail_url': ''})}\n\n"
+
+            response = StreamingHttpResponse(test_stream(), content_type="text/event-stream")
+            response["Cache-Control"] = "no-cache"
+            response["X-Accel-Buffering"] = "no"
+            return response
+
+        # Normal send path
+        from urllib.parse import urlencode
+
+        fake_get = QueryDict(urlencode(filter_params), mutable=True)
+        original_get = request.GET
+        request.GET = fake_get
+        schools = list(self.get_school_filter_queryset())
+        request.GET = original_get
+
+        school_person_pairs = resolve_recipients(schools, recipient_type)
+
+        campaign = BulkEmail.objects.create(
+            subject=subject,
+            body_html=body_html,
+            recipient_type=recipient_type,
+            filter_params=filter_params,
+            sent_by=request.user,
+        )
+
+        if attachment_pks:
+            BulkEmailAttachment.objects.filter(pk__in=attachment_pks).update(bulk_email=campaign)
+
+        def event_stream():
+            sent = 0
+            failed = 0
+            skipped = len(schools) - len(school_person_pairs)
+
+            yield f"data: {json.dumps({'type': 'start', 'total': len(school_person_pairs), 'skipped': skipped})}\n\n"
+
+            for n, (school, person) in enumerate(school_person_pairs, start=1):
+                recipient = send_to_school(campaign, school, person)
+                if recipient.success:
+                    sent += 1
+                else:
+                    failed += 1
+                event = {
+                    "type": "progress",
+                    "n": n,
+                    "total": len(school_person_pairs),
+                    "school": school.name,
+                    "email": recipient.email,
+                    "success": recipient.success,
+                    "error": recipient.error_message if not recipient.success else "",
+                }
+                yield f"data: {json.dumps(event)}\n\n"
+
+            campaign.sent_at = timezone.now()
+            campaign.save(update_fields=["sent_at"])
+
+            detail_url = reverse("bulk_email:detail", args=[campaign.pk])
+            yield f"data: {json.dumps({'type': 'done', 'sent': sent, 'failed': failed, 'skipped': skipped, 'detail_url': detail_url})}\n\n"
+
+        response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        return response
 
 
 @method_decorator(staff_required, name="dispatch")
