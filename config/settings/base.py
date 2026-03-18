@@ -111,6 +111,7 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Basal <noreply@basal.dk>")
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 SCHOOL_SIGNUP_BCC_EMAIL = os.environ.get("SCHOOL_SIGNUP_BCC_EMAIL", "niels@osogdata.dk")
+COURSE_SIGNUP_NOTIFICATION_EMAIL = os.environ.get("COURSE_SIGNUP_NOTIFICATION_EMAIL", "basal@sundkom.dk")
 
 # Email domain allowlist (comma-separated). When set, emails can ONLY be sent to these domains.
 # Used on dev to prevent accidentally emailing real users.

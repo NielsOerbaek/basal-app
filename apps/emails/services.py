@@ -164,6 +164,57 @@ def send_course_reminder(signup, attachments=None):
     return send_email(EmailType.COURSE_REMINDER, signup, attachments=attachments)
 
 
+def send_course_signup_notification(school, course, signups):
+    """
+    Send notification email to admin when a school signs up for a course.
+
+    Args:
+        school: School instance
+        course: Course instance
+        signups: list of CourseSignUp instances created in this submission
+    """
+    notification_email = getattr(settings, "COURSE_SIGNUP_NOTIFICATION_EMAIL", "basal@sundkom.dk")
+
+    oeko = school.people.filter(is_oekonomisk_ansvarlig=True).first()
+    oeko_name = oeko.name if oeko else "–"
+
+    participants_html = "".join(f"<li>{s.participant_name} ({s.participant_email})</li>" for s in signups)
+
+    body_html = f"""
+<p><strong>Ny kursustilmelding</strong></p>
+<ul>
+  <li><strong>Skole:</strong> {school.name}</li>
+  <li><strong>Kursus:</strong> {course.display_name}</li>
+  <li><strong>Deltagere:</strong>
+    <ul>{participants_html}</ul>
+  </li>
+  <li><strong>Økonomisk ansvarlig:</strong> {oeko_name}</li>
+  <li><strong>EAN/CVR-nummer:</strong> {school.ean_nummer or "–"}</li>
+</ul>
+"""
+
+    if not getattr(settings, "RESEND_API_KEY", None):
+        logger.info(f"[EMAIL] To: {notification_email}")
+        logger.info(f"[EMAIL] Subject: Ny kursustilmelding – {school.name}")
+        logger.info(f"[EMAIL] Body: {body_html[:200]}...")
+        return True
+
+    try:
+        resend.api_key = settings.RESEND_API_KEY
+        resend.Emails.send(
+            {
+                "from": settings.DEFAULT_FROM_EMAIL,
+                "to": [notification_email],
+                "subject": f"Ny kursustilmelding – {school.name}",
+                "html": body_html,
+            }
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send course signup notification: {e}")
+        return False
+
+
 def get_school_enrollment_context(school, contact_name):
     """Build template context for school enrollment confirmation."""
     return {
