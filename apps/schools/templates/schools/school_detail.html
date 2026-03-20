@@ -493,28 +493,6 @@
 
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span>Henvendelser</span>
-                <a href="{% url 'contacts:create' %}?school={{ school.pk }}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-plus-lg"></i> Tilføj henvendelse
-                </a>
-            </div>
-            <ul class="list-group list-group-flush">
-                {% for contact in contact_history %}
-                <li class="list-group-item">
-                    <div class="d-flex justify-content-between">
-                        <strong>{{ contact.contacted_date|date:"d. M Y" }}</strong>
-                        <small class="text-muted">{{ contact.created_by.get_full_name|default:contact.created_by.username|default:"Ukendt" }}</small>
-                    </div>
-                    <small>{{ contact.comment|truncatewords:20 }}</small>
-                </li>
-                {% empty %}
-                <li class="list-group-item text-muted">Ingen henvendelser.</li>
-                {% endfor %}
-            </ul>
-        </div>
-
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-clock-history me-2"></i>Seneste aktivitet</span>
                 <a href="{% url 'audit:school_activity' school.pk %}" class="btn btn-sm btn-outline-primary">
                     Se alle

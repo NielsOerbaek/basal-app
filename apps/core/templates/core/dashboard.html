@@ -152,25 +152,6 @@
         </div>
     </div>
     <div class="col-lg-4">
-        <div class="card mb-4">
-            <div class="card-header">
-                <i class="bi bi-clock-history me-2"></i>Seneste henvendelser
-            </div>
-            <ul class="list-group list-group-flush">
-                {% for contact in recent_contacts %}
-                <li class="list-group-item">
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'schools:detail' contact.school.pk %}"><strong>{{ contact.school.name }} ({{ contact.school.kommune }})</strong></a>
-                        <small class="text-muted">{{ contact.contacted_date|date:"d. M" }}</small>
-                    </div>
-                    <small class="text-muted">af {{ contact.created_by.get_full_name|default:contact.created_by.username|default:"Ukendt" }}</small>
-                </li>
-                {% empty %}
-                <li class="list-group-item text-muted">Ingen seneste henvendelser.</li>
-                {% endfor %}
-            </ul>
-        </div>
-
         <div class="card">
             <div class="card-header">
                 <i class="bi bi-person-plus me-2"></i>Seneste kurstilmeldinger

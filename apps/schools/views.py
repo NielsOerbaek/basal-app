@@ -80,10 +80,6 @@ class SchoolListView(SchoolFilterMixin, SortableMixin, ListView):
 
     def get_base_queryset(self):
         """Return the base queryset before sorting."""
-        from django.db.models import OuterRef, Subquery
-
-        from apps.contacts.models import ContactTime
-
         queryset = School.objects.active()
 
         # Search filter
@@ -240,21 +236,6 @@ class SchoolListView(SchoolFilterMixin, SortableMixin, ListView):
             # Schools with remaining seats = 0
             queryset = [s for s in queryset if s.remaining_seats == 0]
 
-        # Annotate with latest contact date
-        if isinstance(queryset, list):
-            # Already converted to list for unused_seats filter
-            for school in queryset:
-                last_contact = school.contact_history.order_by("-contacted_date").first()
-                school.last_contact_date = last_contact.contacted_date if last_contact else None
-        else:
-            # Subquery to get latest contact date
-            latest_contact = (
-                ContactTime.objects.filter(school=OuterRef("pk"))
-                .order_by("-contacted_date")
-                .values("contacted_date")[:1]
-            )
-            queryset = queryset.annotate(last_contact_date=Subquery(latest_contact))
-
         return queryset
 
     def get_queryset(self):
@@ -338,7 +319,6 @@ class SchoolDetailView(DetailView):
         from apps.schools.school_years import get_current_school_year
 
         context = super().get_context_data(**kwargs)
-        context["contact_history"] = self.object.contact_history.select_related("created_by")[:10]
         context["kursusdeltagere"] = self.object.course_signups.select_related("course").order_by(
             "participant_name", "-course__start_date"
         )
@@ -473,7 +453,6 @@ class SchoolHardDeleteView(View):
         signup_count = CourseSignUp.objects.filter(school=school).count()
         person_count = school.people.count()
         comment_count = school.school_comments.count()
-        contact_count = school.contact_history.count()
         warning_parts = []
         if signup_count:
             warning_parts.append(f"{signup_count} kursustilmelding{'er' if signup_count != 1 else ''}")
@@ -481,8 +460,6 @@ class SchoolHardDeleteView(View):
             warning_parts.append(f"{person_count} person{'er' if person_count != 1 else ''}")
         if comment_count:
             warning_parts.append(f"{comment_count} kommentar{'er' if comment_count != 1 else ''}")
-        if contact_count:
-            warning_parts.append(f"{contact_count} henvendelse{'r' if contact_count != 1 else ''}")
         if warning_parts:
             warning = f"Dette vil permanent slette: {', '.join(warning_parts)}. Handlingen kan ikke fortrydes!"
         else:

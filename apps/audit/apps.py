@@ -11,7 +11,7 @@ class AuditConfig(AppConfig):
 
         from apps.schools.models import School, Person, SchoolComment, SchoolYear, SchoolFile
         from apps.courses.models import Course, CourseSignUp, CourseMaterial
-        from apps.contacts.models import ContactTime
+
         from apps.signups.models import SignupPage, SignupFormField, SeatInfoContent
         from apps.bulk_email.models import BulkEmail
 
@@ -58,14 +58,6 @@ class AuditConfig(AppConfig):
             AuditCfg(
                 get_school=lambda instance: instance.school,
                 get_course=lambda instance: instance.course,
-            ),
-        )
-
-        register_for_audit(
-            ContactTime,
-            AuditCfg(
-                excluded_fields=["id", "created_at", "created_by"],
-                get_school=lambda instance: instance.school,
             ),
         )
 
