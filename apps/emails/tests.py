@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 
 from apps.emails.models import EmailTemplate, EmailType
@@ -44,3 +45,49 @@ class SchoolEnrollmentEmailTest(TestCase):
             self.school, contact_email="test@example.com", contact_name="Test Person"
         )
         self.assertFalse(result)
+
+
+class EmailTemplateAdminTest(TestCase):
+    def setUp(self):
+        self.admin_user, _ = User.objects.get_or_create(
+            username="admin",
+            defaults={"email": "admin@test.com", "is_staff": True, "is_superuser": True},
+        )
+        self.admin_user.set_password("password")
+        self.admin_user.save()
+        self.client.force_login(self.admin_user)
+        # Ensure templates exist
+        for et in EmailType.values:
+            EmailTemplate.objects.get_or_create(
+                email_type=et,
+                defaults={"subject": "Test", "body_html": "<p>Test</p>", "is_active": True},
+            )
+
+    def test_admin_cannot_add_template(self):
+        """Add button should not be available — returns 403."""
+        response = self.client.get("/admin/emails/emailtemplate/add/")
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_cannot_delete_template(self):
+        """Delete action should not be available."""
+        template = EmailTemplate.objects.first()
+        response = self.client.post(
+            f"/admin/emails/emailtemplate/{template.pk}/delete/",
+            {"post": "yes"},
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_email_type_is_readonly_on_edit(self):
+        """email_type field should be read-only when editing."""
+        template = EmailTemplate.objects.first()
+        response = self.client.get(f"/admin/emails/emailtemplate/{template.pk}/change/")
+        self.assertEqual(response.status_code, 200)
+        # email_type should not be an editable field in the form
+        self.assertNotContains(response, 'name="email_type"')
+
+    def test_description_is_shown_on_edit(self):
+        """description field should be visible when editing."""
+        template = EmailTemplate.objects.filter(description__gt="").first()
+        if template:
+            response = self.client.get(f"/admin/emails/emailtemplate/{template.pk}/change/")
+            self.assertContains(response, template.description)

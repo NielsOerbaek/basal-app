@@ -1,8 +1,8 @@
 from django.contrib import admin
-from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from django_summernote.admin import SummernoteModelAdmin
 
-from .models import EmailLog, EmailTemplate
+from .models import EmailLog, EmailTemplate, EmailType
 
 
 @admin.register(EmailTemplate)
@@ -10,11 +10,11 @@ class EmailTemplateAdmin(SummernoteModelAdmin):
     list_display = ["email_type", "subject", "is_active", "updated_at"]
     list_filter = ["is_active", "email_type"]
     search_fields = ["subject", "body_html"]
-    readonly_fields = ["updated_at", "available_variables"]
+    readonly_fields = ["email_type", "description", "updated_at", "available_variables"]
     summernote_fields = ("body_html",)
 
     fieldsets = (
-        (None, {"fields": ("email_type", "is_active")}),
+        (None, {"fields": ("email_type", "description", "is_active")}),
         (
             "Indhold",
             {
@@ -38,35 +38,71 @@ class EmailTemplateAdmin(SummernoteModelAdmin):
         ),
     )
 
-    def available_variables(self, obj):
-        from .models import EmailType
+    VARIABLE_DISPLAY = {
+        EmailType.SIGNUP_CONFIRMATION: [
+            ("participant_name", "Deltagerens navn"),
+            ("participant_email", "Deltagerens e-mail"),
+            ("participant_title", "Deltagerens stilling"),
+            ("school_name", "Skolens navn"),
+            ("course_title", "Kursets titel"),
+            ("course_date", "Kursets startdato"),
+            ("course_end_date", "Kursets slutdato"),
+            ("course_location", "Kursets lokation"),
+            ("instructors", "Undervisere (kommasepareret)"),
+            ("registration_deadline", "Tilmeldingsfrist"),
+            ("spots_remaining", "Ledige pladser"),
+        ],
+        EmailType.COURSE_REMINDER: [
+            ("participant_name", "Deltagerens navn"),
+            ("participant_email", "Deltagerens e-mail"),
+            ("participant_title", "Deltagerens stilling"),
+            ("school_name", "Skolens navn"),
+            ("course_title", "Kursets titel"),
+            ("course_date", "Kursets startdato"),
+            ("course_end_date", "Kursets slutdato"),
+            ("course_location", "Kursets lokation"),
+            ("instructors", "Undervisere (kommasepareret)"),
+            ("registration_deadline", "Tilmeldingsfrist"),
+            ("spots_remaining", "Ledige pladser"),
+        ],
+        EmailType.SCHOOL_ENROLLMENT_CONFIRMATION: [
+            ("contact_name", "Kontaktpersonens navn"),
+            ("school_name", "Skolens navn"),
+            ("school_page_url", "Link til skolens side"),
+            ("signup_url", "Link til kursustilmelding"),
+            ("signup_password", "Skolens tilmeldingskode"),
+            ("site_url", "Sidens URL"),
+            ("school_address", "Skolens adresse"),
+            ("school_municipality", "Kommune"),
+            ("ean_nummer", "EAN/CVR-nummer"),
+        ],
+        EmailType.COORDINATOR_SIGNUP: [
+            ("coordinator_name", "Koordinatorens navn"),
+            ("course_title", "Kursets titel"),
+            ("course_date", "Kursets startdato"),
+            ("course_end_date", "Kursets slutdato"),
+            ("course_location", "Kursets lokation"),
+            ("school_name", "Skolens navn"),
+            ("participants_list", "HTML-liste over tilmeldte deltagere"),
+            ("registration_deadline", "Tilmeldingsfrist"),
+            ("instructors", "Undervisere (kommasepareret)"),
+        ],
+    }
 
-        if obj and obj.email_type == EmailType.SCHOOL_ENROLLMENT_CONFIRMATION:
-            variables = """
-            <ul>
-                <li><code>{{ contact_name }}</code> - Kontaktpersonens navn</li>
-                <li><code>{{ school_name }}</code> - Skolens navn</li>
-                <li><code>{{ school_page_url }}</code> - Link til skolens side</li>
-                <li><code>{{ signup_url }}</code> - Link til kursustilmelding</li>
-                <li><code>{{ signup_password }}</code> - Skolens tilmeldingskode</li>
-                <li><code>{{ site_url }}</code> - Sidens URL</li>
-            </ul>
-            """
-        else:
-            variables = """
-            <ul>
-                <li><code>{{ participant_name }}</code> - Deltagerens navn</li>
-                <li><code>{{ participant_email }}</code> - Deltagerens e-mail</li>
-                <li><code>{{ participant_title }}</code> - Deltagerens stilling</li>
-                <li><code>{{ school_name }}</code> - Skolens navn</li>
-                <li><code>{{ course_title }}</code> - Kursets titel</li>
-                <li><code>{{ course_date }}</code> - Kursets startdato</li>
-                <li><code>{{ course_location }}</code> - Kursets lokation</li>
-            </ul>
-            """
-        return format_html(variables)
+    def available_variables(self, obj):
+        if not obj or not obj.email_type:
+            return ""
+        variables = self.VARIABLE_DISPLAY.get(obj.email_type, [])
+        items = "".join(f"<li><code>{{{{ {name} }}}}</code> - {desc}</li>" for name, desc in variables)
+        return mark_safe(f"<ul>{items}</ul>")
 
     available_variables.short_description = "Tilgængelige variabler"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(EmailLog)
