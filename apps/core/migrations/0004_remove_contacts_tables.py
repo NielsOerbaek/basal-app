@@ -9,8 +9,8 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunSQL(
             sql=[
-                "DROP TABLE IF EXISTS contacts_contacttime_contacted_persons CASCADE;",
-                "DROP TABLE IF EXISTS contacts_contacttime CASCADE;",
+                "DROP TABLE IF EXISTS contacts_contacttime_contacted_persons;",
+                "DROP TABLE IF EXISTS contacts_contacttime;",
             ],
             reverse_sql=[],  # No reverse — the app code is removed
         ),
