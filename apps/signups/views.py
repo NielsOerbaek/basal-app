@@ -518,13 +518,24 @@ class SchoolSignupView(View):
                         field_config.attachment.seek(0)
                         email_attachments.append({"filename": filename, "content": list(file_content)})
 
-            # Send confirmation email (with signup form attachments if any)
+            # Send confirmation email to koordinator (with signup form attachments if any)
             send_school_enrollment_confirmation(
                 school,
                 koordinator_email,
                 koordinator_name,
                 attachments=email_attachments or None,
             )
+
+            # Send confirmation email to økonomisk ansvarlig (if different from koordinator)
+            oeko_email = form.cleaned_data["oeko_email"]
+            oeko_name = form.cleaned_data["oeko_name"]
+            if oeko_email and oeko_email != koordinator_email:
+                send_school_enrollment_confirmation(
+                    school,
+                    oeko_email,
+                    oeko_name,
+                    attachments=email_attachments or None,
+                )
 
             # Store enrollment info in session for success page
             request.session["school_signup_active_from"] = default_active_from.isoformat()
