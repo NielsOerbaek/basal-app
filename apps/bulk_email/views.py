@@ -180,12 +180,19 @@ class BulkEmailPreviewView(View):
 
         school = get_object_or_404(School, pk=school_pk)
 
-        # Find the contact person based on recipient type
+        # Find the contact person based on recipient type (use first match for preview)
         person = None
+        people = school.people.exclude(email="").filter(email__isnull=False)
         if recipient_type == BulkEmail.KOORDINATOR:
-            person = school.people.filter(is_koordinator=True, email__isnull=False).exclude(email="").first()
+            person = people.filter(is_koordinator=True).first()
         elif recipient_type == BulkEmail.OEKONOMISK_ANSVARLIG:
-            person = school.people.filter(is_oekonomisk_ansvarlig=True, email__isnull=False).exclude(email="").first()
+            person = people.filter(is_oekonomisk_ansvarlig=True).first()
+        elif recipient_type == BulkEmail.BEGGE:
+            person = people.filter(is_koordinator=True).first() or people.filter(is_oekonomisk_ansvarlig=True).first()
+        elif recipient_type == BulkEmail.FOERSTE_KONTAKT:
+            person = people.first()
+        elif recipient_type == BulkEmail.ALLE_KONTAKTER:
+            person = people.first()
         if person is None:
             person = school.people.first()
 

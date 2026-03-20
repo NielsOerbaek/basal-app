@@ -99,22 +99,41 @@ def find_missing_variables(template_str, school_person_pairs):
 
 def resolve_recipients(schools, recipient_type):
     """
-    For each school, find the matching contact person.
+    For each school, find the matching contact person(s).
 
     Note: schools should have prefetch_related("people") applied for performance.
 
     Returns:
         List of (school, person) tuples — schools with no matching contact are omitted.
+        A school may appear multiple times if recipient_type yields more than one person.
     """
     result = []
     for school in schools:
-        person = None
+        people = list(school.people.all())
         if recipient_type == BulkEmail.KOORDINATOR:
-            person = next((p for p in school.people.all() if p.is_koordinator and p.email), None)
+            person = next((p for p in people if p.is_koordinator and p.email), None)
+            if person:
+                result.append((school, person))
         elif recipient_type == BulkEmail.OEKONOMISK_ANSVARLIG:
-            person = next((p for p in school.people.all() if p.is_oekonomisk_ansvarlig and p.email), None)
-        if person:
-            result.append((school, person))
+            person = next((p for p in people if p.is_oekonomisk_ansvarlig and p.email), None)
+            if person:
+                result.append((school, person))
+        elif recipient_type == BulkEmail.BEGGE:
+            seen_emails = set()
+            for p in people:
+                if p.email and (p.is_koordinator or p.is_oekonomisk_ansvarlig) and p.email not in seen_emails:
+                    seen_emails.add(p.email)
+                    result.append((school, p))
+        elif recipient_type == BulkEmail.FOERSTE_KONTAKT:
+            person = next((p for p in people if p.email), None)
+            if person:
+                result.append((school, person))
+        elif recipient_type == BulkEmail.ALLE_KONTAKTER:
+            seen_emails = set()
+            for p in people:
+                if p.email and p.email not in seen_emails:
+                    seen_emails.add(p.email)
+                    result.append((school, p))
     return result
 
 

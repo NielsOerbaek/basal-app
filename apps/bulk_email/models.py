@@ -9,9 +9,15 @@ User = get_user_model()
 class BulkEmail(models.Model):
     KOORDINATOR = "koordinator"
     OEKONOMISK_ANSVARLIG = "oekonomisk_ansvarlig"
+    BEGGE = "begge"
+    FOERSTE_KONTAKT = "foerste_kontakt"
+    ALLE_KONTAKTER = "alle_kontakter"
     RECIPIENT_TYPE_CHOICES = [
         (KOORDINATOR, "Koordinator"),
         (OEKONOMISK_ANSVARLIG, "Økonomiansvarlig"),
+        (BEGGE, "Koordinator + Økonomiansvarlig"),
+        (FOERSTE_KONTAKT, "Første kontakt"),
+        (ALLE_KONTAKTER, "Alle kontakter"),
     ]
 
     name = models.CharField(max_length=255, blank=True, default="")
