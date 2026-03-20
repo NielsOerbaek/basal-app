@@ -219,7 +219,7 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
     fakturering_adresse = forms.CharField(max_length=255, required=False, label="Faktureringsadresse")
     fakturering_postnummer = forms.CharField(max_length=4, required=False, label="Postnummer")
     fakturering_by = forms.CharField(max_length=100, required=False, label="By")
-    fakturering_ean_nummer = forms.CharField(max_length=13, required=False, label="EAN-nummer")
+    fakturering_ean_nummer = forms.CharField(max_length=13, required=False, label="EAN/CVR-nummer")
     fakturering_kontakt_navn = forms.CharField(max_length=255, required=False, label="Kontaktperson")
     fakturering_kontakt_email = forms.EmailField(required=False, label="E-mail")
 
