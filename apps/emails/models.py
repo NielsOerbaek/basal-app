@@ -11,13 +11,22 @@ class EmailTemplate(models.Model):
     """
     Editable email templates.
 
-    Available template variables:
+    Available template variables (course signup):
     - {{ participant_name }} - Participant's name
     - {{ participant_email }} - Participant's email
+    - {{ participant_title }} - Participant's title
     - {{ school_name }} - School name
     - {{ course_title }} - Course title
     - {{ course_date }} - Course start date
     - {{ course_location }} - Course location
+
+    Available template variables (school enrollment):
+    - {{ contact_name }} - Contact person's name
+    - {{ school_name }} - School name
+    - {{ school_page_url }} - Link to school page
+    - {{ signup_url }} - Link to course signup
+    - {{ signup_password }} - School's signup code
+    - {{ site_url }} - Site URL
     """
 
     email_type = models.CharField(max_length=30, choices=EmailType.choices, unique=True, verbose_name="E-mail type")
