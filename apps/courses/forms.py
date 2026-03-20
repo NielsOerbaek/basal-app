@@ -148,7 +148,7 @@ class CourseForm(forms.ModelForm):
             HTML(
                 "<p class='text-muted small mt-1 mb-3'>"
                 "<i class='bi bi-info-circle me-1'></i>"
-                "Tilmeldingsfristen sættes automatisk til 5 uger før kursusstart hvis den ikke udfyldes."
+                "Tilmeldingsfristen sættes automatisk til 6 uger før kursusstart hvis den ikke udfyldes."
                 "</p>"
             ),
             "is_published",
