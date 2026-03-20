@@ -10,6 +10,20 @@ class ProjectSettings(models.Model):
     students_per_klasseforloeb = models.DecimalField(
         default=24.0, decimal_places=1, max_digits=5, verbose_name="Elever pr. klasseforløb"
     )
+
+    # Global fields shown on all enrolled schools' public pages
+    samarbejdsvilkaar_file = models.FileField(
+        upload_to="site_files/",
+        blank=True,
+        verbose_name="Samarbejdsvilkår (PDF)",
+        help_text="Fil der vises på alle tilmeldte skolers sider",
+    )
+    login_info_text = models.TextField(
+        blank=True,
+        verbose_name="Login-oplysninger",
+        help_text="Fritekst med login-oplysninger til sammenomtrivsel.com — vises på alle tilmeldte skolers sider",
+    )
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

@@ -229,20 +229,27 @@
                 </div>
             </div>
 
-            {% if school.files.exists %}
+            {% if school.is_enrolled %}
+            {% if site_settings.samarbejdsvilkaar_file or site_settings.login_info_text %}
             <div class="card mb-4">
-                <div class="card-header"><i class="bi bi-folder me-2"></i>Dokumenter</div>
-                <ul class="list-group list-group-flush">
-                    {% for file in school.files.all %}
-                    <li class="list-group-item">
-                        <a href="{{ file.file.url }}" target="_blank" class="text-decoration-none">
-                            <i class="bi bi-file-earmark-pdf me-1"></i>{{ file.filename }}
+                <div class="card-header"><i class="bi bi-info-circle me-2"></i>Information</div>
+                <div class="card-body">
+                    {% if site_settings.samarbejdsvilkaar_file %}
+                    <div class="{% if site_settings.login_info_text %}mb-3{% endif %}">
+                        <a href="{{ site_settings.samarbejdsvilkaar_file.url }}" target="_blank" class="text-decoration-none">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>Samarbejdsvilkår
                         </a>
-                        {% if file.description %}<div class="small text-muted">{{ file.description }}</div>{% endif %}
-                    </li>
-                    {% endfor %}
-                </ul>
+                    </div>
+                    {% endif %}
+                    {% if site_settings.login_info_text %}
+                    <div>
+                        <h6 class="fw-bold mb-1">Login-oplysninger</h6>
+                        <div class="text-muted small" style="white-space: pre-line;">{{ site_settings.login_info_text }}</div>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
+            {% endif %}
             {% endif %}
 
             {% if courses_with_materials %}

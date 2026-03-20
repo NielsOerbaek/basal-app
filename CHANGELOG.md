@@ -4,6 +4,16 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 20. marts 2026
+
+### Samarbejdsvilkår og login-oplysninger på skolernes side
+Samarbejdsvilkår (PDF) og login-oplysninger til sammenomtrivsel.com kan nu redigeres ét centralt sted i admin (Projektindstillinger) og vises automatisk på alle tilmeldte skolers sider.
+
+### Dokumenter gemmes ikke længere på skolen ved tilmelding
+Dokumenter fra tilmeldingsformularen sendes stadig med i bekræftelsesmailen, men gemmes ikke længere som filer på den enkelte skole.
+
+---
+
 ## 18. marts 2026
 
 ### Samarbejdsvilkår vedhæftes bekræftelsesmail
@@ -16,7 +26,7 @@ Skoler skal nu have udfyldt EAN/CVR-nummer, før de kan tilmelde sig et kursus. 
 Kursustilmeldingssiden har nu et link "Ikke tilmeldt endnu? Tilmeld din skole til Basal" i bunden, så skoler der ikke er tilmeldt nemt kan finde tilmeldingssiden.
 
 ### Samarbejdsvilkår ved skoletilmelding
-Skoletilmeldingsformularen understøtter nu accept af samarbejdsvilkår via et afkrydsningsfelt med vedhæftet PDF (konfigureres i admin). Når en skole tilmelder sig, bliver vedhæftede dokumenter automatisk gemt som filer på skolen.
+Skoletilmeldingsformularen understøtter nu accept af samarbejdsvilkår via et afkrydsningsfelt med vedhæftet PDF (konfigureres i admin).
 
 ### Dokumenter synlige på skolernes side
 Skolernes offentlige side viser nu en "Dokumenter"-sektion med filer tilknyttet skolen (f.eks. samarbejdsvilkår). Dokumenterne kan downloades direkte.
