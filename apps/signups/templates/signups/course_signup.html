@@ -142,6 +142,26 @@
         <span id="seats-warning-text"></span>
     </div>
 
+    <div id="coordinator-confirmation" class="card mb-3" style="display: none;">
+        <div class="card-body">
+            <p class="mb-2">
+                <i class="bi bi-envelope me-1"></i>
+                Bekræftelse sendes også til koordinator: <strong id="coordinator-confirm-name"></strong>
+                (<span id="coordinator-confirm-email"></span>)
+            </p>
+            <div class="form-check mb-2">
+                <input type="checkbox" class="form-check-input" id="override-coordinator-email-check">
+                <label class="form-check-label" for="override-coordinator-email-check">
+                    Skal bekræftelsen sendes til en anden email?
+                </label>
+            </div>
+            <div id="override-email-field" style="display: none;">
+                <input type="email" name="coordinator_email_override" class="form-control"
+                       placeholder="Indtast alternativ e-mail">
+            </div>
+        </div>
+    </div>
+
     <div>
         <button type="submit" class="btn btn-primary btn-lg">
             {{ page.submit_button_text|default:'Tilmeld' }}
@@ -192,6 +212,21 @@ document.addEventListener('DOMContentLoaded', function() {
     let seatContent = null;
     let seatData = null;
     let missingEan = false;
+
+    const coordinatorConfirmation = document.getElementById('coordinator-confirmation');
+    const coordinatorConfirmName = document.getElementById('coordinator-confirm-name');
+    const coordinatorConfirmEmail = document.getElementById('coordinator-confirm-email');
+    const overrideCheck = document.getElementById('override-coordinator-email-check');
+    const overrideField = document.getElementById('override-email-field');
+
+    if (overrideCheck) {
+        overrideCheck.addEventListener('change', function() {
+            overrideField.style.display = this.checked ? 'block' : 'none';
+            if (!this.checked) {
+                overrideField.querySelector('input').value = '';
+            }
+        });
+    }
 
     function getParticipantCount() {
         return participantsContainer.querySelectorAll('.participant-entry').length;
@@ -364,8 +399,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 koordinatorLink.href = data.school_public_url;
             }
             koordinatorInfo.style.display = 'block';
+            // Update coordinator confirmation section
+            if (coordinatorConfirmation) {
+                coordinatorConfirmName.textContent = k.name;
+                coordinatorConfirmEmail.textContent = k.email || 'ingen e-mail';
+                coordinatorConfirmation.style.display = k.email ? 'block' : 'none';
+            }
         } else {
             koordinatorInfo.style.display = 'none';
+            if (coordinatorConfirmation) {
+                coordinatorConfirmation.style.display = 'none';
+            }
         }
     }
 
