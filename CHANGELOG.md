@@ -6,6 +6,9 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ## 20. marts 2026
 
+### Nyt domæne: db.sammenomtrivsel.com
+Produktionsmiljøet er nu tilgængeligt på db.sammenomtrivsel.com.
+
 ### Samarbejdsvilkår og login-oplysninger på skolernes side
 Samarbejdsvilkår (PDF) og login-oplysninger til sammenomtrivsel.com kan nu redigeres ét centralt sted i admin (Projektindstillinger) og vises automatisk på alle tilmeldte skolers sider.
 
