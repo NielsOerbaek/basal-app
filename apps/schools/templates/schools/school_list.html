@@ -83,9 +83,7 @@
                         <a href="{% url 'schools:update' school.pk %}" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-pencil"></i>
                         </a>
-                        <a href="{% url 'contacts:create' %}?school={{ school.pk }}" class="btn btn-sm btn-outline-info" title="Tilføj henvendelse">
-                            <i class="bi bi-telephone-plus"></i>
-                        </a>
+
                     </td>
                 </tr>
                 {% empty %}

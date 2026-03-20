@@ -11,7 +11,6 @@ from django.utils.safestring import mark_safe
 from django.views import View
 from django.views.generic import TemplateView
 
-from apps.contacts.models import ContactTime
 from apps.courses.models import Course, CourseSignUp
 from apps.goals.calculations import get_current_school_year, get_metrics_for_year
 from apps.goals.constants import PROJECT_TARGETS
@@ -33,8 +32,6 @@ class DashboardView(TemplateView):
             .annotate(signup_count_value=Count("signups"))
             .order_by("start_date")[:5]
         )
-
-        context["recent_contacts"] = ContactTime.objects.select_related("school", "created_by")[:10]
 
         context["recent_signups"] = CourseSignUp.objects.select_related("school", "course")[:10]
 

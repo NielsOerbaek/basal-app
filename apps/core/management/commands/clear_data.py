@@ -26,7 +26,7 @@ class Command(BaseCommand):
                 TRUNCATE TABLE
                     audit_activitylog,
                     courses_coursesignup,
-                    contacts_contacttime,
+
                     courses_course,
                     schools_schoolcomment,
                     schools_person,

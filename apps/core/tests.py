@@ -6,7 +6,6 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from apps.contacts.models import ContactTime
 from apps.courses.models import Course, CourseSignUp, Location
 from apps.schools.models import Person, School, SchoolComment
 
@@ -122,14 +121,6 @@ def smoke_test_data(db, staff_user):
         participant_email="participant@test.com",
     )
 
-    # Create contact time
-    contact = ContactTime.objects.create(
-        school=school,
-        created_by=staff_user,
-        contacted_date=date.today(),
-        comment="Test contact",
-    )
-
     return {
         "school_year": school_year,
         "school": school,
@@ -137,7 +128,6 @@ def smoke_test_data(db, staff_user):
         "comment": comment,
         "course": course,
         "signup": signup,
-        "contact": contact,
         "user": staff_user,
     }
 
@@ -165,9 +155,6 @@ class ViewSmokeTests:
         ("courses:export", {}),
         ("courses:signup-list", {}),
         ("courses:signup-export", {}),
-        ("contacts:list", {}),
-        ("contacts:create", {}),
-        ("contacts:export", {}),
         ("accounts:user-list", {}),
         ("accounts:user-create", {}),
         ("audit:activity_list", {}),
@@ -254,19 +241,6 @@ class TestViewSmokeStaff:
             response = staff_client.get(url)
             assert response.status_code != 500, f"{url_name} returned 500"
 
-    def test_contact_detail_urls(self, staff_client, smoke_test_data):
-        """Contact detail URLs should not return 500 errors."""
-        contact = smoke_test_data["contact"]
-        urls = [
-            ("contacts:detail", {"pk": contact.pk}),
-            ("contacts:update", {"pk": contact.pk}),
-            ("contacts:delete", {"pk": contact.pk}),
-        ]
-        for url_name, kwargs in urls:
-            url = reverse(url_name, kwargs=kwargs)
-            response = staff_client.get(url)
-            assert response.status_code != 500, f"{url_name} returned 500"
-
     def test_user_detail_urls(self, staff_client, smoke_test_data):
         """User detail URLs should not return 500 errors."""
         user = smoke_test_data["user"]
@@ -320,7 +294,6 @@ class TestAuthRedirects:
             "core:dashboard",
             "schools:list",
             "courses:list",
-            "contacts:list",
             "accounts:user-list",
             "audit:activity_list",
         ]

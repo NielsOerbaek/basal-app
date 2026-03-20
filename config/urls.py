@@ -43,7 +43,6 @@ urlpatterns = [
     path("", include("apps.core.urls")),
     path("schools/", include("apps.schools.urls")),
     path("courses/", include("apps.courses.urls")),
-    path("contacts/", include("apps.contacts.urls")),
     path("accounts/", include("apps.accounts.urls")),
     path("signup/", include("apps.signups.urls")),
     path("aktivitet/", include("apps.audit.urls")),

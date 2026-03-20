@@ -3,10 +3,8 @@ from datetime import date, timedelta
 
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 
 from apps.audit.models import ActivityLog
-from apps.contacts.models import ContactTime
 from apps.courses.models import AttendanceStatus, Course, CourseSignUp
 from apps.schools.models import Person, PersonRole, School, SchoolComment
 
@@ -27,7 +25,7 @@ class Command(BaseCommand):
             # Delete in correct order to handle foreign key constraints
             ActivityLog.objects.all().delete()
             CourseSignUp.objects.all().delete()
-            ContactTime.objects.all().delete()
+
             Course.objects.all().delete()
             SchoolComment.objects.all().delete()
             Person.objects.all().delete()
@@ -52,10 +50,6 @@ class Command(BaseCommand):
         # Create signups (respecting seat limits)
         signups = self.create_signups(schools, courses)
         self.stdout.write(self.style.SUCCESS(f"  {len(signups)} tilmeldinger oprettet"))
-
-        # Create contact history (henvendelser)
-        contacts = self.create_contacts(schools)
-        self.stdout.write(self.style.SUCCESS(f"  {len(contacts)} henvendelser oprettet"))
 
         self.stdout.write(self.style.SUCCESS("\nDemo data oprettet!"))
 
@@ -509,74 +503,3 @@ class Command(BaseCommand):
         else:
             # Future course - unmarked
             return AttendanceStatus.UNMARKED
-
-    def create_contacts(self, schools):
-        all_schools = list(School.objects.active())
-        if not all_schools:
-            return []
-
-        # Create or get staff users for contacts
-        esther, _ = User.objects.get_or_create(
-            username="esther",
-            defaults={
-                "first_name": "Esther",
-                "last_name": "Chemnitz",
-                "email": "esther@basal.dk",
-                "is_staff": True,
-            },
-        )
-        esther.set_password("hejhejhej")
-        esther.save()
-
-        caroline, _ = User.objects.get_or_create(
-            username="caroline",
-            defaults={
-                "first_name": "Caroline",
-                "last_name": "Buskov",
-                "email": "caroline@basal.dk",
-                "is_staff": True,
-            },
-        )
-        caroline.set_password("hejhejhej")
-        caroline.save()
-
-        staff_users = [esther, caroline]
-
-        comments = [
-            "Talte med skoleleder om tilmelding til Basal. God interesse.",
-            "Sendt information om kommende kurser.",
-            "Opfølgning på tidligere kursusdeltagelse. Ønsker flere pladser.",
-            "Koordineret praktiske detaljer omkring kursusdeltagelse.",
-            "Diskuterede muligheder for fortsætterkursus.",
-            "Modtaget feedback fra tidligere kursus. Meget positive tilbagemeldinger.",
-            "Aftalt at sende opdateret kursusoversigt til lærerne.",
-            "Gennemgået tilmeldingsprocedure med ny kontaktperson.",
-            "Bekræftet deltagelse i kommende introduktionskursus.",
-            "Drøftet behov for ekstra pladser til næste skoleår.",
-        ]
-
-        contacts = []
-        for school in all_schools:
-            # 1-4 contact entries per school
-            num_contacts = random.randint(1, 4)
-            for i in range(num_contacts):
-                days_ago = random.randint(1, 180)
-                contacted_date = (timezone.now() - timedelta(days=days_ago)).date()
-                # Some contacts have time, some don't
-                contacted_time = None
-                if random.random() > 0.3:
-                    contacted_time = (
-                        timezone.now().time().replace(hour=random.randint(8, 17), minute=random.choice([0, 15, 30, 45]))
-                    )
-
-                contact = ContactTime.objects.create(
-                    school=school,
-                    created_by=random.choice(staff_users),
-                    contacted_date=contacted_date,
-                    contacted_time=contacted_time,
-                    inbound=random.choice([True, False]),
-                    comment=random.choice(comments),
-                )
-                contacts.append(contact)
-
-        return contacts
