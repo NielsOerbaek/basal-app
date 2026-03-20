@@ -12,6 +12,32 @@ Samarbejdsvilkår (PDF) og login-oplysninger til sammenomtrivsel.com kan nu redi
 ### Dokumenter gemmes ikke længere på skolen ved tilmelding
 Dokumenter fra tilmeldingsformularen sendes stadig med i bekræftelsesmailen, men gemmes ikke længere som filer på den enkelte skole.
 
+### Bekræftelsesmail til koordinator ved kursustilmelding (OSO-207, OSO-208)
+Koordinatoren modtager nu en separat bekræftelsesmail med liste over tilmeldte deltagere, når nogen tilmelder sig et kursus. Ved skoletilmelding sendes bekræftelsesmailen til både koordinator og økonomisk ansvarlig.
+
+### Flere modtagertyper ved masseudsendelse (OSO-204, OSO-206)
+Masseudsendelse understøtter nu fem modtagertyper: Koordinator, Økonomiansvarlig, Koordinator + Økonomiansvarlig, Første kontakt og Alle kontakter. Det gør det muligt at sende til skoler, der ikke har en koordinator eller økonomiansvarlig.
+
+### E-mail-skabeloner viser korrekte variabler (OSO-88)
+Admin viser nu de rigtige tilgængelige variabler for hver e-mail-type, så man kan se hvilke felter der kan bruges i skoletilmeldings- vs. kursustilmeldingsbekræftelser.
+
+### Tilmeldingshistorik vises korrekt på skolernes side (OSO-192)
+Datoer i tilmeldingshistorikken på skolernes offentlige side vises nu korrekt.
+
+### Henvendelser er fjernet (OSO-205)
+Funktionen "Henvendelser" er fjernet fra systemet. Henvendelser registreres fremover som kommentarer på den enkelte skole.
+
+### Ændringer i skoletilmeldingsformularen (OSO-211)
+Labels og felter i skoletilmeldingsformularen er opdateret. Kommentarfeltet er fjernet.
+
+### Pladsinformation kan slås fra (OSO-194)
+Pladsinformation på kursustilmeldingssiden kan nu slås til/fra i Projektindstillinger.
+
+### Øvrige rettelser
+- EAN-felter omdøbt til "EAN/CVR-nummer" (OSO-181)
+- "Login til app" omdøbt til "Login til www.sammenomtrivsel.com" (OSO-172)
+- Tilmeldingsfrist hjælpetekst rettet fra 5 til 6 uger (OSO-216)
+
 ---
 
 ## 18. marts 2026
