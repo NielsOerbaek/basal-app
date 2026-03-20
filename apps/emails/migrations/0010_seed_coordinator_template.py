@@ -4,7 +4,7 @@ DESCRIPTIONS = {
     "signup_confirmation": "Sendes til hver deltager ved kursustilmelding.",
     "course_reminder": "Sendes til hver deltager 14 dage før kursusstart. Kursusmateriale vedhæftes automatisk.",
     "school_enrollment_confirmation": "Sendes til koordinator når en skole tilmelder sig Basal.",
-    "coordinator_signup": "Sendes til skolens koordinator når deltagere tilmeldes et kursus. Indeholder oversigt over tilmeldte deltagere.",
+    "coordinator_signup": "Sendes til skolens koordinator når deltagere tilmeldes et kursus. Indeholder oversigt over tilmeldte deltagere. Modtager kan ændres til en anden e-mail ved tilmelding.",
 }
 
 
