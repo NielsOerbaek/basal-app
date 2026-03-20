@@ -197,7 +197,9 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
 
     # School EAN (required for all)
     ean_nummer = forms.CharField(
-        max_length=13, label="EAN/CVR-nummer", help_text="13-cifret EAN-nummer til evt. fremtidig fakturering"
+        max_length=13,
+        label="EAN/CVR-nummer",
+        help_text="13 cifret EAN-nummer eller 8-cifret CVR-nummer til brug ved evt. fremtidig fakturering",
     )
 
     # Koordinator - contact to Komiteen for Sundhedsoplysning
@@ -222,13 +224,6 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
     fakturering_ean_nummer = forms.CharField(max_length=13, required=False, label="EAN/CVR-nummer")
     fakturering_kontakt_navn = forms.CharField(max_length=255, required=False, label="Kontaktperson")
     fakturering_kontakt_email = forms.EmailField(required=False, label="E-mail")
-
-    comments = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={"rows": 3}),
-        label="Kommentarer",
-        help_text="Eventuelle spørgsmål eller bemærkninger",
-    )
 
     def __init__(self, *args, signup_page=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -271,7 +266,9 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
                 style="display: none;",
             ),
             "ean_nummer",
-            HTML("<hr><h5>Koordinator - kontaktperson til Komiteen for Sundhedsoplysning</h5>"),
+            HTML(
+                '<hr><h5>Koordinator</h5><p class="text-muted small">En ansat på skolen, som udpeges som primær kontaktperson til Basal, f.eks. en skolesekretær eller en af de ansatte, der skal varetage Basal-forløb i klasserne</p>'
+            ),
             Row(
                 Column("koordinator_name", css_class="col-md-6"),
                 Column("koordinator_titel", css_class="col-md-3"),
@@ -281,7 +278,9 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
                 Column("koordinator_email", css_class="col-md-6"),
                 Column("koordinator_phone", css_class="col-md-6"),
             ),
-            HTML("<hr><h5>Økonomisk ansvarlig</h5>"),
+            HTML(
+                '<hr><h5>Økonomisk ansvarlig</h5><p class="text-muted small">En ansat på skolen med økonomisk beslutningskompetence, f.eks. skoleleder eller udskolingsleder</p>'
+            ),
             Row(
                 Column("oeko_name", css_class="col-md-6"),
                 Column("oeko_titel", css_class="col-md-3"),
@@ -307,7 +306,6 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
                 css_id="billing-fields",
                 style="display: none;",
             ),
-            "comments",
         ]
 
         # Add dynamic fields to layout
