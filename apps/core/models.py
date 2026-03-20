@@ -24,6 +24,13 @@ class ProjectSettings(models.Model):
         help_text="Fritekst med login-oplysninger til sammenomtrivsel.com — vises på alle tilmeldte skolers sider",
     )
 
+    # Feature toggles
+    show_seat_info_messages = models.BooleanField(
+        default=False,
+        verbose_name="Vis pladsinformation ved kursustilmelding",
+        help_text="Når slået til, vises informationsbeskeder om pladsstatus på kursustilmeldingssiden",
+    )
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

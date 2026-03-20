@@ -297,15 +297,17 @@ class CheckSchoolSeatsView(View):
 
             info = school.seats_for_course(course)
 
-            # Load seat info content for all scenarios
+            # Load seat info content for all scenarios (if enabled)
+            from apps.core.models import ProjectSettings
             from apps.signups.models import SeatInfoContent
 
             seat_content = {}
-            for sc in SeatInfoContent.objects.all():
-                seat_content[sc.scenario] = {
-                    "title": sc.title,
-                    "content": sc.content,
-                }
+            if ProjectSettings.get().show_seat_info_messages:
+                for sc in SeatInfoContent.objects.all():
+                    seat_content[sc.scenario] = {
+                        "title": sc.title,
+                        "content": sc.content,
+                    }
 
             return JsonResponse(
                 {

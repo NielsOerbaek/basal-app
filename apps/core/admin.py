@@ -18,6 +18,12 @@ class ProjectSettingsAdmin(admin.ModelAdmin):
                 "fields": ["samarbejdsvilkaar_file", "login_info_text"],
             },
         ),
+        (
+            "Funktioner",
+            {
+                "fields": ["show_seat_info_messages"],
+            },
+        ),
     ]
 
     def has_add_permission(self, request):
