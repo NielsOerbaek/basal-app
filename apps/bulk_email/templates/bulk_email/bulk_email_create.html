@@ -303,7 +303,14 @@ async function updateRecipientCounter() {
         return;
     }
 
-    const typeLabel = getRecipientType() === "koordinator" ? "koordinator" : "økonomiansvarlig";
+    const typeLabelMap = {
+        "koordinator": "koordinator",
+        "oekonomisk_ansvarlig": "økonomiansvarlig",
+        "begge": "koordinator eller økonomiansvarlig",
+        "foerste_kontakt": "kontaktperson med e-mail",
+        "alle_kontakter": "kontaktpersoner med e-mail",
+    };
+    const typeLabel = typeLabelMap[getRecipientType()] || "kontaktperson";
     if (data.total === 0 && data.skipped === 0) {
         counter.innerHTML = '<span class="text-warning">Ingen skoler matcher de valgte filtre.</span>';
     } else {
@@ -327,7 +334,7 @@ async function updateRecipientCounter() {
 
     // Show skipped schools
     if (data.skipped_schools && data.skipped_schools.length > 0) {
-        let html = `<details><summary class="text-warning small" style="cursor:pointer;">${data.skipped_schools.length} skoler springes over (mangler ${typeLabel})</summary>`;
+        let html = `<details><summary class="text-warning small" style="cursor:pointer;">${data.skipped_schools.length} skoler springes over (ingen ${typeLabel})</summary>`;
         html += `<ul class="small mt-1 mb-0">`;
         for (const s of data.skipped_schools) {
             html += `<li>${escapeHtml(s.school)}${s.kommune ? " (" + escapeHtml(s.kommune) + ")" : ""}</li>`;
