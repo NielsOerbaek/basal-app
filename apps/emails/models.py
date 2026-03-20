@@ -5,6 +5,7 @@ class EmailType(models.TextChoices):
     SIGNUP_CONFIRMATION = "signup_confirmation", "Tilmeldingsbekræftelse"
     COURSE_REMINDER = "course_reminder", "Kursuspåmindelse (14 dage før)"
     SCHOOL_ENROLLMENT_CONFIRMATION = "school_enrollment_confirmation", "Skoletilmeldingsbekræftelse"
+    COORDINATOR_SIGNUP = "coordinator_signup", "Koordinator-tilmeldingsbekræftelse"
 
 
 class EmailTemplate(models.Model):
@@ -38,6 +39,11 @@ class EmailTemplate(models.Model):
     )
     is_active = models.BooleanField(
         default=True, verbose_name="Aktiv", help_text="Deaktiver for at stoppe afsendelse af denne e-mail type"
+    )
+    description = models.TextField(
+        blank=True,
+        verbose_name="Beskrivelse",
+        help_text="Beskrivelse af hvornår denne e-mail sendes og til hvem",
     )
     updated_at = models.DateTimeField(auto_now=True)
 

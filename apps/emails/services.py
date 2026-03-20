@@ -44,14 +44,21 @@ def render_template(template_string, context_dict):
 
 def get_signup_context(signup):
     """Build template context from a CourseSignUp instance."""
+    course = signup.course
     return {
         "participant_name": signup.participant_name,
         "participant_email": signup.participant_email,
         "participant_title": signup.participant_title,
         "school_name": signup.school.name,
-        "course_title": signup.course.display_name,
-        "course_date": date_format(signup.course.start_date, "j. F Y"),
-        "course_location": signup.course.location.full_address if signup.course.location else "",
+        "course_title": course.display_name,
+        "course_date": date_format(course.start_date, "j. F Y"),
+        "course_end_date": date_format(course.end_date, "j. F Y"),
+        "course_location": course.location.full_address if course.location else "",
+        "instructors": ", ".join(course.instructors.values_list("name", flat=True)),
+        "registration_deadline": date_format(course.registration_deadline, "j. F Y")
+        if course.registration_deadline
+        else "",
+        "spots_remaining": course.spots_remaining,
     }
 
 
@@ -257,6 +264,9 @@ def get_school_enrollment_context(school, contact_name):
         "signup_url": f"{settings.SITE_URL}/signup/course/?token={school.signup_token}",
         "signup_password": school.signup_password,
         "site_url": settings.SITE_URL,
+        "school_address": school.adresse,
+        "school_municipality": school.kommune,
+        "ean_nummer": school.ean_nummer or "",
     }
 
 
@@ -316,4 +326,124 @@ def send_school_enrollment_confirmation(school, contact_email, contact_name, att
         return True
     except Exception as e:
         logger.error(f"Failed to send enrollment confirmation: {e}")
+        return False
+
+
+def get_coordinator_signup_context(coordinator, course, signups):
+    """Build template context for coordinator signup confirmation."""
+    participants_html = (
+        "<ul>" + "".join(f"<li>{s.participant_name} ({s.participant_email})</li>" for s in signups) + "</ul>"
+    )
+    return {
+        "coordinator_name": coordinator.name if coordinator else "Koordinator",
+        "course_title": course.display_name,
+        "course_date": date_format(course.start_date, "j. F Y"),
+        "course_end_date": date_format(course.end_date, "j. F Y"),
+        "course_location": course.location.full_address if course.location else "",
+        "school_name": signups[0].school.name if signups else "",
+        "participants_list": participants_html,
+        "registration_deadline": date_format(course.registration_deadline, "j. F Y")
+        if course.registration_deadline
+        else "",
+        "instructors": ", ".join(course.instructors.values_list("name", flat=True)),
+    }
+
+
+def send_coordinator_signup_confirmation(school, course, signups, override_email=None):
+    """
+    Send signup confirmation to the school's coordinator.
+
+    Args:
+        school: School instance
+        course: Course instance
+        signups: list of CourseSignUp instances from this batch
+        override_email: optional email to send to instead of coordinator
+
+    Returns:
+        True if successful, False otherwise
+    """
+    coordinator = school.people.filter(is_koordinator=True).first()
+
+    # Determine recipient
+    if override_email:
+        recipient_email = override_email
+        recipient_name = coordinator.name if coordinator else "Koordinator"
+    elif coordinator and coordinator.email:
+        recipient_email = coordinator.email
+        recipient_name = coordinator.name
+    else:
+        logger.warning(f"No coordinator email for school {school.name} — skipping coordinator notification")
+        return False
+
+    try:
+        template = EmailTemplate.objects.get(email_type=EmailType.COORDINATOR_SIGNUP, is_active=True)
+    except EmailTemplate.DoesNotExist:
+        logger.warning("No active template found for coordinator signup confirmation")
+        return False
+
+    context = get_coordinator_signup_context(coordinator, course, signups)
+    subject = render_template(template.subject, context)
+    body_html = add_email_footer(render_template(template.body_html, context))
+
+    # Enforce email domain allowlist
+    if not check_email_domain_allowed(recipient_email):
+        logger.warning(
+            f"[EMAIL BLOCKED] Recipient {recipient_email} not in allowed domains: " f"{settings.EMAIL_ALLOWED_DOMAINS}"
+        )
+        EmailLog.objects.create(
+            email_type=EmailType.COORDINATOR_SIGNUP,
+            recipient_email=recipient_email,
+            recipient_name=recipient_name,
+            subject=subject,
+            course=course,
+            success=False,
+            error_message=f"[BLOCKED] Domain not in EMAIL_ALLOWED_DOMAINS: {settings.EMAIL_ALLOWED_DOMAINS}",
+        )
+        return False
+
+    if not settings.RESEND_API_KEY:
+        logger.info(f"[EMAIL] To: {recipient_email}")
+        logger.info(f"[EMAIL] Subject: {subject}")
+        logger.info(f"[EMAIL] Body: {body_html[:200]}...")
+        EmailLog.objects.create(
+            email_type=EmailType.COORDINATOR_SIGNUP,
+            recipient_email=recipient_email,
+            recipient_name=recipient_name,
+            subject=subject,
+            course=course,
+            success=True,
+            error_message="[DEV MODE - not actually sent]",
+        )
+        return True
+
+    try:
+        resend.api_key = settings.RESEND_API_KEY
+        resend.Emails.send(
+            {
+                "from": settings.DEFAULT_FROM_EMAIL,
+                "to": [recipient_email],
+                "subject": subject,
+                "html": body_html,
+            }
+        )
+        EmailLog.objects.create(
+            email_type=EmailType.COORDINATOR_SIGNUP,
+            recipient_email=recipient_email,
+            recipient_name=recipient_name,
+            subject=subject,
+            course=course,
+            success=True,
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send coordinator signup confirmation: {e}")
+        EmailLog.objects.create(
+            email_type=EmailType.COORDINATOR_SIGNUP,
+            recipient_email=recipient_email,
+            recipient_name=recipient_name,
+            subject=subject,
+            course=course,
+            success=False,
+            error_message=str(e),
+        )
         return False

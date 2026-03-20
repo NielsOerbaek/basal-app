@@ -173,7 +173,11 @@ class CourseSignupView(View):
                 )
 
         if form.is_valid():
-            from apps.emails.services import send_course_signup_notification, send_signup_confirmation
+            from apps.emails.services import (
+                send_coordinator_signup_confirmation,
+                send_course_signup_notification,
+                send_signup_confirmation,
+            )
 
             course = form.cleaned_data["course"]
             school = form.cleaned_data["school"]
@@ -196,6 +200,18 @@ class CourseSignupView(View):
 
             # Send notification to admin
             send_course_signup_notification(school, course, created_signups)
+
+            # Send confirmation to coordinator
+            override_email = request.POST.get("coordinator_email_override", "").strip() or None
+            if override_email:
+                from django.core.exceptions import ValidationError as DjangoValidationError
+                from django.core.validators import validate_email
+
+                try:
+                    validate_email(override_email)
+                except DjangoValidationError:
+                    override_email = None  # Fall back to coordinator email
+            send_coordinator_signup_confirmation(school, course, created_signups, override_email=override_email)
 
             return redirect("signup:course-success")
 
@@ -504,13 +520,24 @@ class SchoolSignupView(View):
                         field_config.attachment.seek(0)
                         email_attachments.append({"filename": filename, "content": list(file_content)})
 
-            # Send confirmation email (with signup form attachments if any)
+            # Send confirmation email to koordinator (with signup form attachments if any)
             send_school_enrollment_confirmation(
                 school,
                 koordinator_email,
                 koordinator_name,
                 attachments=email_attachments or None,
             )
+
+            # Send confirmation email to økonomisk ansvarlig (if different from koordinator)
+            oeko_email = form.cleaned_data["oeko_email"]
+            oeko_name = form.cleaned_data["oeko_name"]
+            if oeko_email and oeko_email != koordinator_email:
+                send_school_enrollment_confirmation(
+                    school,
+                    oeko_email,
+                    oeko_name,
+                    attachments=email_attachments or None,
+                )
 
             # Store enrollment info in session for success page
             request.session["school_signup_active_from"] = default_active_from.isoformat()
