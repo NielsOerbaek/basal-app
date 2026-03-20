@@ -1,6 +1,9 @@
+from datetime import date
+
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 
+from apps.courses.models import Course, CourseSignUp, Instructor, Location
 from apps.emails.models import EmailTemplate, EmailType
 from apps.schools.models import School
 
@@ -91,3 +94,166 @@ class EmailTemplateAdminTest(TestCase):
         if template:
             response = self.client.get(f"/admin/emails/emailtemplate/{template.pk}/change/")
             self.assertContains(response, template.description)
+
+
+class SignupContextTest(TestCase):
+    def setUp(self):
+        self.location = Location.objects.create(
+            name="Teststed", street_address="Testvej 1", postal_code="1234", municipality="Testby"
+        )
+        self.instructor = Instructor.objects.create(name="Hans Hansen")
+        self.course = Course.objects.create(
+            start_date=date(2026, 6, 1),
+            end_date=date(2026, 6, 2),
+            location=self.location,
+            capacity=30,
+            registration_deadline=date(2026, 5, 15),
+        )
+        self.course.instructors.add(self.instructor)
+        self.school = School.objects.create(name="Test School", adresse="Skolevej 1", kommune="Testby")
+        self.signup = CourseSignUp.objects.create(
+            course=self.course,
+            school=self.school,
+            participant_name="Test Deltager",
+            participant_email="test@example.com",
+            participant_title="Lærer",
+        )
+
+    def test_get_signup_context_includes_new_variables(self):
+        from apps.emails.services import get_signup_context
+
+        ctx = get_signup_context(self.signup)
+        self.assertIn("registration_deadline", ctx)
+        self.assertIn("course_end_date", ctx)
+        self.assertIn("instructors", ctx)
+        self.assertIn("spots_remaining", ctx)
+        self.assertEqual(ctx["instructors"], "Hans Hansen")
+        self.assertEqual(ctx["spots_remaining"], 29)  # 30 capacity - 1 signup
+
+    def test_get_signup_context_handles_no_deadline(self):
+        from apps.emails.services import get_signup_context
+
+        self.course.registration_deadline = None
+        self.course.save()
+        ctx = get_signup_context(self.signup)
+        self.assertEqual(ctx["registration_deadline"], "")
+
+
+class SchoolEnrollmentContextTest(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(
+            name="Test School",
+            adresse="Skolevej 1",
+            postnummer="1234",
+            by="Testby",
+            kommune="Testkommune",
+            ean_nummer="1234567890123",
+            signup_token="abc123",
+            signup_password="testpass",
+        )
+
+    def test_get_school_enrollment_context_includes_new_variables(self):
+        from apps.emails.services import get_school_enrollment_context
+
+        ctx = get_school_enrollment_context(self.school, "Test Person")
+        self.assertEqual(ctx["school_address"], "Skolevej 1")
+        self.assertEqual(ctx["school_municipality"], "Testkommune")
+        self.assertEqual(ctx["ean_nummer"], "1234567890123")
+
+
+class CoordinatorEmailTest(TestCase):
+    def setUp(self):
+        from apps.schools.models import Person
+
+        self.location = Location.objects.create(
+            name="Teststed", street_address="Testvej 1", postal_code="1234", municipality="Testby"
+        )
+        self.course = Course.objects.create(
+            start_date=date(2026, 6, 1),
+            end_date=date(2026, 6, 2),
+            location=self.location,
+            capacity=30,
+        )
+        self.school = School.objects.create(name="Test School", adresse="Skolevej 1", kommune="Testby")
+        self.coordinator = Person.objects.create(
+            school=self.school,
+            name="Koordinator Person",
+            email="koordinator@example.com",
+            is_koordinator=True,
+        )
+        self.signups = [
+            CourseSignUp.objects.create(
+                course=self.course,
+                school=self.school,
+                participant_name="Deltager 1",
+                participant_email="d1@example.com",
+            ),
+            CourseSignUp.objects.create(
+                course=self.course,
+                school=self.school,
+                participant_name="Deltager 2",
+                participant_email="d2@example.com",
+            ),
+        ]
+        # Ensure template exists
+        EmailTemplate.objects.get_or_create(
+            email_type="coordinator_signup",
+            defaults={
+                "subject": "Tilmelding – {{ school_name }}",
+                "body_html": "<p>{{ coordinator_name }}</p>{{ participants_list }}",
+                "is_active": True,
+            },
+        )
+
+    @override_settings(RESEND_API_KEY=None)
+    def test_sends_to_coordinator(self):
+        from apps.emails.models import EmailLog
+        from apps.emails.services import send_coordinator_signup_confirmation
+
+        result = send_coordinator_signup_confirmation(self.school, self.course, self.signups)
+        self.assertTrue(result)
+        log = EmailLog.objects.filter(email_type="coordinator_signup").first()
+        self.assertIsNotNone(log)
+        self.assertEqual(log.recipient_email, "koordinator@example.com")
+        self.assertEqual(log.recipient_name, "Koordinator Person")
+
+    @override_settings(RESEND_API_KEY=None)
+    def test_override_email_replaces_coordinator(self):
+        from apps.emails.models import EmailLog
+        from apps.emails.services import send_coordinator_signup_confirmation
+
+        result = send_coordinator_signup_confirmation(
+            self.school, self.course, self.signups, override_email="other@example.com"
+        )
+        self.assertTrue(result)
+        log = EmailLog.objects.filter(email_type="coordinator_signup").first()
+        self.assertEqual(log.recipient_email, "other@example.com")
+        # recipient_name should still be the coordinator's name
+        self.assertEqual(log.recipient_name, "Koordinator Person")
+
+    @override_settings(RESEND_API_KEY=None)
+    def test_skips_when_no_coordinator_and_no_override(self):
+        from apps.emails.services import send_coordinator_signup_confirmation
+
+        self.coordinator.delete()
+        result = send_coordinator_signup_confirmation(self.school, self.course, self.signups)
+        self.assertFalse(result)
+
+    @override_settings(RESEND_API_KEY=None)
+    def test_skips_when_coordinator_has_no_email(self):
+        from apps.emails.services import send_coordinator_signup_confirmation
+
+        self.coordinator.email = ""
+        self.coordinator.save()
+        result = send_coordinator_signup_confirmation(self.school, self.course, self.signups)
+        self.assertFalse(result)
+
+    @override_settings(RESEND_API_KEY=None)
+    def test_context_includes_participants_list(self):
+        from apps.emails.services import get_coordinator_signup_context
+
+        ctx = get_coordinator_signup_context(self.coordinator, self.course, self.signups)
+        self.assertIn("Deltager 1", ctx["participants_list"])
+        self.assertIn("Deltager 2", ctx["participants_list"])
+        self.assertEqual(ctx["coordinator_name"], "Koordinator Person")
+        self.assertEqual(ctx["school_name"], "Test School")
