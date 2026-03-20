@@ -1028,6 +1028,12 @@ class SchoolPublicView(DetailView):
                 context["is_in_first_year"] = False
                 context["is_waiting_for_first_year"] = False
 
+        # Global site settings (samarbejdsvilkår + login info)
+        from apps.core.models import ProjectSettings
+
+        site_settings = ProjectSettings.get()
+        context["site_settings"] = site_settings
+
         # Courses with materials (newest first)
         from apps.courses.models import Course
 
