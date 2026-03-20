@@ -103,6 +103,84 @@
                 </div>
             </div>
 
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-people me-2"></i>Kontaktpersoner</span>
+                    <a href="{% url 'school-public-person-create' school.signup_token %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus-lg me-1"></i>Tilføj person
+                    </a>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for person in kontaktpersoner %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="mb-1">
+                                    <strong>{{ person.name }}</strong>{% if person.display_titel %}, {{ person.display_titel|lower }}{% endif %}
+                                    {% for role in person.roles %}
+                                    <span class="badge {% if role == 'Koordinator' %}bg-primary{% else %}bg-secondary{% endif %} ms-1">{{ role }}</span>
+                                    {% endfor %}
+                                </div>
+                                <div class="small text-muted">
+                                    {% if person.email %}<i class="bi bi-envelope me-1"></i>{{ person.email }}{% endif %}
+                                    {% if person.email and person.phone %}<span class="mx-2">|</span>{% endif %}
+                                    {% if person.phone %}<i class="bi bi-telephone me-1"></i>{{ person.phone }}{% endif %}
+                                </div>
+                            </div>
+                            <a href="{% url 'school-public-person-update' school.signup_token person.pk %}" class="btn btn-outline-secondary btn-sm" title="Rediger">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-muted">Ingen kontaktpersoner tilføjet.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            {% if school.is_enrolled %}
+            {% if site_settings.login_info_text %}
+            <div class="card mb-4">
+                <div class="card-header"><i class="bi bi-box-arrow-in-right me-2"></i>Login til app</div>
+                <div class="card-body">
+                    <div class="text-muted small" style="white-space: pre-line;">{{ site_settings.login_info_text }}</div>
+                </div>
+            </div>
+            {% endif %}
+            {% if site_settings.samarbejdsvilkaar_file %}
+            <div class="card mb-4">
+                <div class="card-header"><i class="bi bi-file-earmark-pdf me-2"></i>Vilkår</div>
+                <div class="card-body">
+                    <a href="{{ site_settings.samarbejdsvilkaar_file.url }}" target="_blank" class="text-decoration-none">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Samarbejdsvilkår
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+
+            {% if courses_with_materials %}
+            <div class="card mb-4">
+                <div class="card-header"><i class="bi bi-file-earmark-text me-2"></i>Kursusmaterialer</div>
+                <ul class="list-group list-group-flush">
+                    {% for course in courses_with_materials %}
+                    <li class="list-group-item">
+                        <div class="fw-bold mb-2">{{ course.display_name }}</div>
+                        {% for material in course.course_materials.all %}
+                        <div class="small ms-3">
+                            <a href="{{ material.file.url }}" target="_blank" class="text-decoration-none">
+                                <i class="bi bi-file-earmark-pdf me-1"></i>{{ material.display_name }}
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-6">
             {% if school.is_enrolled %}
             <div class="card mb-4">
                 <div class="card-header"><i class="bi bi-pencil-square me-2"></i>Kursustilmelding</div>
@@ -227,86 +305,6 @@
                     <div class="p-3 text-muted">Ingen forbrugsdata tilgængeligt.</div>
                     {% endif %}
                 </div>
-            </div>
-
-            {% if school.is_enrolled %}
-            {% if site_settings.samarbejdsvilkaar_file or site_settings.login_info_text %}
-            <div class="card mb-4">
-                <div class="card-header"><i class="bi bi-info-circle me-2"></i>Information</div>
-                <div class="card-body">
-                    {% if site_settings.samarbejdsvilkaar_file %}
-                    <div class="{% if site_settings.login_info_text %}mb-3{% endif %}">
-                        <a href="{{ site_settings.samarbejdsvilkaar_file.url }}" target="_blank" class="text-decoration-none">
-                            <i class="bi bi-file-earmark-pdf me-1"></i>Samarbejdsvilkår
-                        </a>
-                    </div>
-                    {% endif %}
-                    {% if site_settings.login_info_text %}
-                    <div>
-                        <h6 class="fw-bold mb-1">Login-oplysninger</h6>
-                        <div class="text-muted small" style="white-space: pre-line;">{{ site_settings.login_info_text }}</div>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
-            {% endif %}
-
-            {% if courses_with_materials %}
-            <div class="card mb-4">
-                <div class="card-header"><i class="bi bi-file-earmark-text me-2"></i>Kursusmaterialer</div>
-                <ul class="list-group list-group-flush">
-                    {% for course in courses_with_materials %}
-                    <li class="list-group-item">
-                        <div class="fw-bold mb-2">{{ course.display_name }}</div>
-                        {% for material in course.course_materials.all %}
-                        <div class="small ms-3">
-                            <a href="{{ material.file.url }}" target="_blank" class="text-decoration-none">
-                                <i class="bi bi-file-earmark-pdf me-1"></i>{{ material.display_name }}
-                            </a>
-                        </div>
-                        {% endfor %}
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
-        </div>
-
-        <div class="col-lg-6">
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-people me-2"></i>Kontaktpersoner</span>
-                    <a href="{% url 'school-public-person-create' school.signup_token %}" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-plus-lg me-1"></i>Tilføj person
-                    </a>
-                </div>
-                <ul class="list-group list-group-flush">
-                    {% for person in kontaktpersoner %}
-                    <li class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <div class="mb-1">
-                                    <strong>{{ person.name }}</strong>{% if person.display_titel %}, {{ person.display_titel|lower }}{% endif %}
-                                    {% for role in person.roles %}
-                                    <span class="badge {% if role == 'Koordinator' %}bg-primary{% else %}bg-secondary{% endif %} ms-1">{{ role }}</span>
-                                    {% endfor %}
-                                </div>
-                                <div class="small text-muted">
-                                    {% if person.email %}<i class="bi bi-envelope me-1"></i>{{ person.email }}{% endif %}
-                                    {% if person.email and person.phone %}<span class="mx-2">|</span>{% endif %}
-                                    {% if person.phone %}<i class="bi bi-telephone me-1"></i>{{ person.phone }}{% endif %}
-                                </div>
-                            </div>
-                            <a href="{% url 'school-public-person-update' school.signup_token person.pk %}" class="btn btn-outline-secondary btn-sm" title="Rediger">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                        </div>
-                    </li>
-                    {% empty %}
-                    <li class="list-group-item text-muted">Ingen kontaktpersoner tilføjet.</li>
-                    {% endfor %}
-                </ul>
             </div>
 
             <div class="card mb-4">
