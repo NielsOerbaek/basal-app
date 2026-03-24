@@ -110,6 +110,7 @@ LOGOUT_REDIRECT_URL = "/login/"
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Basal <noreply@basal.dk>")
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+RESEND_WEBHOOK_SECRET = os.environ.get("RESEND_WEBHOOK_SECRET", "")
 SCHOOL_SIGNUP_BCC_EMAIL = os.environ.get("SCHOOL_SIGNUP_BCC_EMAIL", "niels@osogdata.dk")
 COURSE_SIGNUP_NOTIFICATION_EMAIL = os.environ.get("COURSE_SIGNUP_NOTIFICATION_EMAIL", "basal@sundkom.dk")
 
