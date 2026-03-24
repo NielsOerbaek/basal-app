@@ -1,4 +1,3 @@
-import json
 import logging
 
 import resend
@@ -7,6 +6,7 @@ from django.http import HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
+from svix.webhooks import Webhook, WebhookVerificationError
 
 logger = logging.getLogger(__name__)
 
@@ -19,29 +19,32 @@ class ResendWebhookView(View):
     Webhook endpoint for Resend email events.
     Sends a notification email when a bounce or complaint is received.
 
-    Secured via RESEND_WEBHOOK_SECRET in query param (?token=...).
+    Secured via svix signature verification using RESEND_WEBHOOK_SECRET.
     """
 
     def post(self, request):
-        # Verify webhook secret
         webhook_secret = getattr(settings, "RESEND_WEBHOOK_SECRET", None)
         if not webhook_secret:
             logger.error("RESEND_WEBHOOK_SECRET not configured")
             return JsonResponse({"error": "not configured"}, status=500)
 
-        token = request.GET.get("token", "")
-        if token != webhook_secret:
-            return JsonResponse({"error": "unauthorized"}, status=401)
+        # Verify svix signature
+        headers = {
+            "svix-id": request.headers.get("svix-id", ""),
+            "svix-timestamp": request.headers.get("svix-timestamp", ""),
+            "svix-signature": request.headers.get("svix-signature", ""),
+        }
 
         try:
-            payload = json.loads(request.body)
-        except (json.JSONDecodeError, ValueError):
-            return JsonResponse({"error": "invalid JSON"}, status=400)
+            wh = Webhook(webhook_secret)
+            payload = wh.verify(request.body, headers)
+        except WebhookVerificationError:
+            logger.warning("[WEBHOOK] Invalid signature")
+            return JsonResponse({"error": "invalid signature"}, status=401)
 
         event_type = payload.get("type", "")
 
         if event_type not in ("email.bounced", "email.complained"):
-            # Acknowledge but ignore other events
             return HttpResponse(status=200)
 
         data = payload.get("data", {})
