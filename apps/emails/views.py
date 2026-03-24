@@ -2,6 +2,7 @@ import logging
 
 import resend
 from django.conf import settings
+from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -11,6 +12,43 @@ from svix.webhooks import Webhook, WebhookVerificationError
 logger = logging.getLogger(__name__)
 
 BOUNCE_NOTIFICATION_RECIPIENT = "basal@sundkom.dk"
+
+
+def lookup_email_owner(email):
+    """Look up person and school associated with a bounced email address."""
+    from apps.courses.models import CourseSignUp
+    from apps.schools.models import Person
+
+    # Check Person (koordinator, økonomisk ansvarlig, etc.)
+    person = Person.objects.filter(email__iexact=email).select_related("school").first()
+    if person:
+        roles = []
+        if person.is_koordinator:
+            roles.append("koordinator")
+        if person.is_oekonomisk_ansvarlig:
+            roles.append("økonomiansvarlig")
+        role_str = ", ".join(roles) if roles else "kontaktperson"
+        return person.name, person.school.name, role_str
+
+    # Check CourseSignUp (participant)
+    signup = (
+        CourseSignUp.objects.filter(participant_email__iexact=email)
+        .select_related("school", "course")
+        .order_by("-created_at")
+        .first()
+    )
+    if signup:
+        school_name = signup.school.name if signup.school else "ukendt skole"
+        return signup.participant_name, school_name, "kursustilmeldt"
+
+    # Check school billing email
+    from apps.schools.models import School
+
+    school = School.objects.filter(Q(fakturering_kontakt_email__iexact=email)).first()
+    if school:
+        return school.fakturering_kontakt_navn or "faktureringsmodtager", school.name, "fakturering"
+
+    return None, None, None
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -58,9 +96,25 @@ class ResendWebhookView(View):
         else:
             event_label = "Klage (spam)"
 
+        # Look up affected persons
+        person_rows = ""
+        for email in to_emails:
+            name, school, role = lookup_email_owner(email)
+            if name:
+                person_rows += f"<li><strong>{name}</strong> ({role}) — {school}</li>\n"
+            else:
+                person_rows += f"<li>{email} — <em>ikke fundet i systemet</em></li>\n"
+
         notification_subject = f"[Basal] Email {event_label}: {', '.join(to_emails)}"
         notification_body = f"""
 <p><strong>Email {event_label}</strong></p>
+
+<p><strong>Berørte personer:</strong></p>
+<ul>
+{person_rows}
+</ul>
+
+<p><strong>Email-detaljer:</strong></p>
 <ul>
   <li><strong>Modtager:</strong> {', '.join(to_emails)}</li>
   <li><strong>Afsender:</strong> {from_email}</li>
@@ -68,7 +122,6 @@ class ResendWebhookView(View):
   <li><strong>Email ID:</strong> {email_id}</li>
   <li><strong>Hændelse:</strong> {event_type}</li>
 </ul>
-<p>Tjek Resend-dashboardet for flere detaljer.</p>
 """
 
         if not getattr(settings, "RESEND_API_KEY", None):
