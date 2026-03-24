@@ -8,7 +8,7 @@ from django.template import Context, Template
 from django.utils.formats import date_format
 
 from apps.bulk_email.models import BulkEmail, BulkEmailRecipient
-from apps.emails.services import EMAIL_FOOTER, check_email_domain_allowed
+from apps.emails.services import DEFAULT_REPLY_TO, check_email_domain_allowed
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +147,7 @@ def send_to_school(bulk_email, school, person, attachment_data=None):
     """
     email_address = person.email
     subject = render_for_school(bulk_email.subject, school, person)
-    body_html = make_urls_absolute(render_for_school(bulk_email.body_html, school, person)) + EMAIL_FOOTER
+    body_html = make_urls_absolute(render_for_school(bulk_email.body_html, school, person))
 
     recipient = BulkEmailRecipient(
         bulk_email=bulk_email,
@@ -184,6 +184,7 @@ def send_to_school(bulk_email, school, person, attachment_data=None):
         params = {
             "from": settings.DEFAULT_FROM_EMAIL,
             "to": [email_address],
+            "reply_to": DEFAULT_REPLY_TO,
             "subject": subject,
             "html": body_html,
         }

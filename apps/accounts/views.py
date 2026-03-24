@@ -138,6 +138,7 @@ def send_password_email(user, new_password):
             {
                 "from": settings.DEFAULT_FROM_EMAIL,
                 "to": [user.email],
+                "reply_to": ["basal@sundkom.dk"],
                 "subject": subject,
                 "html": html_body,
             }

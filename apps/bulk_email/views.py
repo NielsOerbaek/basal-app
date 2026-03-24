@@ -21,7 +21,7 @@ from apps.bulk_email.services import (
     send_to_school,
 )
 from apps.core.decorators import full_admin_required
-from apps.emails.services import EMAIL_FOOTER, check_email_domain_allowed
+from apps.emails.services import DEFAULT_REPLY_TO, check_email_domain_allowed
 from apps.schools.mixins import SchoolFilterMixin
 from apps.schools.models import Person, School
 
@@ -321,7 +321,7 @@ class BulkEmailSendView(SchoolFilterMixin, View):
 
             fake_person = Person(name="Test", email=test_email)
             rendered_subject = render_for_school(subject, school, person or fake_person)
-            rendered_body = render_for_school(body_html, school, person or fake_person) + EMAIL_FOOTER
+            rendered_body = render_for_school(body_html, school, person or fake_person)
 
             def test_stream():
                 success = True
@@ -338,6 +338,7 @@ class BulkEmailSendView(SchoolFilterMixin, View):
                             {
                                 "from": settings.DEFAULT_FROM_EMAIL,
                                 "to": [test_email],
+                                "reply_to": DEFAULT_REPLY_TO,
                                 "subject": rendered_subject,
                                 "html": rendered_body,
                             }

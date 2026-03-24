@@ -22,24 +22,25 @@ def check_email_domain_allowed(email):
     return domain in [d.lower() for d in allowed]
 
 
-EMAIL_FOOTER = """
-<hr style="margin-top: 30px; border: none; border-top: 1px solid #ccc;">
-<p style="color: #666; font-size: 12px;">
-    Har du spørgsmål? Kontakt os på <a href="mailto:basal@sundkom.dk">basal@sundkom.dk</a>
-</p>
-"""
+DEFAULT_REPLY_TO = ["basal@sundkom.dk"]
 
 
-def add_email_footer(body_html):
-    """Add standard footer to email body."""
-    return body_html + EMAIL_FOOTER
+def auto_link_urls(html):
+    """Turn plain-text URLs into clickable links, skipping URLs already inside an <a> tag."""
+    import re
+
+    return re.sub(
+        r'(?<!["\'>=/])(https?://[^\s<>"\']+)',
+        r'<a href="\1">\1</a>',
+        html,
+    )
 
 
 def render_template(template_string, context_dict):
     """Render a template string with the given context."""
     template = Template(template_string)
     context = Context(context_dict)
-    return template.render(context)
+    return auto_link_urls(template.render(context))
 
 
 def get_signup_context(signup):
@@ -82,7 +83,7 @@ def send_email(email_type, signup, attachments=None):
 
     context = get_signup_context(signup)
     subject = render_template(template.subject, context)
-    body_html = add_email_footer(render_template(template.body_html, context))
+    body_html = render_template(template.body_html, context)
 
     # Enforce email domain allowlist
     if not check_email_domain_allowed(signup.participant_email):
@@ -126,6 +127,7 @@ def send_email(email_type, signup, attachments=None):
         email_params = {
             "from": settings.DEFAULT_FROM_EMAIL,
             "to": [signup.participant_email],
+            "reply_to": DEFAULT_REPLY_TO,
             "subject": subject,
             "html": body_html,
         }
@@ -245,6 +247,7 @@ def send_course_signup_notification(school, course, signups):
             {
                 "from": settings.DEFAULT_FROM_EMAIL,
                 "to": [notification_email],
+                "reply_to": DEFAULT_REPLY_TO,
                 "subject": f"Ny kursustilmelding – {school.name}",
                 "html": body_html,
             }
@@ -291,7 +294,7 @@ def send_school_enrollment_confirmation(school, contact_email, contact_name, att
 
     context = get_school_enrollment_context(school, contact_name)
     subject = render_template(template.subject, context)
-    body_html = add_email_footer(render_template(template.body_html, context))
+    body_html = render_template(template.body_html, context)
 
     # Enforce email domain allowlist
     if not check_email_domain_allowed(contact_email):
@@ -317,6 +320,7 @@ def send_school_enrollment_confirmation(school, contact_email, contact_name, att
             "from": settings.DEFAULT_FROM_EMAIL,
             "to": [contact_email],
             "bcc": [bcc_email],
+            "reply_to": DEFAULT_REPLY_TO,
             "subject": subject,
             "html": body_html,
         }
@@ -383,7 +387,7 @@ def send_coordinator_signup_confirmation(school, course, signups, override_email
 
     context = get_coordinator_signup_context(coordinator, course, signups)
     subject = render_template(template.subject, context)
-    body_html = add_email_footer(render_template(template.body_html, context))
+    body_html = render_template(template.body_html, context)
 
     # Enforce email domain allowlist
     if not check_email_domain_allowed(recipient_email):
@@ -422,6 +426,7 @@ def send_coordinator_signup_confirmation(school, course, signups, override_email
             {
                 "from": settings.DEFAULT_FROM_EMAIL,
                 "to": [recipient_email],
+                "reply_to": DEFAULT_REPLY_TO,
                 "subject": subject,
                 "html": body_html,
             }
