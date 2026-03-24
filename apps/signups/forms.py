@@ -102,11 +102,13 @@ class CourseSignupForm(DynamicFieldsMixin, forms.Form):
         ).order_by("start_date")
 
         if locked_school:
-            # Lock to specific school
+            # Lock to specific school — use Django's field.disabled so the
+            # initial value is preserved server-side (HTML disabled attrs
+            # prevent the browser from submitting the value).
             self.fields["school"].queryset = School.objects.filter(pk=locked_school.pk)
             self.fields["school"].initial = locked_school
             self.fields["school"].empty_label = None
-            self.fields["school"].widget.attrs["disabled"] = True
+            self.fields["school"].disabled = True
         else:
             self.fields["school"].queryset = (
                 School.objects.active().filter(enrolled_at__isnull=False, opted_out_at__isnull=True).order_by("name")

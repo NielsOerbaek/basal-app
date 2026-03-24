@@ -567,6 +567,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Re-fetch coordinator info when user returns to tab (e.g. after editing on school page)
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && schoolSelect && schoolSelect.value) {
+            checkSchoolSeats();
+        }
+    });
+
     // Password validation
     const passwordInput = document.getElementById('school-password');
     const validateBtn = document.getElementById('validate-password-btn');
@@ -610,8 +617,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.valid) {
                 passwordSuccess.textContent = 'Kode accepteret! Indlæser...';
                 passwordSuccess.style.display = 'block';
-                // Reload page to show form with locked school
-                window.location.reload();
+                // Navigate to show form with locked school (avoid cached reload)
+                window.location.href = window.location.pathname;
             } else {
                 passwordError.textContent = data.error || 'Ugyldig kode';
                 passwordError.style.display = 'block';
