@@ -1,3 +1,4 @@
+import time
 from datetime import date, timedelta
 
 from django.core.management.base import BaseCommand
@@ -86,6 +87,7 @@ class Command(BaseCommand):
                     total_sent += 1
                 else:
                     success = send_course_reminder(signup, attachments=attachments)
+                    time.sleep(0.25)  # Resend rate limit: 5 req/s
                     if success:
                         self.stdout.write(self.style.SUCCESS(f"  Sendt til: {signup.participant_email}"))
                         total_sent += 1
