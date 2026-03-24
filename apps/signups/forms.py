@@ -98,7 +98,9 @@ class CourseSignupForm(DynamicFieldsMixin, forms.Form):
 
         # Set querysets
         self.fields["course"].queryset = Course.objects.filter(
-            is_published=True, start_date__gte=timezone.now().date()
+            is_published=True,
+            start_date__gte=timezone.now().date(),
+            registration_deadline__gte=timezone.now().date(),
         ).order_by("start_date")
 
         if locked_school:
