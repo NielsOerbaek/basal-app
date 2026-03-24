@@ -98,7 +98,21 @@ class SchoolFilterMixin:
                 start_date = end_date = None
 
             if start_date:
-                if status_filter == "tilmeldt_ny":
+                if status_filter == "alle_tilmeldte":
+                    queryset = queryset.filter(
+                        enrolled_at__isnull=False,
+                        active_from__isnull=False,
+                        active_from__lte=end_date,
+                        opted_out_at__isnull=True,
+                    )
+                elif status_filter == "alle_ikke_tilmeldte":
+                    queryset = queryset.filter(
+                        Q(enrolled_at__isnull=True)
+                        | Q(active_from__isnull=True)
+                        | Q(active_from__gt=end_date)
+                        | Q(opted_out_at__isnull=False)
+                    )
+                elif status_filter == "tilmeldt_ny":
                     queryset = queryset.filter(
                         enrolled_at__isnull=False,
                         active_from__isnull=False,
