@@ -4,6 +4,34 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 24. marts 2026
+
+### Billeder i e-mails virker nu
+Billeder indsat via skabelonerne (Summernote) havde relative stier, som ikke kunne vises i e-mail-klienter. De konverteres nu automatisk til absolutte URL'er.
+
+### Deltagerliste i koordinator-bekræftelsesmail
+Deltagerlisten i koordinatorens bekræftelsesmail vises nu korrekt som formateret HTML (den blev tidligere vist som rå HTML-kode). Listen inkluderer nu også titel og underviser-markering.
+
+### Afsender på e-mails ændret
+E-mails sendes nu fra `basal@raakode.dk` i stedet for `niels@raakode.dk`.
+
+### Bounce-notifikationer (OSO-229)
+Når en e-mail ikke kan leveres (bounce) eller markeres som spam, sendes en notifikation til `basal@sundkom.dk` med information om modtager, tilknyttet person, skole og rolle.
+
+### Masseudsendelse: bedre filtertæller
+Filtertælleren viser nu antal skoler der matcher filteret, antal skoler der sendes til, antal email-adresser, og antal skoler der springes over.
+
+### Masseudsendelse: filterfejl rettet
+Statusfiltrene "Alle tilmeldte" og "Alle ikke-tilmeldte" med skoleår virkede ikke korrekt i masseudsendelse — de returnerede alle skoler i stedet for de filtrerede. Filtreringslogikken er nu samlet ét sted så den virker ens på skolelisten og i masseudsendelse.
+
+### Kurser med overskredet tilmeldingsfrist skjules
+Kurser hvor tilmeldingsfristen er overskredet vises ikke længere på tilmeldingssiden.
+
+### Rate limit ved kursuspåmindelser
+Der er tilføjet en forsinkelse mellem afsendelse af kursuspåmindelser for at undgå Resends rate limit.
+
+---
+
 ## 20. marts 2026
 
 ### Nyt domæne: db.sammenomtrivsel.com
