@@ -16,6 +16,7 @@ from apps.bulk_email.models import BulkEmail, BulkEmailAttachment
 from apps.bulk_email.services import (
     VARIABLE_NAMES,
     find_missing_variables,
+    make_urls_absolute,
     render_for_school,
     resolve_recipients,
     send_to_school,
@@ -323,7 +324,14 @@ class BulkEmailSendView(SchoolFilterMixin, View):
 
             fake_person = Person(name="Test", email=test_email)
             rendered_subject = render_for_school(subject, school, person or fake_person)
-            rendered_body = render_for_school(body_html, school, person or fake_person)
+            rendered_body = make_urls_absolute(render_for_school(body_html, school, person or fake_person))
+
+            # Load attachments for test email
+            test_attachments = []
+            if attachment_pks:
+                for att in BulkEmailAttachment.objects.filter(pk__in=attachment_pks):
+                    with att.file.open("rb") as f:
+                        test_attachments.append({"filename": att.filename, "content": list(f.read())})
 
             def test_stream():
                 success = True
@@ -336,15 +344,16 @@ class BulkEmailSendView(SchoolFilterMixin, View):
                 else:
                     try:
                         resend.api_key = settings.RESEND_API_KEY
-                        resend.Emails.send(
-                            {
-                                "from": settings.DEFAULT_FROM_EMAIL,
-                                "to": [test_email],
-                                "reply_to": DEFAULT_REPLY_TO,
-                                "subject": rendered_subject,
-                                "html": rendered_body,
-                            }
-                        )
+                        params = {
+                            "from": settings.DEFAULT_FROM_EMAIL,
+                            "to": [test_email],
+                            "reply_to": DEFAULT_REPLY_TO,
+                            "subject": rendered_subject,
+                            "html": rendered_body,
+                        }
+                        if test_attachments:
+                            params["attachments"] = test_attachments
+                        resend.Emails.send(params)
                     except Exception as e:
                         success = False
                         error = str(e)[:200]
