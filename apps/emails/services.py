@@ -347,7 +347,14 @@ def send_school_enrollment_confirmation(school, contact_email, contact_name, att
 def get_coordinator_signup_context(coordinator, course, signups):
     """Build template context for coordinator signup confirmation."""
     participants_html = (
-        "<ul>" + "".join(f"<li>{s.participant_name} ({s.participant_email})</li>" for s in signups) + "</ul>"
+        "<ul>"
+        + "".join(
+            f"<li>{s.participant_name}, {s.participant_title} ({s.participant_email})"
+            + (" – underviser" if s.is_underviser else "")
+            + "</li>"
+            for s in signups
+        )
+        + "</ul>"
     )
     return {
         "coordinator_name": coordinator.name if coordinator else "Koordinator",
