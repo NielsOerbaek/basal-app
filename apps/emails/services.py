@@ -1,4 +1,5 @@
 import logging
+import re
 
 import resend
 from django.conf import settings
@@ -36,11 +37,20 @@ def auto_link_urls(html):
     )
 
 
+def make_urls_absolute(html):
+    """Convert relative src/href URLs to absolute using SITE_URL."""
+    site_url = getattr(settings, "SITE_URL", "").rstrip("/")
+    if not site_url:
+        return html
+    html = re.sub(r'(src|href)="(/[^"]+)"', rf'\1="{site_url}\2"', html)
+    return html
+
+
 def render_template(template_string, context_dict):
     """Render a template string with the given context."""
     template = Template(template_string)
     context = Context(context_dict)
-    return auto_link_urls(template.render(context))
+    return make_urls_absolute(auto_link_urls(template.render(context)))
 
 
 def get_signup_context(signup):
