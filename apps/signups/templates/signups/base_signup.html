@@ -13,6 +13,10 @@
         max-width: 200px;
         height: auto;
     }
+    /* Override Word/pasted inline font styles */
+    .intro-text, .intro-text * {
+        font-family: inherit !important;
+    }
 </style>
 {% block signup_extra_css %}{% endblock %}
 {% endblock %}
