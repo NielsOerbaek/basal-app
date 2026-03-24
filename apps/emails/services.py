@@ -5,6 +5,7 @@ import resend
 from django.conf import settings
 from django.template import Context, Template
 from django.utils.formats import date_format
+from django.utils.safestring import mark_safe
 
 from .models import EmailLog, EmailTemplate, EmailType
 
@@ -355,7 +356,7 @@ def get_coordinator_signup_context(coordinator, course, signups):
         "course_end_date": date_format(course.end_date, "j. F Y"),
         "course_location": course.location.full_address if course.location else "",
         "school_name": signups[0].school.name if signups else "",
-        "participants_list": participants_html,
+        "participants_list": mark_safe(participants_html),
         "registration_deadline": date_format(course.registration_deadline, "j. F Y")
         if course.registration_deadline
         else "",
