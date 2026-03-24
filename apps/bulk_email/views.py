@@ -265,6 +265,8 @@ class BulkEmailDryRunView(View):
             {
                 "recipients": recipients_data,
                 "total": len(recipients_data),
+                "total_schools": len(schools),
+                "schools_sending": len(matched_school_pks),
                 "skipped": len(skipped_data),
                 "skipped_schools": skipped_data,
                 "warnings": warnings,

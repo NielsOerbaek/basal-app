@@ -314,7 +314,11 @@ async function updateRecipientCounter() {
     if (data.total === 0 && data.skipped === 0) {
         counter.innerHTML = '<span class="text-warning">Ingen skoler matcher de valgte filtre.</span>';
     } else {
-        counter.textContent = `${data.total} modtagere` + (data.skipped > 0 ? ` (${data.skipped} skoler uden ${typeLabel} springes over)` : "");
+        let parts = [`${data.total_schools} skoler matcher filteret`, `sendes til ${data.schools_sending} skoler`, `${data.total} email-adresser`];
+        if (data.skipped > 0) {
+            parts.push(`${data.skipped} skoler uden ${typeLabel} springes over`);
+        }
+        counter.textContent = parts.join(" · ");
     }
 
     // Show up to 10 recipients in a preview table
