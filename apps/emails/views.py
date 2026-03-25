@@ -91,6 +91,10 @@ class ResendWebhookView(View):
         subject = data.get("subject", "")
         email_id = data.get("email_id", "")
 
+        # Only notify for emails sent from our domain
+        if "sundkom.dk" not in from_email:
+            return HttpResponse(status=200)
+
         if event_type == "email.bounced":
             event_label = "Bounce"
         else:
