@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 
 import resend
 from django.conf import settings
@@ -420,6 +421,8 @@ class BulkEmailSendView(SchoolFilterMixin, View):
             yield f"data: {json.dumps({'type': 'start', 'total': len(school_person_pairs), 'skipped': skipped})}\n\n"
 
             for n, (school, person) in enumerate(school_person_pairs, start=1):
+                if n > 1:
+                    time.sleep(0.25)
                 recipient = send_to_school(campaign, school, person, attachment_data=attachment_data)
                 if recipient.success:
                     sent += 1
