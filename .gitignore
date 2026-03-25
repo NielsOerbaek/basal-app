@@ -54,6 +54,7 @@ Thumbs.db
 
 # Testing
 .coverage
+.coverage.*
 htmlcov/
 .pytest_cache/
 .tox/
@@ -66,6 +67,12 @@ node_modules/
 
 # Local deploy script
 deploy.sh
+
+# Local files
+.linear-api-key
+screenshots/
+docs/pre-launch-*
+*.docx
 
 # Worktrees
 .worktrees/
