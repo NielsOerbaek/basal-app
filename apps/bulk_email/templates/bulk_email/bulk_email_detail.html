@@ -134,7 +134,8 @@
                                     data-recipient-pk="{{ r.pk }}"
                                     data-school-name="{{ r.school.name|default:'—' }}"
                                     data-original-email="{{ r.resent_to|default:r.email }}"
-                                    data-current-email="{{ r.person.email|default:'' }}">
+                                    data-current-email="{{ r.person.email|default:'' }}"
+                                    data-is-bounced="{% if r.needs_action %}1{% endif %}">
                                 Gensend
                             </button>
                             {% endif %}
@@ -180,7 +181,7 @@
             </div>
             <div class="modal-body">
                 <p>Skole: <strong id="resend-school-name"></strong></p>
-                <p class="text-muted small">Bouncet adresse: <span id="resend-original-email"></span></p>
+                <p class="text-muted small"><span id="resend-original-label">Oprindelig adresse</span>: <span id="resend-original-email"></span></p>
                 <div class="alert alert-info small d-none" id="resend-email-changed-notice">
                     <i class="bi bi-info-circle me-1"></i>Kontaktpersonens e-mail er siden opdateret til <strong id="resend-changed-email"></strong>
                 </div>
@@ -252,7 +253,9 @@
             activeRecipientPk = btn.dataset.recipientPk;
             const originalEmail = btn.dataset.originalEmail;
             const currentEmail = btn.dataset.currentEmail;
+            const isBounced = btn.dataset.isBounced === '1';
             document.getElementById('resend-school-name').textContent = btn.dataset.schoolName;
+            document.getElementById('resend-original-label').textContent = isBounced ? 'Bouncet adresse' : 'Oprindelig adresse';
             document.getElementById('resend-original-email').textContent = originalEmail;
             document.getElementById('resend-error').classList.add('d-none');
 
