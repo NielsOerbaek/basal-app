@@ -46,6 +46,14 @@
                     <div class="fs-3 fw-bold text-danger">{{ failed_count }}</div>
                     <div class="text-muted small">Fejlede</div>
                 </div>
+                <div class="col">
+                    <div class="fs-3 fw-bold text-warning" id="bounced-count">{{ bounced_count }}</div>
+                    <div class="text-muted small">Kunne ikke leveres</div>
+                </div>
+                <div class="col">
+                    <div class="fs-3 fw-bold text-danger" id="schools-missing-count">{{ schools_missing }}</div>
+                    <div class="text-muted small">Skoler mangler</div>
+                </div>
             </div>
         </div>
     </div>
@@ -74,28 +82,54 @@
 
     {# Recipients #}
     <div class="card">
-        <div class="card-header">Modtagere ({{ recipients|length }})</div>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Modtagere ({{ recipients|length }})</span>
+        </div>
         <div class="table-responsive">
-            <table class="table table-sm mb-0">
+            <table class="table table-sm mb-0" id="recipients-table">
                 <thead class="table-light">
                     <tr>
-                        <th>Skole</th>
+                        <th role="button" data-sort="school" class="sortable">Skole <i class="bi bi-chevron-expand small text-muted"></i></th>
                         <th>Kontakt</th>
                         <th>E-mail</th>
-                        <th>Status</th>
+                        <th role="button" data-sort="status" class="sortable">Status <i class="bi bi-chevron-expand small text-muted"></i></th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for r in recipients %}
-                    <tr {% if not r.success %}class="table-danger"{% endif %}>
+                    <tr id="row-{{ r.pk }}"
+                        class="{% if not r.success %}table-danger{% elif r.is_bounced and not r.is_resolved %}table-warning{% endif %}"
+                        data-school="{{ r.school.name|default:"—" }}"
+                        data-status="{% if not r.success %}0{% elif r.is_bounced and not r.is_resolved %}1{% elif r.is_resolved %}3{% else %}2{% endif %}">
                         <td>{{ r.school.name|default:"—" }}</td>
                         <td>{{ r.person.name|default:"—" }}</td>
                         <td>{{ r.email }}</td>
                         <td>
-                            {% if r.success %}
-                                <span class="text-success">✓</span>
+                            {% if not r.success %}
+                                <span class="text-danger">&#10005; {{ r.error_message }}</span>
+                            {% elif r.is_bounced and r.resent_to %}
+                                <span class="text-warning"><i class="bi bi-exclamation-triangle-fill"></i> Bouncet igen ({{ r.resent_to }})</span>
+                            {% elif r.is_bounced %}
+                                <span class="text-warning"><i class="bi bi-exclamation-triangle-fill"></i> Bouncet</span>
+                            {% elif r.is_resolved %}
+                                {% if r.person and r.person.email == r.resent_to %}
+                                <span class="text-success">&#10003; E-mail opdateret til {{ r.resent_to }}</span>
+                                {% else %}
+                                <span class="text-success">&#10003; Gensendt til {{ r.resent_to }} (engangsudsendelse)</span>
+                                {% endif %}
                             {% else %}
-                                <span class="text-danger">✗ {{ r.error_message }}</span>
+                                <span class="text-success">&#10003;</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if r.is_bounced and not r.is_resolved and r.success %}
+                            <button class="btn btn-sm btn-outline-primary resend-btn"
+                                    data-recipient-pk="{{ r.pk }}"
+                                    data-school-name="{{ r.school.name|default:'—' }}"
+                                    data-original-email="{{ r.resent_to|default:r.email }}">
+                                Gensend
+                            </button>
                             {% endif %}
                         </td>
                     </tr>
@@ -105,4 +139,157 @@
         </div>
     </div>
 </div>
+
+{# Resend modal #}
+<div class="modal fade" id="resendModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Gensend e-mail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Skole: <strong id="resend-school-name"></strong></p>
+                <p class="text-muted small">Oprindelig adresse: <span id="resend-original-email"></span></p>
+                <div class="mb-3">
+                    <label for="resend-email" class="form-label">Ny e-mailadresse</label>
+                    <input type="email" class="form-control" id="resend-email" required>
+                </div>
+                <div class="form-check mb-3" id="resend-update-contact-wrapper">
+                    <input class="form-check-input" type="checkbox" id="resend-update-contact" checked>
+                    <label class="form-check-label" for="resend-update-contact">
+                        Opdater kontaktpersonens e-mail permanent
+                    </label>
+                    <div class="form-text">Hvis slået fra, sendes kun denne ene e-mail til den nye adresse.</div>
+                </div>
+                <div id="resend-error" class="alert alert-danger d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuller</button>
+                <button type="button" class="btn btn-primary" id="resend-confirm">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    // Table sorting
+    const table = document.getElementById('recipients-table');
+    const tbody = table.querySelector('tbody');
+    let currentSort = { col: null, asc: true };
+
+    table.querySelectorAll('th[data-sort]').forEach(th => {
+        th.style.cursor = 'pointer';
+        th.addEventListener('click', () => {
+            const col = th.dataset.sort;
+            if (currentSort.col === col) {
+                currentSort.asc = !currentSort.asc;
+            } else {
+                currentSort.col = col;
+                currentSort.asc = true;
+            }
+            sortTable(col, currentSort.asc);
+        });
+    });
+
+    function sortTable(col, asc) {
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.sort((a, b) => {
+            const va = a.dataset[col] || '';
+            const vb = b.dataset[col] || '';
+            // Try numeric sort for status
+            const na = parseFloat(va), nb = parseFloat(vb);
+            if (!isNaN(na) && !isNaN(nb)) {
+                return asc ? na - nb : nb - na;
+            }
+            return asc ? va.localeCompare(vb, 'da') : vb.localeCompare(va, 'da');
+        });
+        rows.forEach(r => tbody.appendChild(r));
+    }
+
+    // Resend modal
+    const modal = new bootstrap.Modal(document.getElementById('resendModal'));
+    let activeRecipientPk = null;
+
+    document.querySelectorAll('.resend-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            activeRecipientPk = btn.dataset.recipientPk;
+            document.getElementById('resend-school-name').textContent = btn.dataset.schoolName;
+            document.getElementById('resend-original-email').textContent = btn.dataset.originalEmail;
+            document.getElementById('resend-email').value = '';
+            document.getElementById('resend-error').classList.add('d-none');
+            modal.show();
+        });
+    });
+
+    document.getElementById('resend-confirm').addEventListener('click', async () => {
+        const email = document.getElementById('resend-email').value.trim();
+        if (!email) return;
+
+        const btn = document.getElementById('resend-confirm');
+        btn.disabled = true;
+        btn.textContent = 'Sender...';
+        document.getElementById('resend-error').classList.add('d-none');
+
+        try {
+            const resp = await fetch(`/masseudsendelse/resend/${activeRecipientPk}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value
+                        || document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '',
+                },
+                body: `new_email=${encodeURIComponent(email)}&update_contact=${document.getElementById('resend-update-contact').checked ? '1' : '0'}`,
+            });
+            const data = await resp.json();
+            if (resp.ok && data.success) {
+                modal.hide();
+                // Update the row in-place
+                const row = document.getElementById(`row-${activeRecipientPk}`);
+                row.className = '';
+                row.dataset.status = '3';
+                const statusCell = row.children[3];
+                const label = data.contact_updated
+                    ? `&#10003; E-mail opdateret til ${data.email}`
+                    : `&#10003; Gensendt til ${data.email} (engangsudsendelse)`;
+                statusCell.innerHTML = `<span class="text-success">${label}</span>`;
+                const actionCell = row.children[4];
+                actionCell.innerHTML = '';
+                updateCounts();
+            } else {
+                document.getElementById('resend-error').textContent = data.error || 'Ukendt fejl';
+                document.getElementById('resend-error').classList.remove('d-none');
+            }
+        } catch (e) {
+            document.getElementById('resend-error').textContent = 'Netværksfejl';
+            document.getElementById('resend-error').classList.remove('d-none');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Send';
+        }
+    });
+
+    function updateCounts() {
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        let bounced = 0;
+        const schoolBounceMap = {};
+        rows.forEach(r => {
+            const status = r.dataset.status;
+            const school = r.dataset.school;
+            if (status === '1') bounced++;
+            // Track per-school: status 2=ok, 3=resolved, 1=bounced, 0=failed
+            if (school && school !== '—' && (status === '1' || status === '2' || status === '3')) {
+                if (!(school in schoolBounceMap)) schoolBounceMap[school] = { allBounced: true };
+                if (status !== '1') schoolBounceMap[school].allBounced = false;
+            }
+        });
+        const missing = Object.values(schoolBounceMap).filter(s => s.allBounced).length;
+        document.getElementById('bounced-count').textContent = bounced;
+        document.getElementById('schools-missing-count').textContent = missing;
+    }
+})();
+</script>
 {% endblock %}

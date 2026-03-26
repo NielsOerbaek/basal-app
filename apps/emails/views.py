@@ -43,12 +43,12 @@ def lookup_email_owner(email):
     return results
 
 
-def mark_email_bounced(email):
+def mark_email_bounced(email, at=None):
     """Mark all records matching this email address as bounced."""
     from apps.courses.models import CourseSignUp
     from apps.schools.models import Person, School
 
-    now = timezone.now()
+    now = at or timezone.now()
     Person.objects.filter(email__iexact=email, email_bounced_at__isnull=True).update(email_bounced_at=now)
     CourseSignUp.objects.filter(participant_email__iexact=email, email_bounced_at__isnull=True).update(
         email_bounced_at=now
@@ -129,7 +129,7 @@ class ResendWebhookView(View):
 
 <p><strong>Email-detaljer:</strong></p>
 <ul>
-  <li><strong>Modtager:</strong> {', '.join(to_emails)}</li>
+  <li><strong>Modtager:</strong> {", ".join(to_emails)}</li>
   <li><strong>Afsender:</strong> {from_email}</li>
   <li><strong>Emne:</strong> {subject}</li>
   <li><strong>Email ID:</strong> {email_id}</li>

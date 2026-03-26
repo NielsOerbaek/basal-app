@@ -59,13 +59,133 @@ class BulkEmailDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         campaign = self.object
-        context["recipients"] = campaign.recipients.select_related("school", "person").order_by(
-            "success", "school__name"
+        recipients = list(campaign.recipients.select_related("school", "person").order_by("success", "school__name"))
+
+        # Collect all person PKs and emails to check bounce status
+        person_pks = [r.person_id for r in recipients if r.person_id]
+        bounced_person_pks = set(
+            Person.objects.filter(pk__in=person_pks, email_bounced_at__isnull=False).values_list("pk", flat=True)
         )
-        context["sent_count"] = campaign.recipients.filter(success=True).count()
-        context["failed_count"] = campaign.recipients.filter(success=False).count()
+
+        # Also check school billing emails
+        recipient_emails = {r.email.lower() for r in recipients}
+        bounced_billing_emails = set(
+            School.objects.filter(
+                fakturering_kontakt_email__in=recipient_emails,
+                fakturering_email_bounced_at__isnull=False,
+            ).values_list("fakturering_kontakt_email", flat=True)
+        )
+
+        # Annotate recipients with bounce info
+        bounced_count = 0
+        schools_with_bounces = {}  # school_id -> [has_non_bounced]
+        for r in recipients:
+            r.is_bounced = (r.person_id in bounced_person_pks) or (r.email.lower() in bounced_billing_emails)
+            if r.resent_to:
+                contact_was_updated = r.person and r.person.email == r.resent_to
+                if contact_was_updated:
+                    # Contact email was changed — resolved only if not re-bounced
+                    r.is_resolved = not r.is_bounced
+                else:
+                    # One-off resend — resolved for this campaign (can't track re-bounces)
+                    r.is_resolved = True
+            else:
+                r.is_resolved = False
+            if r.is_bounced and not r.is_resolved:
+                bounced_count += 1
+
+            # Track per-school bounce status
+            if r.school_id and r.success:
+                if r.school_id not in schools_with_bounces:
+                    schools_with_bounces[r.school_id] = {"all_bounced": True, "has_recipients": True}
+                if not r.is_bounced or r.is_resolved:
+                    schools_with_bounces[r.school_id]["all_bounced"] = False
+
+        schools_missing = sum(1 for s in schools_with_bounces.values() if s["all_bounced"])
+
+        context["recipients"] = recipients
+        context["sent_count"] = sum(1 for r in recipients if r.success)
+        context["failed_count"] = sum(1 for r in recipients if not r.success)
+        context["bounced_count"] = bounced_count
+        context["schools_missing"] = schools_missing
         context["filter_summary"] = campaign.get_filter_summary_display()
         return context
+
+
+@method_decorator(full_admin_required, name="dispatch")
+class BulkEmailResendView(View):
+    """Resend a bulk email to a new address for a specific recipient."""
+
+    def post(self, request, recipient_pk):
+        from apps.bulk_email.models import BulkEmailRecipient
+
+        recipient = get_object_or_404(
+            BulkEmailRecipient.objects.select_related("bulk_email", "school", "person"), pk=recipient_pk
+        )
+        new_email = request.POST.get("new_email", "").strip()
+        update_contact = request.POST.get("update_contact") == "1"
+
+        if not new_email:
+            return JsonResponse({"error": "E-mailadresse mangler"}, status=400)
+
+        campaign = recipient.bulk_email
+        school = recipient.school
+        person = recipient.person
+
+        # Render the email content
+        subject = render_for_school(campaign.subject, school, person)
+        body_html = make_urls_absolute(render_for_school(campaign.body_html, school, person))
+
+        # Domain check
+        if not check_email_domain_allowed(new_email):
+            return JsonResponse({"error": "Domænet er ikke tilladt"}, status=400)
+
+        # Dev mode guard
+        if not getattr(settings, "RESEND_API_KEY", None):
+            logger.info(f"[RESEND] DEV MODE — To: {new_email} Subject: {subject}")
+            recipient.resent_to = new_email
+            recipient.resent_at = timezone.now()
+            recipient.save(update_fields=["resent_to", "resent_at"])
+            if update_contact and person:
+                person.email = new_email
+                person.email_bounced_at = None
+                person.save(update_fields=["email", "email_bounced_at"])
+            return JsonResponse({"success": True, "email": new_email, "contact_updated": update_contact})
+
+        try:
+            # Load attachments
+            attachments = []
+            for att in campaign.attachments.all():
+                with att.file.open("rb") as f:
+                    attachments.append({"filename": att.filename, "content": list(f.read())})
+
+            params = {
+                "from": settings.DEFAULT_FROM_EMAIL,
+                "to": [new_email],
+                "reply_to": DEFAULT_REPLY_TO,
+                "subject": subject,
+                "html": body_html,
+            }
+            if attachments:
+                params["attachments"] = attachments
+
+            resend.api_key = settings.RESEND_API_KEY
+            resend.Emails.send(params)
+
+            recipient.resent_to = new_email
+            recipient.resent_at = timezone.now()
+            recipient.save(update_fields=["resent_to", "resent_at"])
+
+            if update_contact and person:
+                person.email = new_email
+                person.email_bounced_at = None
+                person.save(update_fields=["email", "email_bounced_at"])
+
+            return JsonResponse({"success": True, "email": new_email, "contact_updated": update_contact})
+
+        except Exception as e:
+            logger.error(f"[RESEND] Failed to resend to {new_email}: {e}")
+            return JsonResponse({"error": str(e)[:500]}, status=500)
 
 
 @method_decorator(full_admin_required, name="dispatch")

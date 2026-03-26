@@ -191,8 +191,10 @@ def send_to_school(bulk_email, school, person, attachment_data=None):
         if attachments:
             params["attachments"] = attachments
 
-        resend.Emails.send(params)
+        result = resend.Emails.send(params)
         recipient.success = True
+        if hasattr(result, "id"):
+            recipient.resend_email_id = result.id
     except Exception as e:
         logger.error(f"[BULK EMAIL] Failed to send to {email_address}: {e}")
         recipient.success = False
