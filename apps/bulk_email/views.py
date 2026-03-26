@@ -72,8 +72,12 @@ class BulkEmailDetailView(DetailView):
         schools_with_bounces = {}  # school_id -> [has_non_bounced]
         for r in recipients:
             # bounced_at on the recipient itself is authoritative (survives person deletion)
-            # Also check Person.email_bounced_at for legacy recipients without bounced_at
-            r.is_bounced = bool(r.bounced_at) or (r.person_id in bounced_person_pks)
+            # Fall back to Person.email_bounced_at only for legacy recipients (no resend done)
+            if r.resent_to:
+                # Resend was attempted — only bounced_at matters (set again by webhook if re-bounced)
+                r.is_bounced = bool(r.bounced_at)
+            else:
+                r.is_bounced = bool(r.bounced_at) or (r.person_id in bounced_person_pks)
 
             # Detect if contact email was changed externally (not via resend)
             r.email_changed = (
