@@ -81,6 +81,12 @@ class BulkEmailDetailView(DetailView):
         schools_with_bounces = {}  # school_id -> [has_non_bounced]
         for r in recipients:
             r.is_bounced = (r.person_id in bounced_person_pks) or (r.email.lower() in bounced_billing_emails)
+
+            # Detect if contact email was changed externally (not via resend)
+            r.email_changed = (
+                r.person and r.person.email and r.person.email.lower() != r.email.lower() and not r.resent_to
+            )
+
             if r.resent_to:
                 contact_was_updated = r.person and r.person.email == r.resent_to
                 if contact_was_updated:
@@ -91,7 +97,10 @@ class BulkEmailDetailView(DetailView):
                     r.is_resolved = True
             else:
                 r.is_resolved = False
-            if r.is_bounced and not r.is_resolved:
+
+            # Count as unresolved if bounced OR email changed but not resent
+            r.needs_action = (r.is_bounced and not r.is_resolved) or r.email_changed
+            if r.needs_action:
                 bounced_count += 1
 
             # Track per-school bounce status
@@ -101,7 +110,7 @@ class BulkEmailDetailView(DetailView):
                         "all_bounced": True,
                         "name": r.school.name if r.school else "—",
                     }
-                if not r.is_bounced or r.is_resolved:
+                if not r.needs_action:
                     schools_with_bounces[r.school_id]["all_bounced"] = False
 
         missing_schools = sorted(s["name"] for s in schools_with_bounces.values() if s["all_bounced"])
