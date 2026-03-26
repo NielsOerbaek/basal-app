@@ -196,6 +196,11 @@ class BulkEmailResendView(View):
 
             return JsonResponse({"success": True, "email": new_email, "contact_updated": update_contact})
 
+        except (ConnectionError, OSError) as e:
+            logger.error(f"[RESEND] Network error resending to {new_email}: {e}")
+            return JsonResponse(
+                {"error": "Kunne ikke oprette forbindelse til e-mailserveren. Prøv igen om et minut."}, status=503
+            )
         except Exception as e:
             logger.error(f"[RESEND] Failed to resend to {new_email}: {e}")
             return JsonResponse({"error": str(e)[:500]}, status=500)
