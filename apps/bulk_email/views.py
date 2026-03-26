@@ -61,36 +61,19 @@ class BulkEmailDetailView(DetailView):
         campaign = self.object
         recipients = list(campaign.recipients.select_related("school", "person").order_by("success", "school__name"))
 
-        # Collect all person PKs and emails to check bounce status
+        # Collect person bounce status (for recipients where person still exists)
         person_pks = [r.person_id for r in recipients if r.person_id]
         bounced_person_pks = set(
             Person.objects.filter(pk__in=person_pks, email_bounced_at__isnull=False).values_list("pk", flat=True)
         )
 
-        # Check bounced emails by address (covers deleted persons)
-        recipient_emails = {r.email.lower() for r in recipients}
-        bounced_emails_by_address = set(
-            e.lower()
-            for e in Person.objects.filter(email__in=recipient_emails, email_bounced_at__isnull=False).values_list(
-                "email", flat=True
-            )
-        )
-
-        # Also check school billing emails
-        bounced_billing_emails = set(
-            e.lower()
-            for e in School.objects.filter(
-                fakturering_kontakt_email__in=recipient_emails,
-                fakturering_email_bounced_at__isnull=False,
-            ).values_list("fakturering_kontakt_email", flat=True)
-        )
-        bounced_emails_by_address |= bounced_billing_emails
-
         # Annotate recipients with bounce info
         bounced_count = 0
         schools_with_bounces = {}  # school_id -> [has_non_bounced]
         for r in recipients:
-            r.is_bounced = (r.person_id in bounced_person_pks) or (r.email.lower() in bounced_emails_by_address)
+            # bounced_at on the recipient itself is authoritative (survives person deletion)
+            # Also check Person.email_bounced_at for legacy recipients without bounced_at
+            r.is_bounced = bool(r.bounced_at) or (r.person_id in bounced_person_pks)
 
             # Detect if contact email was changed externally (not via resend)
             r.email_changed = (
@@ -168,7 +151,8 @@ class BulkEmailResendView(View):
             logger.info(f"[RESEND] DEV MODE — To: {new_email} Subject: {subject}")
             recipient.resent_to = new_email
             recipient.resent_at = timezone.now()
-            recipient.save(update_fields=["resent_to", "resent_at"])
+            recipient.bounced_at = None
+            recipient.save(update_fields=["resent_to", "resent_at", "bounced_at"])
             if update_contact and person:
                 person.email = new_email
                 person.email_bounced_at = None
@@ -197,7 +181,8 @@ class BulkEmailResendView(View):
 
             recipient.resent_to = new_email
             recipient.resent_at = timezone.now()
-            recipient.save(update_fields=["resent_to", "resent_at"])
+            recipient.bounced_at = None
+            recipient.save(update_fields=["resent_to", "resent_at", "bounced_at"])
 
             if update_contact and person:
                 person.email = new_email

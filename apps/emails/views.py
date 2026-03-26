@@ -45,6 +45,7 @@ def lookup_email_owner(email):
 
 def mark_email_bounced(email, at=None):
     """Mark all records matching this email address as bounced."""
+    from apps.bulk_email.models import BulkEmailRecipient
     from apps.courses.models import CourseSignUp
     from apps.schools.models import Person, School
 
@@ -56,6 +57,7 @@ def mark_email_bounced(email, at=None):
     School.objects.filter(fakturering_kontakt_email__iexact=email, fakturering_email_bounced_at__isnull=True).update(
         fakturering_email_bounced_at=now
     )
+    BulkEmailRecipient.objects.filter(email__iexact=email, bounced_at__isnull=True, success=True).update(bounced_at=now)
 
 
 @method_decorator(csrf_exempt, name="dispatch")

@@ -90,6 +90,7 @@ class BulkEmailRecipient(models.Model):
     email = models.CharField(max_length=254)
     success = models.BooleanField(default=False)
     error_message = models.CharField(max_length=500, blank=True)
+    bounced_at = models.DateTimeField(null=True, blank=True, verbose_name="Bouncet")
     resend_email_id = models.CharField(max_length=100, blank=True)
     resent_to = models.CharField(max_length=254, blank=True, verbose_name="Gensendt til")
     resent_at = models.DateTimeField(null=True, blank=True, verbose_name="Gensendt")
