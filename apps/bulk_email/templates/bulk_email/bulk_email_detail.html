@@ -114,12 +114,12 @@
                         <td>
                             {% if not r.success %}
                                 <span class="text-danger">&#10005; {{ r.error_message }}</span>
+                            {% elif r.email_changed %}
+                                <span class="text-warning"><i class="bi bi-exclamation-triangle-fill"></i> E-mail opdateret til {{ r.person.email }} — ikke gensendt</span>
                             {% elif r.is_bounced and r.resent_to %}
                                 <span class="text-warning"><i class="bi bi-exclamation-triangle-fill"></i> Bouncet igen ({{ r.resent_to }})</span>
                             {% elif r.is_bounced %}
                                 <span class="text-warning"><i class="bi bi-exclamation-triangle-fill"></i> Bouncet</span>
-                            {% elif r.email_changed %}
-                                <span class="text-warning"><i class="bi bi-exclamation-triangle-fill"></i> E-mail opdateret til {{ r.person.email }} — ikke gensendt</span>
                             {% elif r.is_resolved %}
                                 {% if r.person and r.person.email == r.resent_to %}
                                 <span class="text-success">&#10003; E-mail opdateret til {{ r.resent_to }}</span>
