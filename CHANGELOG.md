@@ -4,6 +4,29 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 26. marts 2026
+
+### Kursustilmelding: duplikeret dato fjernet (OSO-231)
+Datoen blev vist to gange i dropdown-menuen ved kursustilmelding. Nu vises den kun én gang.
+
+### Bounce-håndtering i databasen
+Når en e-mail bouncer, markeres e-mailadressen nu som bouncet i databasen (på kontaktpersoner, kursustilmeldte og faktureringskontakter). Markeringen fjernes automatisk hvis e-mailadressen ændres.
+
+### Bounce-advarsler på alle e-mailadresser
+En gul advarselsikon vises ved bouncede e-mailadresser overalt i systemet: skolesiden, den offentlige skoleside, kommuneoversigt, oversigten og kursus-fremmødelisten. Ikonet har en tooltip med dato for bounce.
+
+### Masseudsendelse: bounce-overblik og gensendelse
+Detaljesiden for en masseudsendelse viser nu:
+- Antal e-mails der ikke kunne leveres og antal skoler der mangler
+- Klik på "Skoler mangler" for at se hvilke skoler det drejer sig om
+- Mulighed for at gensende en e-mail til en ny adresse, med valg om at opdatere kontaktpersonens e-mail permanent
+- Hvis kontaktpersonens e-mail er opdateret siden bouncen, vises den nye adresse i gensend-dialogen
+- Skolenavne i tabellen linker nu til skolens detaljeside
+- Tabellen kan sorteres efter skole og status
+- E-mailens indhold er nu sammenklappet som standard
+
+---
+
 ## 24. marts 2026
 
 ### Billeder i e-mails virker nu
