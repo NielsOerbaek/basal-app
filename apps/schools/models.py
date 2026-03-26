@@ -84,6 +84,9 @@ class School(models.Model):
     fakturering_ean_nummer = models.CharField(max_length=13, blank=True, verbose_name="EAN-nummer")
     fakturering_kontakt_navn = models.CharField(max_length=255, blank=True, verbose_name="Kontaktperson")
     fakturering_kontakt_email = models.EmailField(blank=True, verbose_name="E-mail")
+    fakturering_email_bounced_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Fakturerings-e-mail bouncet"
+    )
 
     enrolled_at = models.DateField(
         null=True, blank=True, verbose_name="Tilmeldt dato", help_text="Dato for skolens tilmelding til Basal"
@@ -122,6 +125,13 @@ class School(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            old = School.objects.filter(pk=self.pk).values_list("fakturering_kontakt_email", flat=True).first()
+            if old and old != self.fakturering_kontakt_email:
+                self.fakturering_email_bounced_at = None
+        super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         self.is_active = False
@@ -479,10 +489,18 @@ class Person(models.Model):
     titel_other = models.CharField(max_length=100, blank=True, verbose_name="Anden titel")
     phone = models.CharField(max_length=50, blank=True, verbose_name="Telefon")
     email = models.EmailField(blank=True, verbose_name="E-mail")
+    email_bounced_at = models.DateTimeField(null=True, blank=True, verbose_name="E-mail bouncet")
     comment = models.TextField(blank=True, verbose_name="Kommentar")
     is_koordinator = models.BooleanField(default=False, verbose_name="Koordinator")
     is_oekonomisk_ansvarlig = models.BooleanField(default=False, verbose_name="Økonomisk ansvarlig")
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            old = Person.objects.filter(pk=self.pk).values_list("email", flat=True).first()
+            if old and old != self.email:
+                self.email_bounced_at = None
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ["-is_koordinator", "-is_oekonomisk_ansvarlig", "name"]

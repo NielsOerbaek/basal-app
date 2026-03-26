@@ -2,8 +2,8 @@ import logging
 
 import resend
 from django.conf import settings
-from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
@@ -17,38 +17,45 @@ BOUNCE_NOTIFICATION_RECIPIENT = "basal@sundkom.dk"
 def lookup_email_owner(email):
     """Look up person and school associated with a bounced email address."""
     from apps.courses.models import CourseSignUp
-    from apps.schools.models import Person
+    from apps.schools.models import Person, School
+
+    results = []
 
     # Check Person (koordinator, økonomisk ansvarlig, etc.)
-    person = Person.objects.filter(email__iexact=email).select_related("school").first()
-    if person:
+    for person in Person.objects.filter(email__iexact=email).select_related("school"):
         roles = []
         if person.is_koordinator:
             roles.append("koordinator")
         if person.is_oekonomisk_ansvarlig:
             roles.append("økonomiansvarlig")
         role_str = ", ".join(roles) if roles else "kontaktperson"
-        return person.name, person.school.name, role_str
+        results.append((person.name, person.school.name, role_str))
 
     # Check CourseSignUp (participant)
-    signup = (
-        CourseSignUp.objects.filter(participant_email__iexact=email)
-        .select_related("school", "course")
-        .order_by("-created_at")
-        .first()
-    )
-    if signup:
+    for signup in CourseSignUp.objects.filter(participant_email__iexact=email).select_related("school", "course"):
         school_name = signup.school.name if signup.school else "ukendt skole"
-        return signup.participant_name, school_name, "kursustilmeldt"
+        results.append((signup.participant_name, school_name, "kursustilmeldt"))
 
     # Check school billing email
-    from apps.schools.models import School
+    for school in School.objects.filter(fakturering_kontakt_email__iexact=email):
+        results.append((school.fakturering_kontakt_navn or "faktureringsmodtager", school.name, "fakturering"))
 
-    school = School.objects.filter(Q(fakturering_kontakt_email__iexact=email)).first()
-    if school:
-        return school.fakturering_kontakt_navn or "faktureringsmodtager", school.name, "fakturering"
+    return results
 
-    return None, None, None
+
+def mark_email_bounced(email):
+    """Mark all records matching this email address as bounced."""
+    from apps.courses.models import CourseSignUp
+    from apps.schools.models import Person, School
+
+    now = timezone.now()
+    Person.objects.filter(email__iexact=email, email_bounced_at__isnull=True).update(email_bounced_at=now)
+    CourseSignUp.objects.filter(participant_email__iexact=email, email_bounced_at__isnull=True).update(
+        email_bounced_at=now
+    )
+    School.objects.filter(fakturering_kontakt_email__iexact=email, fakturering_email_bounced_at__isnull=True).update(
+        fakturering_email_bounced_at=now
+    )
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -100,12 +107,14 @@ class ResendWebhookView(View):
         else:
             event_label = "Klage (spam)"
 
-        # Look up affected persons
+        # Mark bounced emails and look up affected persons
         person_rows = ""
         for email in to_emails:
-            name, school, role = lookup_email_owner(email)
-            if name:
-                person_rows += f"<li><strong>{name}</strong> ({role}) — {school}</li>\n"
+            mark_email_bounced(email)
+            owners = lookup_email_owner(email)
+            if owners:
+                for name, school, role in owners:
+                    person_rows += f"<li><strong>{name}</strong> ({role}) — {school}</li>\n"
             else:
                 person_rows += f"<li>{email} — <em>ikke fundet i systemet</em></li>\n"
 

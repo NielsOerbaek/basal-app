@@ -152,6 +152,7 @@ class CourseSignUp(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="signups", verbose_name="Kursus")
     participant_name = models.CharField(max_length=255, verbose_name="Navn")
     participant_email = models.EmailField(blank=True, verbose_name="E-mail", help_text="E-mail til kontakt")
+    email_bounced_at = models.DateTimeField(null=True, blank=True, verbose_name="E-mail bouncet")
     participant_phone = models.CharField(max_length=50, blank=True, verbose_name="Telefon")
     participant_title = models.CharField(
         max_length=255, blank=True, verbose_name="Titel", help_text="Jobtitel eller rolle"
@@ -161,6 +162,13 @@ class CourseSignUp(models.Model):
         default=True, verbose_name="Er underviser", help_text="Afkryds hvis deltageren er underviser (ikke leder/andet)"
     )
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            old = CourseSignUp.objects.filter(pk=self.pk).values_list("participant_email", flat=True).first()
+            if old and old != self.participant_email:
+                self.email_bounced_at = None
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ["school__name", "participant_name"]
