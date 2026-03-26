@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load school_tags %}
 
 {% block title %}Oversigt - Basal{% endblock %}
 
@@ -137,7 +138,7 @@
                         <tr>
                             <td><a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a></td>
                             <td>{{ school.kommune }}</td>
-                            <td>{% with contact=school.people.first %}{% if contact %}{{ contact.name }}{% if contact.email %} ({{ contact.email }}){% endif %}{% else %}-{% endif %}{% endwith %}</td>
+                            <td>{% with contact=school.people.first %}{% if contact %}{{ contact.name }}{% if contact.email %} ({{ contact.email }}{% bounce_icon contact.email_bounced_at %}){% endif %}{% else %}-{% endif %}{% endwith %}</td>
                             <td>{{ school.enrolled_at|date:"d. M Y" }}</td>
                         </tr>
                         {% endfor %}

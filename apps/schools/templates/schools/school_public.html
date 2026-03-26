@@ -1,4 +1,5 @@
 {% extends 'core/base_public.html' %}
+{% load school_tags %}
 
 {% block title %}{{ school.name }} - Basal{% endblock %}
 
@@ -122,7 +123,7 @@
                                     {% endfor %}
                                 </div>
                                 <div class="small text-muted">
-                                    {% if person.email %}<i class="bi bi-envelope me-1"></i>{{ person.email }}{% endif %}
+                                    {% if person.email %}<i class="bi bi-envelope me-1"></i>{{ person.email }}{% bounce_icon person.email_bounced_at %}{% endif %}
                                     {% if person.email and person.phone %}<span class="mx-2">|</span>{% endif %}
                                     {% if person.phone %}<i class="bi bi-telephone me-1"></i>{{ person.phone }}{% endif %}
                                 </div>
@@ -321,7 +322,7 @@
                                     {% if signup.participant_title %}<span class="text-muted">, {{ signup.participant_title|lower }}</span>{% endif %}
                                 </div>
                                 <div class="small text-muted">
-                                    {% if signup.participant_email %}<i class="bi bi-envelope me-1"></i>{{ signup.participant_email }}{% endif %}
+                                    {% if signup.participant_email %}<i class="bi bi-envelope me-1"></i>{{ signup.participant_email }}{% bounce_icon signup.email_bounced_at %}{% endif %}
                                     {% if signup.participant_email and signup.participant_phone %}<span class="mx-2">|</span>{% endif %}
                                     {% if signup.participant_phone %}<i class="bi bi-telephone me-1"></i>{{ signup.participant_phone }}{% endif %}
                                 </div>

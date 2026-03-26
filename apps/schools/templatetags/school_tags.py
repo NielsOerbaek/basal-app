@@ -1,4 +1,5 @@
 from django import template
+from django.utils.formats import date_format
 from django.utils.html import format_html
 
 from apps.schools.school_years import calculate_school_year_for_date, parse_school_year
@@ -37,4 +38,21 @@ def school_year_chip(active_from):
         bg_color,
         text_color,
         year_name,
+    )
+
+
+@register.simple_tag
+def bounce_icon(bounced_at):
+    """
+    Render a warning icon with tooltip if email has bounced.
+
+    Usage: {% bounce_icon person.email_bounced_at %}
+    """
+    if not bounced_at:
+        return ""
+    formatted = date_format(bounced_at, "d/m/Y H:i")
+    return format_html(
+        '<i class="bi bi-exclamation-triangle-fill text-warning ms-1"'
+        ' title="E-mail bouncet {}" data-bs-toggle="tooltip"></i>',
+        formatted,
     )

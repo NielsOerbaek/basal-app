@@ -97,17 +97,21 @@ class BulkEmailDetailView(DetailView):
             # Track per-school bounce status
             if r.school_id and r.success:
                 if r.school_id not in schools_with_bounces:
-                    schools_with_bounces[r.school_id] = {"all_bounced": True, "has_recipients": True}
+                    schools_with_bounces[r.school_id] = {
+                        "all_bounced": True,
+                        "name": r.school.name if r.school else "—",
+                    }
                 if not r.is_bounced or r.is_resolved:
                     schools_with_bounces[r.school_id]["all_bounced"] = False
 
-        schools_missing = sum(1 for s in schools_with_bounces.values() if s["all_bounced"])
+        missing_schools = sorted(s["name"] for s in schools_with_bounces.values() if s["all_bounced"])
 
         context["recipients"] = recipients
         context["sent_count"] = sum(1 for r in recipients if r.success)
         context["failed_count"] = sum(1 for r in recipients if not r.success)
         context["bounced_count"] = bounced_count
-        context["schools_missing"] = schools_missing
+        context["schools_missing"] = len(missing_schools)
+        context["missing_school_names"] = missing_schools
         context["filter_summary"] = campaign.get_filter_summary_display()
         return context
 

@@ -2,7 +2,7 @@
     <td>
         <strong>{{ signup.participant_name }}</strong>
         {% if signup.participant_title %}<br><small class="text-muted">{{ signup.participant_title }}</small>{% endif %}
-        {% if signup.participant_email %}<br><small><a href="mailto:{{ signup.participant_email }}">{{ signup.participant_email }}</a></small>{% endif %}
+        {% load school_tags %}{% if signup.participant_email %}<br><small><a href="mailto:{{ signup.participant_email }}">{{ signup.participant_email }}</a>{% bounce_icon signup.email_bounced_at %}</small>{% endif %}
     </td>
     <td>{% if signup.school %}{{ signup.school.name }}{% else %}<span class="text-muted">{{ signup.other_organization }}</span>{% endif %}</td>
     <td>

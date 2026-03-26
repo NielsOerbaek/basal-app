@@ -50,34 +50,38 @@
                     <div class="fs-3 fw-bold text-warning" id="bounced-count">{{ bounced_count }}</div>
                     <div class="text-muted small">Kunne ikke leveres</div>
                 </div>
-                <div class="col">
+                <div class="col" role="button" data-bs-toggle="modal" data-bs-target="#schoolsMissingModal">
                     <div class="fs-3 fw-bold text-danger" id="schools-missing-count">{{ schools_missing }}</div>
-                    <div class="text-muted small">Skoler mangler</div>
+                    <div class="text-muted small">Skoler mangler <i class="bi bi-box-arrow-up-right small"></i></div>
                 </div>
             </div>
         </div>
     </div>
 
-    {# Email content #}
+    {# Email content (collapsed by default) #}
     <div class="card mb-4">
-        <div class="card-header fw-semibold">E-mailens indhold</div>
-        <div class="card-body p-0">
-            <div class="bg-light border-bottom px-3 py-2">
-                <span class="text-muted small text-uppercase" style="letter-spacing:0.5px;">Emne</span><br>
-                <strong>{{ campaign.subject }}</strong>
-            </div>
-            <div class="p-3">
-                {{ campaign.body_html|safe }}
-            </div>
+        <div class="card-header fw-semibold" role="button" data-bs-toggle="collapse" data-bs-target="#email-content-body">
+            E-mailens indhold <i class="bi bi-chevron-down small text-muted"></i>
         </div>
-        {% if campaign.attachments.exists %}
-        <div class="card-footer">
-            <span class="text-muted small">Vedhæftninger:</span>
-            {% for att in campaign.attachments.all %}
-                <a href="{% url 'bulk_email:attachment_download' att.pk %}" class="ms-2 small">{{ att.filename }}</a>{% if not forloop.last %},{% endif %}
-            {% endfor %}
+        <div class="collapse" id="email-content-body">
+            <div class="card-body p-0">
+                <div class="bg-light border-bottom px-3 py-2">
+                    <span class="text-muted small text-uppercase" style="letter-spacing:0.5px;">Emne</span><br>
+                    <strong>{{ campaign.subject }}</strong>
+                </div>
+                <div class="p-3">
+                    {{ campaign.body_html|safe }}
+                </div>
+            </div>
+            {% if campaign.attachments.exists %}
+            <div class="card-footer">
+                <span class="text-muted small">Vedhæftninger:</span>
+                {% for att in campaign.attachments.all %}
+                    <a href="{% url 'bulk_email:attachment_download' att.pk %}" class="ms-2 small">{{ att.filename }}</a>{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 
     {# Recipients #}
@@ -102,7 +106,7 @@
                         class="{% if not r.success %}table-danger{% elif r.is_bounced and not r.is_resolved %}table-warning{% endif %}"
                         data-school="{{ r.school.name|default:"—" }}"
                         data-status="{% if not r.success %}0{% elif r.is_bounced and not r.is_resolved %}1{% elif r.is_resolved %}3{% else %}2{% endif %}">
-                        <td>{{ r.school.name|default:"—" }}</td>
+                        <td>{% if r.school %}<a href="{% url 'schools:detail' r.school.pk %}">{{ r.school.name }}</a>{% else %}—{% endif %}</td>
                         <td>{{ r.person.name|default:"—" }}</td>
                         <td>{{ r.email }}</td>
                         <td>
@@ -127,7 +131,8 @@
                             <button class="btn btn-sm btn-outline-primary resend-btn"
                                     data-recipient-pk="{{ r.pk }}"
                                     data-school-name="{{ r.school.name|default:'—' }}"
-                                    data-original-email="{{ r.resent_to|default:r.email }}">
+                                    data-original-email="{{ r.resent_to|default:r.email }}"
+                                    data-current-email="{{ r.person.email|default:'' }}">
                                 Gensend
                             </button>
                             {% endif %}
@@ -136,6 +141,29 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+{# Schools missing modal #}
+<div class="modal fade" id="schoolsMissingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Skoler hvor alle e-mails bouncede</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% if missing_school_names %}
+                <ul class="list-group">
+                    {% for name in missing_school_names %}
+                    <li class="list-group-item">{{ name }}</li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted">Ingen skoler mangler.</p>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
@@ -150,7 +178,10 @@
             </div>
             <div class="modal-body">
                 <p>Skole: <strong id="resend-school-name"></strong></p>
-                <p class="text-muted small">Oprindelig adresse: <span id="resend-original-email"></span></p>
+                <p class="text-muted small">Bouncet adresse: <span id="resend-original-email"></span></p>
+                <div class="alert alert-info small d-none" id="resend-email-changed-notice">
+                    <i class="bi bi-info-circle me-1"></i>Kontaktpersonens e-mail er siden opdateret til <strong id="resend-changed-email"></strong>
+                </div>
                 <div class="mb-3">
                     <label for="resend-email" class="form-label">Ny e-mailadresse</label>
                     <input type="email" class="form-control" id="resend-email" required>
@@ -217,10 +248,22 @@
     document.querySelectorAll('.resend-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             activeRecipientPk = btn.dataset.recipientPk;
+            const originalEmail = btn.dataset.originalEmail;
+            const currentEmail = btn.dataset.currentEmail;
             document.getElementById('resend-school-name').textContent = btn.dataset.schoolName;
-            document.getElementById('resend-original-email').textContent = btn.dataset.originalEmail;
-            document.getElementById('resend-email').value = '';
+            document.getElementById('resend-original-email').textContent = originalEmail;
             document.getElementById('resend-error').classList.add('d-none');
+
+            // Pre-fill and show notice if person's email has been updated since the bounce
+            const notice = document.getElementById('resend-email-changed-notice');
+            if (currentEmail && currentEmail.toLowerCase() !== originalEmail.toLowerCase()) {
+                document.getElementById('resend-email').value = currentEmail;
+                document.getElementById('resend-changed-email').textContent = currentEmail;
+                notice.classList.remove('d-none');
+            } else {
+                document.getElementById('resend-email').value = '';
+                notice.classList.add('d-none');
+            }
             modal.show();
         });
     });

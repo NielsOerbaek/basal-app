@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load school_tags %}
 
 {% block title %}{{ kommune }} - Kommuner - Basal{% endblock %}
 
@@ -51,7 +52,7 @@
                         {% with primary=school.people.all|first %}
                         {% if primary and primary.email or primary and primary.phone %}
                         <i class="bi bi-check-circle text-success" title="Har kontaktinfo"></i>
-                        {% if primary.email %}<small class="text-muted ms-1">{{ primary.email }}</small>{% endif %}
+                        {% if primary.email %}<small class="text-muted ms-1">{{ primary.email }}{% bounce_icon primary.email_bounced_at %}</small>{% endif %}
                         {% else %}
                         <i class="bi bi-x-circle text-danger" title="Mangler kontaktinfo"></i>
                         <small class="text-muted ms-1">Mangler</small>

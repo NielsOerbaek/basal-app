@@ -71,7 +71,7 @@
                         <br><small class="text-muted">
                             Kontakt: {{ school.fakturering_kontakt_navn }}
                             {% if school.fakturering_kontakt_email %}
-                            &lt;{{ school.fakturering_kontakt_email }}&gt;
+                            &lt;{{ school.fakturering_kontakt_email }}&gt;{% bounce_icon school.fakturering_email_bounced_at %}
                             {% endif %}
                         </small>
                         {% endif %}
@@ -241,7 +241,7 @@
                                 {% endfor %}
                             </div>
                             <div class="small text-muted">
-                                {% if person.email %}<i class="bi bi-envelope me-1"></i><a href="mailto:{{ person.email }}">{{ person.email }}</a>{% endif %}
+                                {% if person.email %}<i class="bi bi-envelope me-1"></i><a href="mailto:{{ person.email }}">{{ person.email }}</a>{% bounce_icon person.email_bounced_at %}{% endif %}
                                 {% if person.email and person.phone %}<span class="mx-2">|</span>{% endif %}
                                 {% if person.phone %}<i class="bi bi-telephone me-1"></i>{{ person.phone }}{% endif %}
                             </div>
@@ -272,7 +272,7 @@
                                 {% if signup.participant_title %}<span class="text-muted">, {{ signup.participant_title|lower }}</span>{% endif %}
                             </div>
                             <div class="small text-muted">
-                                {% if signup.participant_email %}<i class="bi bi-envelope me-1"></i><a href="mailto:{{ signup.participant_email }}">{{ signup.participant_email }}</a>{% endif %}
+                                {% if signup.participant_email %}<i class="bi bi-envelope me-1"></i><a href="mailto:{{ signup.participant_email }}">{{ signup.participant_email }}</a>{% bounce_icon signup.email_bounced_at %}{% endif %}
                                 {% if signup.participant_email and signup.participant_phone %}<span class="mx-2">|</span>{% endif %}
                                 {% if signup.participant_phone %}<i class="bi bi-telephone me-1"></i>{{ signup.participant_phone }}{% endif %}
                             </div>
