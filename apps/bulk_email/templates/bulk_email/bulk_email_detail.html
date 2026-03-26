@@ -95,6 +95,7 @@
                     <tr>
                         <th role="button" data-sort="school" class="sortable">Skole <i class="bi bi-chevron-expand small text-muted"></i></th>
                         <th>Kontakt</th>
+                        <th>Rolle</th>
                         <th>E-mail</th>
                         <th role="button" data-sort="status" class="sortable">Status <i class="bi bi-chevron-expand small text-muted"></i></th>
                         <th></th>
@@ -108,6 +109,7 @@
                         data-status="{% if not r.success %}0{% elif r.needs_action %}1{% elif r.is_resolved %}3{% else %}2{% endif %}">
                         <td>{% if r.school %}<a href="{% url 'schools:detail' r.school.pk %}">{{ r.school.name }}</a>{% else %}—{% endif %}</td>
                         <td>{% if r.person %}{{ r.person.name }}{% else %}<em class="text-muted">Person slettet</em>{% endif %}</td>
+                        <td>{% if r.person %}{% if r.person.is_koordinator %}<span class="badge bg-primary">Koordinator</span> {% endif %}{% if r.person.is_oekonomisk_ansvarlig %}<span class="badge bg-secondary">Økonomiansvarlig</span>{% endif %}{% endif %}</td>
                         <td>{{ r.email }}</td>
                         <td>
                             {% if not r.success %}
@@ -299,12 +301,12 @@
                 const row = document.getElementById(`row-${activeRecipientPk}`);
                 row.className = '';
                 row.dataset.status = '3';
-                const statusCell = row.children[3];
+                const statusCell = row.children[4];
                 const label = data.contact_updated
                     ? `&#10003; E-mail opdateret til ${data.email}`
                     : `&#10003; Gensendt til ${data.email} (engangsudsendelse)`;
                 statusCell.innerHTML = `<span class="text-success">${label}</span>`;
-                const actionCell = row.children[4];
+                const actionCell = row.children[5];
                 actionCell.innerHTML = '';
                 updateCounts();
             } else {
