@@ -129,8 +129,8 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if r.needs_action and r.success %}
-                            <button class="btn btn-sm btn-outline-primary resend-btn"
+                            {% if r.success %}
+                            <button class="btn btn-sm {% if r.needs_action %}btn-outline-primary{% else %}btn-outline-secondary btn-sm{% endif %} resend-btn"
                                     data-recipient-pk="{{ r.pk }}"
                                     data-school-name="{{ r.school.name|default:'—' }}"
                                     data-original-email="{{ r.resent_to|default:r.email }}"
