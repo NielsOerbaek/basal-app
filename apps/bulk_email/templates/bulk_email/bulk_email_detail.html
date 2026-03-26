@@ -107,7 +107,7 @@
                         data-school="{{ r.school.name|default:"—" }}"
                         data-status="{% if not r.success %}0{% elif r.needs_action %}1{% elif r.is_resolved %}3{% else %}2{% endif %}">
                         <td>{% if r.school %}<a href="{% url 'schools:detail' r.school.pk %}">{{ r.school.name }}</a>{% else %}—{% endif %}</td>
-                        <td>{{ r.person.name|default:"—" }}</td>
+                        <td>{% if r.person %}{{ r.person.name }}{% else %}<em class="text-muted">Person slettet</em>{% endif %}</td>
                         <td>{{ r.email }}</td>
                         <td>
                             {% if not r.success %}

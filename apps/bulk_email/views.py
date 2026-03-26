@@ -67,20 +67,30 @@ class BulkEmailDetailView(DetailView):
             Person.objects.filter(pk__in=person_pks, email_bounced_at__isnull=False).values_list("pk", flat=True)
         )
 
-        # Also check school billing emails
+        # Check bounced emails by address (covers deleted persons)
         recipient_emails = {r.email.lower() for r in recipients}
+        bounced_emails_by_address = set(
+            e.lower()
+            for e in Person.objects.filter(email__in=recipient_emails, email_bounced_at__isnull=False).values_list(
+                "email", flat=True
+            )
+        )
+
+        # Also check school billing emails
         bounced_billing_emails = set(
-            School.objects.filter(
+            e.lower()
+            for e in School.objects.filter(
                 fakturering_kontakt_email__in=recipient_emails,
                 fakturering_email_bounced_at__isnull=False,
             ).values_list("fakturering_kontakt_email", flat=True)
         )
+        bounced_emails_by_address |= bounced_billing_emails
 
         # Annotate recipients with bounce info
         bounced_count = 0
         schools_with_bounces = {}  # school_id -> [has_non_bounced]
         for r in recipients:
-            r.is_bounced = (r.person_id in bounced_person_pks) or (r.email.lower() in bounced_billing_emails)
+            r.is_bounced = (r.person_id in bounced_person_pks) or (r.email.lower() in bounced_emails_by_address)
 
             # Detect if contact email was changed externally (not via resend)
             r.email_changed = (
