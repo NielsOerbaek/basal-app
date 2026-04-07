@@ -262,10 +262,13 @@ function removeAttachment(index) {
 function getFilterParams() {
     const params = {};
     const urlParams = new URLSearchParams(window.location.search);
-    for (const key of ["search", "year", "status_filter", "kommune", "institutionstype", "unused_seats"]) {
+    for (const key of ["search", "year", "status_filter", "kommune", "unused_seats"]) {
         const val = urlParams.get(key) || "";
         if (val) params[key] = val;
     }
+    // Multi-value: institutionstype
+    const institutionstyper = urlParams.getAll("institutionstype").filter(Boolean);
+    if (institutionstyper.length) params.institutionstype = institutionstyper;
     return params;
 }
 

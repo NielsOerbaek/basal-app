@@ -64,9 +64,10 @@ def get_filter_summary(request):
     if kommune:
         parts.append(f"Kommune: {kommune}")
 
-    institutionstype = request.GET.get("institutionstype", "").strip()
-    if institutionstype:
-        parts.append(f"Type: {_INSTITUTIONSTYPE_LABELS.get(institutionstype, institutionstype)}")
+    institutionstyper = [v for v in request.GET.getlist("institutionstype") if v]
+    if institutionstyper:
+        labels = [_INSTITUTIONSTYPE_LABELS.get(v, v) for v in institutionstyper]
+        parts.append(f"Type: {', '.join(labels)}")
 
     if unused_seats == "yes":
         parts.append("Har ubrugte pladser")
@@ -231,9 +232,11 @@ class SchoolFilterMixin:
             else:
                 queryset = queryset.filter(kommune=kommune_filter)
 
-        institutionstype_filter = self.request.GET.get("institutionstype", "").strip()
+        institutionstype_filter = [v for v in self.request.GET.getlist("institutionstype") if v]
         if institutionstype_filter:
-            allowed = _INSTITUTIONSTYPE_FILTER_EXPAND.get(institutionstype_filter, [institutionstype_filter])
+            allowed = set()
+            for v in institutionstype_filter:
+                allowed.update(_INSTITUTIONSTYPE_FILTER_EXPAND.get(v, [v]))
             if isinstance(queryset, list):
                 queryset = [s for s in queryset if s.institutionstype in allowed]
             else:
@@ -260,7 +263,8 @@ class SchoolFilterMixin:
             .order_by("start_date")
             .values_list("name", flat=True)
         )
-        has_active_filters = any(self.request.GET.get(p) for p in FILTER_PARAMS)
+        has_active_filters = any(self.request.GET.getlist(p) for p in FILTER_PARAMS)
+        selected_institutionstyper = [v for v in self.request.GET.getlist("institutionstype") if v]
         selected_year = self.request.GET.get("year", "").strip() or None
 
         selected_year_dates = None
@@ -284,4 +288,5 @@ class SchoolFilterMixin:
             "has_active_filters": has_active_filters,
             "selected_year": selected_year,
             "selected_year_dates": selected_year_dates,
+            "selected_institutionstyper": selected_institutionstyper,
         }

@@ -75,6 +75,31 @@ class SchoolFilterMixinContextTest(TestCase):
         names = sorted(s.name for s in view.get_school_filter_queryset())
         self.assertEqual(names, ["Friskolen"])
 
+    def test_institutionstype_filter_multi_select(self):
+        from apps.schools.models import InstitutionstypeChoice
+
+        School.objects.create(
+            name="Friskolen2",
+            kommune="Aarhus",
+            institutionstype=InstitutionstypeChoice.FRISKOLE,
+            signup_token="m1",
+            signup_password="m1",
+        )
+        School.objects.create(
+            name="Efterskolen2",
+            kommune="Aarhus",
+            institutionstype=InstitutionstypeChoice.EFTERSKOLE,
+            signup_token="m2",
+            signup_password="m2",
+        )
+        # Both selected
+        request = self.factory.get("/?institutionstype=friskole&institutionstype=efterskole")
+        view = DummyView(request)
+        names = {s.name for s in view.get_school_filter_queryset()}
+        self.assertIn("Friskolen2", names)
+        self.assertIn("Efterskolen2", names)
+        self.assertNotIn("Testskole", names)  # folkeskole not selected
+
     def test_institutionstype_filter_kombineret_matches_both(self):
         from apps.schools.models import InstitutionstypeChoice
 

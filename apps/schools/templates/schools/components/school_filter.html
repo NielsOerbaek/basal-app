@@ -160,21 +160,24 @@
           <div class="form-text text-muted">Filtrér til skoler i én bestemt kommune.</div>
         </div>
 
-        {# ── 5b. Institutionstype ── #}
+        {# ── 5b. Institutionstype (multi-select via checkboxes) ── #}
         <div class="mb-3">
-          <label for="filter-institutionstype" class="form-label fw-semibold">Institutionstype</label>
-          <select
-            id="filter-institutionstype"
-            name="institutionstype"
-            class="form-select school-filter-autosubmit"
-            {% if request.GET.institutionstype %}style="border-color: #0d6efd; background: #f0f6ff;"{% endif %}
-          >
-            <option value="">— Alle typer —</option>
-            <option value="folkeskole" {% if request.GET.institutionstype == 'folkeskole' %}selected{% endif %}>Folkeskole</option>
-            <option value="friskole" {% if request.GET.institutionstype == 'friskole' %}selected{% endif %}>Fri/privat grundskole</option>
-            <option value="efterskole" {% if request.GET.institutionstype == 'efterskole' %}selected{% endif %}>Efterskole</option>
-          </select>
-          <div class="form-text text-muted">Filtrér til folkeskoler, friskoler eller efterskoler.</div>
+          <label class="form-label fw-semibold">Institutionstype</label>
+          <div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input school-filter-autosubmit" type="checkbox" name="institutionstype" value="folkeskole" id="filter-it-folkeskole" {% if 'folkeskole' in selected_institutionstyper %}checked{% endif %}>
+              <label class="form-check-label" for="filter-it-folkeskole">Folkeskole</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input school-filter-autosubmit" type="checkbox" name="institutionstype" value="friskole" id="filter-it-friskole" {% if 'friskole' in selected_institutionstyper %}checked{% endif %}>
+              <label class="form-check-label" for="filter-it-friskole">Fri/privat grundskole</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input school-filter-autosubmit" type="checkbox" name="institutionstype" value="efterskole" id="filter-it-efterskole" {% if 'efterskole' in selected_institutionstyper %}checked{% endif %}>
+              <label class="form-check-label" for="filter-it-efterskole">Efterskole</label>
+            </div>
+          </div>
+          <div class="form-text text-muted">Vælg en eller flere typer. "Kombineret fri-/efterskole" er inkluderet i både fri/privat og efterskole.</div>
         </div>
 
         {# ── 6. Ubrugte pladser ── #}
@@ -221,9 +224,9 @@
   const form = document.getElementById('school-filter-form');
   if (!form) return;
 
-  // Auto-submit selects on change
-  form.querySelectorAll('select.school-filter-autosubmit').forEach(function (sel) {
-    sel.addEventListener('change', function () {
+  // Auto-submit selects and checkboxes on change
+  form.querySelectorAll('.school-filter-autosubmit').forEach(function (el) {
+    el.addEventListener('change', function () {
       form.submit();
     });
   });

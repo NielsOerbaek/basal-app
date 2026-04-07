@@ -365,7 +365,10 @@ class BulkEmailDryRunView(View):
         # Build a fake request to use the mixin filter logic
         fake_qs = QueryDict(mutable=True)
         for k, v in filter_params.items():
-            fake_qs[k] = str(v)
+            if isinstance(v, list):
+                fake_qs.setlist(k, [str(x) for x in v])
+            else:
+                fake_qs[k] = str(v)
 
         class _FakeRequest:
             GET = fake_qs
@@ -507,7 +510,10 @@ class BulkEmailSendView(SchoolFilterMixin, View):
         # Normal send path
         fake_get = QueryDict(mutable=True)
         for k, v in filter_params.items():
-            fake_get[k] = str(v)
+            if isinstance(v, list):
+                fake_get.setlist(k, [str(x) for x in v])
+            else:
+                fake_get[k] = str(v)
         original_get = request.GET
         request.GET = fake_get
         schools = list(self.get_school_filter_queryset())
