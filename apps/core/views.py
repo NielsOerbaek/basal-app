@@ -146,6 +146,44 @@ class CronBackupView(View):
 
 
 @method_decorator(staff_required, name="dispatch")
+class ManualView(TemplateView):
+    """User guide rendered from docs/user-guide/user-guide.md."""
+
+    template_name = "core/manual.html"
+
+    def get_context_data(self, **kwargs):
+        from django.urls import reverse
+
+        context = super().get_context_data(**kwargs)
+        manual_path = Path(settings.BASE_DIR) / "docs" / "user-guide" / "user-guide.md"
+        if manual_path.exists():
+            md_text = manual_path.read_text(encoding="utf-8")
+            # Strip YAML frontmatter
+            if md_text.startswith("---"):
+                end = md_text.find("\n---", 3)
+                if end != -1:
+                    md_text = md_text[end + 4 :].lstrip()
+            # Strip LaTeX page breaks
+            md_text = md_text.replace("\\newpage", "")
+            # Rewrite image paths to use Django static files
+            md_text = md_text.replace("screenshots/", "/static/img/manual/")
+            # Replace login URL placeholder with the actual absolute URL
+            login_url = self.request.build_absolute_uri(reverse("login"))
+            md_text = md_text.replace("{{LOGIN_URL}}", login_url)
+            # Insert TOC marker
+            md_text = "[TOC]\n\n" + md_text
+            html = markdown.markdown(
+                md_text,
+                extensions=["tables", "fenced_code", "toc"],
+                extension_configs={"toc": {"title": "Indhold"}},
+            )
+            context["manual"] = mark_safe(html)
+        else:
+            context["manual"] = None
+        return context
+
+
+@method_decorator(staff_required, name="dispatch")
 class AboutView(TemplateView):
     """About page showing the changelog."""
 

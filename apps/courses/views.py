@@ -144,9 +144,11 @@ class CourseDeleteView(View):
 
 
 @method_decorator(staff_required, name="dispatch")
-class CourseExportView(View):
-    def get(self, request):
-        queryset = list(Course.objects.select_related("location").prefetch_related("instructors").all())
+class CourseExportView(CourseListView):
+    paginate_by = None
+
+    def get(self, request, *args, **kwargs):
+        queryset = list(self.get_base_queryset().order_by("-start_date"))
         for course in queryset:
             course._export_date = (
                 str(course.start_date)
@@ -178,7 +180,7 @@ class SignUpListView(ListView):
     context_object_name = "signups"
     paginate_by = 25
 
-    def get_queryset(self):
+    def get_base_queryset(self):
         queryset = CourseSignUp.objects.select_related("school", "course")
         course_id = self.request.GET.get("course")
         if course_id:
@@ -207,6 +209,9 @@ class SignUpListView(ListView):
             queryset = queryset.filter(is_underviser=True)
 
         return queryset
+
+    def get_queryset(self):
+        return self.get_base_queryset()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

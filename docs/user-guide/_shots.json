@@ -1,0 +1,15 @@
+[
+  {"url": "/", "out": "01-dashboard.png"},
+  {"url": "/schools/", "out": "02-skoleliste.png"},
+  {"url": "/schools/1925/", "out": "03-skole-detalje.png"},
+  {"url": "/schools/1925/edit/", "out": "04-skole-rediger.png"},
+  {"url": "/courses/", "out": "05-kursusliste.png"},
+  {"url": "/courses/create/", "out": "06-kursus-opret.png"},
+  {"url": "/courses/34/", "out": "07-kursus-detalje.png"},
+  {"url": "/courses/34/rollcall/", "out": "08-rollcall.png"},
+  {"url": "/masseudsendelse/", "out": "09-bulk-list.png"},
+  {"url": "/masseudsendelse/ny/", "out": "10-bulk-create.png"},
+  {"url": "/masseudsendelse/2/", "out": "11-bulk-detalje.png"},
+  {"url": "/projektmaal/", "out": "12-projektmaal.png"},
+  {"url": "/aktivitet/", "out": "13-aktivitetslog.png"}
+]

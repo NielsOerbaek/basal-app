@@ -341,11 +341,15 @@ class SchoolHardDeleteView(View):
 
 
 @method_decorator(staff_required, name="dispatch")
-class SchoolExportView(View):
+class SchoolExportView(SchoolFilterMixin, View):
     def get(self, request):
         from apps.schools.school_years import calculate_school_year_for_date
 
-        queryset = list(School.objects.active().order_by("name"))
+        queryset = self.get_school_filter_queryset()
+        if not isinstance(queryset, list):
+            queryset = list(queryset.order_by("name"))
+        else:
+            queryset.sort(key=lambda s: s.name.lower())
         for school in queryset:
             school._export_status = school.enrollment_status[1]
             school._export_school_year = (
