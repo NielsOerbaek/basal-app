@@ -8,6 +8,7 @@ class InstitutionstypeChoice(models.TextChoices):
     FOLKESKOLE = "folkeskole", "Folkeskole"
     FRISKOLE = "friskole", "Fri/privat grundskole"
     EFTERSKOLE = "efterskole", "Efterskole"
+    FRISKOLE_EFTERSKOLE = "friskole_efterskole", "Kombineret fri-/efterskole"
 
 
 class TitelChoice(models.TextChoices):

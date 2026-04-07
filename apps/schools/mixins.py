@@ -6,6 +6,13 @@ _INSTITUTIONSTYPE_LABELS = {
     "folkeskole": "Folkeskole",
     "friskole": "Fri/privat grundskole",
     "efterskole": "Efterskole",
+    "friskole_efterskole": "Kombineret fri-/efterskole",
+}
+
+# Filter values that should also include the combined "friskole_efterskole" type
+_INSTITUTIONSTYPE_FILTER_EXPAND = {
+    "friskole": ["friskole", "friskole_efterskole"],
+    "efterskole": ["efterskole", "friskole_efterskole"],
 }
 
 _DANISH_MONTHS = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"]
@@ -226,10 +233,11 @@ class SchoolFilterMixin:
 
         institutionstype_filter = self.request.GET.get("institutionstype", "").strip()
         if institutionstype_filter:
+            allowed = _INSTITUTIONSTYPE_FILTER_EXPAND.get(institutionstype_filter, [institutionstype_filter])
             if isinstance(queryset, list):
-                queryset = [s for s in queryset if s.institutionstype == institutionstype_filter]
+                queryset = [s for s in queryset if s.institutionstype in allowed]
             else:
-                queryset = queryset.filter(institutionstype=institutionstype_filter)
+                queryset = queryset.filter(institutionstype__in=allowed)
 
         unused_filter = self.request.GET.get("unused_seats", "").strip()
         if unused_filter in ("yes", "no"):

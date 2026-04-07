@@ -141,6 +141,44 @@ class ImportStilSchoolsTest(TestCase):
         self.assertFalse(existing.people.filter(name="Generel Kontakt").exists())
         self.assertEqual(existing.people.count(), 1)
 
+    def test_cross_type_match_becomes_kombineret(self):
+        # Import as efterskole first
+        path1 = _write_csv(
+            [
+                _row(
+                    INST_NR="309300",
+                    INST_NAVN="Vinde Helsinge Friskole, Vestsjællands Idrætsefterskole",
+                    INST_TYPE_NR="1011",
+                    INST_TYPE_NAVN="Efterskoler",
+                    UNDERV_NIV="10",
+                    BEL_KOMMUNE_NAVN="Kalundborg Kommune",
+                )
+            ]
+        )
+        self._run(path1)
+
+        # Now import same name+kommune as friskole (different inst_nr)
+        path2 = _write_csv(
+            [
+                _row(
+                    INST_NR="309004",
+                    INST_NAVN="Vinde Helsinge Friskole, Vestsjællands Idrætsefterskole",
+                    INST_TYPE_NR="1013",
+                    INST_TYPE_NAVN="Friskoler og private grundskoler",
+                    UNDERV_NIV="9",
+                    BEL_KOMMUNE_NAVN="Kalundborg Kommune",
+                )
+            ]
+        )
+        self._run(path2)
+
+        schools = School.objects.filter(name="Vinde Helsinge Friskole, Vestsjællands Idrætsefterskole")
+        self.assertEqual(schools.count(), 1)
+        s = schools.first()
+        self.assertEqual(s.institutionstype, InstitutionstypeChoice.FRISKOLE_EFTERSKOLE)
+        # Existing inst_nr (efterskole) preserved
+        self.assertEqual(s.inst_nr, "309300")
+
     def test_dry_run_does_not_persist(self):
         path = _write_csv([_row()])
         self._run(path, dry_run=True)

@@ -152,6 +152,18 @@ class Command(BaseCommand):
         general_phone = (row.get("TLF_NR") or "").strip()
 
         if school:
+            # Detect cross-type match: same physical institution registered as
+            # both friskole and efterskole → mark as kombineret. Preserve the
+            # existing inst_nr in that case (we only have one slot).
+            combined = {InstitutionstypeChoice.FRISKOLE, InstitutionstypeChoice.EFTERSKOLE}
+            if school.institutionstype == InstitutionstypeChoice.FRISKOLE_EFTERSKOLE or (
+                school.institutionstype in combined
+                and institutionstype in combined
+                and school.institutionstype != institutionstype
+            ):
+                defaults["institutionstype"] = InstitutionstypeChoice.FRISKOLE_EFTERSKOLE
+                defaults["inst_nr"] = school.inst_nr or inst_nr
+
             changed = False
             for field, value in defaults.items():
                 if getattr(school, field) != value:

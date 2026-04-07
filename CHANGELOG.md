@@ -13,6 +13,7 @@ Alle frie/private grundskoler og efterskoler, der dækker 7.-10. klasse, er nu i
 - Skoleoversigten viser institutionstype som en farvet chip i sin egen kolonne, og der er tilføjet et nyt **filter** så man kan vise kun folkeskoler, friskoler eller efterskoler.
 - Excel-eksporten af skoleoversigten inkluderer nu institutionstype.
 - For nye importerede skoler er skolelederen oprettet som en kontaktperson, og skolens generelle e-mail er oprettet som "Generel Kontakt".
+- Skoler der både er friskole og efterskole (samme fysiske institution) markeres som **"Kombineret fri-/efterskole"** og dukker op både når man filtrerer på friskoler og når man filtrerer på efterskoler.
 
 ---
 
