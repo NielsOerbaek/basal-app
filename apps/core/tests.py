@@ -93,7 +93,7 @@ def smoke_test_data(db, staff_user):
         school=school,
         name="Test Person",
         email="person@test.com",
-        role="koordinator",
+        is_koordinator=True,
     )
 
     # Create school comment

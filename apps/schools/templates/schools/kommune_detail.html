@@ -18,23 +18,93 @@
     <h1><i class="bi bi-geo-alt me-2"></i>{{ kommune }}</h1>
 </div>
 
-{% if has_kommunen_betaler %}
-<div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-receipt me-1"></i>Faktureringsoplysninger for kommunen</span>
-        <small class="text-muted">Deles med alle skoler i {{ kommune }}, hvor "Kommunen betaler" er slået til.</small>
+<div class="row mb-4">
+    {% if has_kommunen_betaler %}
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-receipt me-1"></i>Faktureringsoplysninger for kommunen
+            </div>
+            <div class="card-body">
+                {# Read-only view #}
+                <div id="kommune-billing-readonly">
+                    {% if kommune_obj %}
+                    <dl class="row mb-2">
+                        <dt class="col-sm-4">Adresse</dt>
+                        <dd class="col-sm-8">
+                            {{ kommune_obj.fakturering_adresse|default:"—" }}
+                            {% if kommune_obj.fakturering_postnummer or kommune_obj.fakturering_by %}
+                            <br>{{ kommune_obj.fakturering_postnummer }} {{ kommune_obj.fakturering_by }}
+                            {% endif %}
+                        </dd>
+                        <dt class="col-sm-4">EAN-nummer</dt>
+                        <dd class="col-sm-8">{{ kommune_obj.fakturering_ean_nummer|default:"—" }}</dd>
+                        <dt class="col-sm-4">Kontaktperson</dt>
+                        <dd class="col-sm-8">{{ kommune_obj.fakturering_kontakt_navn|default:"—" }}</dd>
+                        <dt class="col-sm-4">E-mail</dt>
+                        <dd class="col-sm-8">
+                            {% if kommune_obj.fakturering_kontakt_email %}
+                            {{ kommune_obj.fakturering_kontakt_email }}{% bounce_icon kommune_obj.fakturering_email_bounced_at %}
+                            {% else %}—{% endif %}
+                        </dd>
+                    </dl>
+                    {% else %}
+                    <p class="text-muted small mb-2"><em>Ingen faktureringsoplysninger gemt for denne kommune endnu.</em></p>
+                    {% endif %}
+                    <small class="text-muted d-block mb-2">
+                        Deles med alle skoler i {{ kommune }}, hvor "Kommunen betaler" er slået til.
+                    </small>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#kommune-billing-edit" aria-expanded="false">
+                        <i class="bi bi-pencil me-1"></i>Rediger
+                    </button>
+                </div>
+
+                {# Edit form (collapsed by default) #}
+                <div class="collapse mt-3{% if billing_form.errors %} show{% endif %}" id="kommune-billing-edit">
+                    <hr class="mt-0">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ billing_form|crispy }}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-1"></i>Gem
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary ms-1" data-bs-toggle="collapse" data-bs-target="#kommune-billing-edit">
+                            Annullér
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="card-body">
-        <form method="post">
-            {% csrf_token %}
-            {{ billing_form|crispy }}
-            <button type="submit" class="btn btn-primary mt-2">
-                <i class="bi bi-save me-1"></i>Gem faktureringsoplysninger
-            </button>
-        </form>
+    {% endif %}
+
+    <div class="{% if has_kommunen_betaler %}col-lg-5{% else %}col-12{% endif %}">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-bar-chart me-1"></i>Statistik
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-7">Skoler i alt</dt>
+                    <dd class="col-sm-5 text-end fw-semibold">{{ stats.total }}</dd>
+
+                    {% for label, count in stats.by_type %}
+                    <dt class="col-sm-7 ps-3 small text-muted">↳ {{ label }}</dt>
+                    <dd class="col-sm-5 text-end small text-muted">{{ count }}</dd>
+                    {% endfor %}
+
+                    <dt class="col-sm-7 mt-2">Tilmeldte skoler</dt>
+                    <dd class="col-sm-5 mt-2 text-end fw-semibold">{{ stats.enrolled }}</dd>
+
+                    {% if has_kommunen_betaler %}
+                    <dt class="col-sm-7 ps-3 small text-muted">↳ heraf med "Kommunen betaler"</dt>
+                    <dd class="col-sm-5 text-end small text-muted">{{ stats.enrolled_kommunen_betaler }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
     </div>
 </div>
-{% endif %}
 
 <div class="card">
     <div class="table-responsive">

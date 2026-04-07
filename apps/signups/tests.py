@@ -56,6 +56,7 @@ class CourseSignupViewTest(TestCase):
         self.course = Course.objects.create(
             start_date=date.today() + timedelta(days=7),
             end_date=date.today() + timedelta(days=7),
+            registration_deadline=date.today() + timedelta(days=5),
             location=self.location,
             is_published=True,
         )
@@ -149,6 +150,7 @@ class CourseSignupWithDynamicFieldsTest(TestCase):
         self.course = Course.objects.create(
             start_date=date.today() + timedelta(days=7),
             end_date=date.today() + timedelta(days=7),
+            registration_deadline=date.today() + timedelta(days=5),
             location=self.location,
             is_published=True,
         )
@@ -497,6 +499,7 @@ class CourseSignupAuthTest(TestCase):
         self.course = Course.objects.create(
             start_date=date.today() + timedelta(days=7),
             end_date=date.today() + timedelta(days=7),
+            registration_deadline=date.today() + timedelta(days=5),
             location=self.location,
             is_published=True,
         )
@@ -706,7 +709,11 @@ class SchoolSignupExtendedFieldsTest(TestCase):
                 "fakturering_kontakt_email": "faktura@kommune.dk",
             },
         )
+        from apps.schools.models import Kommune
+
         self.school.refresh_from_db()
         self.assertTrue(self.school.kommunen_betaler)
-        self.assertEqual(self.school.fakturering_adresse, "Rådhuspladsen 1")
-        self.assertEqual(self.school.fakturering_ean_nummer, "5790000000001")
+        # When kommunen_betaler is set, billing fields are stored on the Kommune row
+        kommune = Kommune.objects.get(name=self.school.kommune)
+        self.assertEqual(kommune.fakturering_adresse, "Rådhuspladsen 1")
+        self.assertEqual(kommune.fakturering_ean_nummer, "5790000000001")

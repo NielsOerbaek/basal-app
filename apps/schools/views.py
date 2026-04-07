@@ -61,8 +61,10 @@ class KommuneDetailView(ListView):
         return School.objects.filter(kommune=kommune_name, kommunen_betaler=True).exists()
 
     def get_context_data(self, **kwargs):
+        from django.db.models import Count
+
         from apps.schools.forms import KommuneBillingForm
-        from apps.schools.models import Kommune
+        from apps.schools.models import InstitutionstypeChoice, Kommune
 
         context = super().get_context_data(**kwargs)
         kommune_name = self.kwargs["kommune"]
@@ -70,6 +72,32 @@ class KommuneDetailView(ListView):
         context["kommune_obj"] = Kommune.get_for(kommune_name)
         context["has_kommunen_betaler"] = self._has_kommunen_betaler_school(kommune_name)
         context["billing_form"] = KommuneBillingForm(instance=context["kommune_obj"])
+
+        # Stats
+        qs = School.objects.active().filter(kommune=kommune_name)
+        type_counts = dict(
+            qs.values_list("institutionstype").annotate(c=Count("id")).values_list("institutionstype", "c")
+        )
+        labels = dict(InstitutionstypeChoice.choices)
+        context["stats"] = {
+            "total": qs.count(),
+            "by_type": [
+                (labels.get(code, code), type_counts.get(code, 0))
+                for code in [
+                    InstitutionstypeChoice.FOLKESKOLE,
+                    InstitutionstypeChoice.FRISKOLE,
+                    InstitutionstypeChoice.EFTERSKOLE,
+                    InstitutionstypeChoice.FRISKOLE_EFTERSKOLE,
+                ]
+                if type_counts.get(code, 0) > 0
+            ],
+            "enrolled": qs.filter(enrolled_at__isnull=False, opted_out_at__isnull=True).count(),
+            "enrolled_kommunen_betaler": qs.filter(
+                enrolled_at__isnull=False,
+                opted_out_at__isnull=True,
+                kommunen_betaler=True,
+            ).count(),
+        }
         return context
 
     def post(self, request, *args, **kwargs):
