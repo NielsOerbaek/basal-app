@@ -24,6 +24,7 @@ class SchoolForm(forms.ModelForm):
         model = School
         fields = [
             "name",
+            "institutionstype",
             "adresse",
             "postnummer",
             "by",
@@ -47,7 +48,10 @@ class SchoolForm(forms.ModelForm):
         self.helper = FormHelper()
         self.helper.form_tag = False
         self.helper.layout = Layout(
-            "name",
+            Row(
+                Column("name", css_class="col-md-8"),
+                Column("institutionstype", css_class="col-md-4"),
+            ),
             Row(
                 Column("adresse", css_class="col-md-6"),
                 Column("postnummer", css_class="col-md-2"),

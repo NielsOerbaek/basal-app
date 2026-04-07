@@ -53,6 +53,34 @@ class SchoolFilterMixinContextTest(TestCase):
         ctx = view.get_filter_context()
         self.assertTrue(ctx["has_active_filters"])
 
+    def test_institutionstype_filter(self):
+        from apps.schools.models import InstitutionstypeChoice
+
+        School.objects.create(
+            name="Friskolen",
+            kommune="Aarhus",
+            institutionstype=InstitutionstypeChoice.FRISKOLE,
+            signup_token="t1",
+            signup_password="p1",
+        )
+        School.objects.create(
+            name="Efterskolen",
+            kommune="Aarhus",
+            institutionstype=InstitutionstypeChoice.EFTERSKOLE,
+            signup_token="t2",
+            signup_password="p2",
+        )
+        request = self.factory.get("/?institutionstype=friskole")
+        view = DummyView(request)
+        names = sorted(s.name for s in view.get_school_filter_queryset())
+        self.assertEqual(names, ["Friskolen"])
+
+    def test_institutionstype_in_filter_summary(self):
+        request = self.factory.get("/?institutionstype=efterskole")
+        view = DummyView(request)
+        ctx = view.get_filter_context()
+        self.assertIn("Efterskole", ctx["filter_summary"])
+
     def test_selected_year_from_request(self):
         request = self.factory.get("/masseudsendelse/ny/?year=2024/25")
         view = DummyView(request)

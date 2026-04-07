@@ -1,6 +1,12 @@
 from apps.schools.models import School, SchoolYear
 
-FILTER_PARAMS = ["search", "year", "status_filter", "kommune", "unused_seats"]
+FILTER_PARAMS = ["search", "year", "status_filter", "kommune", "institutionstype", "unused_seats"]
+
+_INSTITUTIONSTYPE_LABELS = {
+    "folkeskole": "Folkeskole",
+    "friskole": "Fri/privat grundskole",
+    "efterskole": "Efterskole",
+}
 
 _DANISH_MONTHS = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"]
 
@@ -50,6 +56,10 @@ def get_filter_summary(request):
 
     if kommune:
         parts.append(f"Kommune: {kommune}")
+
+    institutionstype = request.GET.get("institutionstype", "").strip()
+    if institutionstype:
+        parts.append(f"Type: {_INSTITUTIONSTYPE_LABELS.get(institutionstype, institutionstype)}")
 
     if unused_seats == "yes":
         parts.append("Har ubrugte pladser")
@@ -209,7 +219,17 @@ class SchoolFilterMixin:
 
         kommune_filter = self.request.GET.get("kommune", "").strip()
         if kommune_filter:
-            queryset = queryset.filter(kommune=kommune_filter)
+            if isinstance(queryset, list):
+                queryset = [s for s in queryset if s.kommune == kommune_filter]
+            else:
+                queryset = queryset.filter(kommune=kommune_filter)
+
+        institutionstype_filter = self.request.GET.get("institutionstype", "").strip()
+        if institutionstype_filter:
+            if isinstance(queryset, list):
+                queryset = [s for s in queryset if s.institutionstype == institutionstype_filter]
+            else:
+                queryset = queryset.filter(institutionstype=institutionstype_filter)
 
         unused_filter = self.request.GET.get("unused_seats", "").strip()
         if unused_filter in ("yes", "no"):

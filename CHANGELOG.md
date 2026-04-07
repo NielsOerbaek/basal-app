@@ -4,6 +4,18 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 7. april 2026
+
+### Friskoler og efterskoler i databasen (OSO-176, OSO-178, OSO-180)
+Alle frie/private grundskoler og efterskoler, der dækker 7.-10. klasse, er nu importeret fra STIL's institutionsregister.
+
+- Skoler har nu en **institutionstype** (Folkeskole, Fri/privat grundskole, Efterskole), der vises på skolens detaljeside og kan redigeres på skolens redigeringsside.
+- Skoleoversigten viser institutionstype som en farvet chip i sin egen kolonne, og der er tilføjet et nyt **filter** så man kan vise kun folkeskoler, friskoler eller efterskoler.
+- Excel-eksporten af skoleoversigten inkluderer nu institutionstype.
+- For nye importerede skoler er skolelederen oprettet som en kontaktperson, og skolens generelle e-mail er oprettet som "Generel Kontakt".
+
+---
+
 ## 26. marts 2026
 
 ### Kursustilmelding: duplikeret dato fjernet (OSO-231)

@@ -4,6 +4,12 @@ from django.contrib.auth.models import User
 from django.db import models
 
 
+class InstitutionstypeChoice(models.TextChoices):
+    FOLKESKOLE = "folkeskole", "Folkeskole"
+    FRISKOLE = "friskole", "Fri/privat grundskole"
+    EFTERSKOLE = "efterskole", "Efterskole"
+
+
 class TitelChoice(models.TextChoices):
     SKOLELEDER = "skoleleder", "Skoleleder"
     UDSKOLINGSLEDER = "udskolingsleder", "Udskolingsleder"
@@ -75,6 +81,19 @@ class School(models.Model):
     by = models.CharField(max_length=100, blank=True, verbose_name="By")
     kommune = models.CharField(max_length=100, verbose_name="Kommune")
     ean_nummer = models.CharField(max_length=13, blank=True, verbose_name="EAN/CVR-nummer")
+    institutionstype = models.CharField(
+        max_length=20,
+        choices=InstitutionstypeChoice.choices,
+        default=InstitutionstypeChoice.FOLKESKOLE,
+        verbose_name="Institutionstype",
+    )
+    inst_nr = models.CharField(
+        max_length=6,
+        blank=True,
+        db_index=True,
+        verbose_name="Institutionsnummer",
+        help_text="STIL-institutionsnummer (bruges som nøgle ved import)",
+    )
 
     # Billing fields (when municipality pays)
     kommunen_betaler = models.BooleanField(default=False, verbose_name="Kommunen betaler")

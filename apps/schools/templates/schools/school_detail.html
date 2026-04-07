@@ -56,6 +56,8 @@
                     </dd>
                     <dt class="col-sm-4">Kommune</dt>
                     <dd class="col-sm-8">{{ school.kommune }}</dd>
+                    <dt class="col-sm-4">Institutionstype</dt>
+                    <dd class="col-sm-8">{{ school.get_institutionstype_display }}</dd>
                     {% if school.ean_nummer %}
                     <dt class="col-sm-4">EAN/CVR-nummer</dt>
                     <dd class="col-sm-8">{{ school.ean_nummer }}</dd>

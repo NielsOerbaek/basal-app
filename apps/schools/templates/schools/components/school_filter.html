@@ -160,6 +160,23 @@
           <div class="form-text text-muted">Filtrér til skoler i én bestemt kommune.</div>
         </div>
 
+        {# ── 5b. Institutionstype ── #}
+        <div class="mb-3">
+          <label for="filter-institutionstype" class="form-label fw-semibold">Institutionstype</label>
+          <select
+            id="filter-institutionstype"
+            name="institutionstype"
+            class="form-select school-filter-autosubmit"
+            {% if request.GET.institutionstype %}style="border-color: #0d6efd; background: #f0f6ff;"{% endif %}
+          >
+            <option value="">— Alle typer —</option>
+            <option value="folkeskole" {% if request.GET.institutionstype == 'folkeskole' %}selected{% endif %}>Folkeskole</option>
+            <option value="friskole" {% if request.GET.institutionstype == 'friskole' %}selected{% endif %}>Fri/privat grundskole</option>
+            <option value="efterskole" {% if request.GET.institutionstype == 'efterskole' %}selected{% endif %}>Efterskole</option>
+          </select>
+          <div class="form-text text-muted">Filtrér til folkeskoler, friskoler eller efterskoler.</div>
+        </div>
+
         {# ── 6. Ubrugte pladser ── #}
         <div class="mb-3">
           <label for="filter-unused-seats" class="form-label fw-semibold">Ubrugte pladser</label>

@@ -351,6 +351,7 @@ class SchoolExportView(View):
             school._export_school_year = (
                 calculate_school_year_for_date(school.active_from) if school.active_from else ""
             )
+            school._export_institutionstype = school.get_institutionstype_display()
             if school.enrolled_at and not school.opted_out_at:
                 school._export_seats = f"{school.used_seats} / {school.total_seats}"
             else:
@@ -358,6 +359,7 @@ class SchoolExportView(View):
         fields = [
             ("name", "Navn"),
             ("kommune", "Kommune"),
+            ("_export_institutionstype", "Institutionstype"),
             ("_export_status", "Status"),
             ("_export_school_year", "Tilmeldt skoleår"),
             ("_export_seats", "Brugte pladser"),

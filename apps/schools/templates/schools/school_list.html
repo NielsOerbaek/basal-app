@@ -52,6 +52,7 @@
                 <tr>
                     <th>{% sort_header 'name' 'Navn' %}</th>
                     <th>{% sort_header 'kommune' 'Kommune' %}</th>
+                    <th>Type</th>
                     <th>Status</th>
                     <th>{% sort_header 'school_year' 'Aktiv fra' %}</th>
                     <th>{% sort_header 'seats' 'Brugte pladser' %}</th>
@@ -63,6 +64,15 @@
                 <tr>
                     <td><a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a></td>
                     <td>{{ school.kommune }}</td>
+                    <td>
+                        {% if school.institutionstype == 'efterskole' %}
+                        <span class="badge bg-warning text-dark">Efterskole</span>
+                        {% elif school.institutionstype == 'friskole' %}
+                        <span class="badge bg-info text-dark">Friskole</span>
+                        {% else %}
+                        <span class="badge bg-light text-dark border">Folkeskole</span>
+                        {% endif %}
+                    </td>
                     <td>
                         {% with status=school.enrollment_status %}
                         <span class="badge {{ status.2 }}">{{ status.1 }}</span>
@@ -88,7 +98,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-4">Ingen skoler fundet.</td>
+                    <td colspan="7" class="text-center text-muted py-4">Ingen skoler fundet.</td>
                 </tr>
                 {% endfor %}
             </tbody>
