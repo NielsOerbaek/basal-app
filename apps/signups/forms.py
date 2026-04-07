@@ -166,6 +166,20 @@ class CourseSignupForm(DynamicFieldsMixin, forms.Form):
             return self.locked_school
         return self.cleaned_data.get("school")
 
+    def clean(self):
+        cleaned_data = super().clean()
+        school = cleaned_data.get("school")
+        if school:
+            if not school.ean_nummer and not school.kommunen_betaler:
+                raise ValidationError(
+                    "Jeres skole mangler et EAN/CVR-nummer. Det skal udfyldes, før I kan tilmelde jer et kursus."
+                )
+            if not school.people.filter(is_oekonomisk_ansvarlig=True).exists():
+                raise ValidationError(
+                    "Jeres skole mangler en økonomisk ansvarlig. Det skal udfyldes, før I kan tilmelde jer et kursus."
+                )
+        return cleaned_data
+
 
 class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
     """School signup form for joining the Basal project."""

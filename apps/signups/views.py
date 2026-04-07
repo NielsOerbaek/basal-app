@@ -301,6 +301,7 @@ class CheckSchoolSeatsView(View):
             school_public_url = reverse("school-public", args=[school.signup_token])
 
         missing_ean = not school.ean_nummer and not school.kommunen_betaler
+        missing_oeko = not school.people.filter(is_oekonomisk_ansvarlig=True).exists()
 
         course_id = request.GET.get("course_id")
         if course_id:
@@ -337,6 +338,7 @@ class CheckSchoolSeatsView(View):
                     "koordinator": koordinator_info,
                     "school_public_url": school_public_url,
                     "missing_ean": missing_ean,
+                    "missing_oeko": missing_oeko,
                 }
             )
 
@@ -348,6 +350,7 @@ class CheckSchoolSeatsView(View):
                 "koordinator": koordinator_info,
                 "school_public_url": school_public_url,
                 "missing_ean": missing_ean,
+                "missing_oeko": missing_oeko,
             }
         )
 

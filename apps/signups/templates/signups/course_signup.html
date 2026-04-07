@@ -79,6 +79,12 @@
         <a id="ean-warning-link" href="#" target="_blank" class="btn btn-sm btn-outline-danger">Udfyld EAN/CVR-nummer på skolens side</a>
     </div>
 
+    <div id="oeko-warning" class="alert alert-danger" style="display: none;">
+        <strong><i class="bi bi-exclamation-triangle me-2"></i>Økonomisk ansvarlig mangler</strong>
+        <p class="mb-2">Jeres skole mangler en økonomisk ansvarlig. Det skal udfyldes, før I kan tilmelde jer et kursus.</p>
+        <a id="oeko-warning-link" href="#" target="_blank" class="btn btn-sm btn-outline-danger">Udfyld økonomisk ansvarlig på skolens side</a>
+    </div>
+
     <div id="koordinator-info" class="small text-muted border rounded p-2 mb-3" style="display: none;">
         <i class="bi bi-person-badge me-1"></i><strong>Koordinator:</strong>
         <span id="koordinator-name"></span>
@@ -205,6 +211,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const koordinatorLink = document.getElementById('koordinator-link');
     const eanWarning = document.getElementById('ean-warning');
     const eanWarningLink = document.getElementById('ean-warning-link');
+    const oekoWarning = document.getElementById('oeko-warning');
+    const oekoWarningLink = document.getElementById('oeko-warning-link');
 
     let participantIndex = 1;
     let schoolAvailableSeats = null;
@@ -212,6 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let seatContent = null;
     let seatData = null;
     let missingEan = false;
+    let missingOeko = false;
 
     const coordinatorConfirmation = document.getElementById('coordinator-confirmation');
     const coordinatorConfirmName = document.getElementById('coordinator-confirm-name');
@@ -384,6 +393,31 @@ document.addEventListener('DOMContentLoaded', function() {
             addParticipantBtn.disabled = true;
         } else {
             eanWarning.style.display = 'none';
+            if (!missingOeko) {
+                submitBtn.disabled = false;
+                addParticipantBtn.disabled = false;
+            }
+        }
+    }
+
+    function updateOekoWarning(data) {
+        missingOeko = data && data.missing_oeko;
+        if (missingOeko) {
+            if (data.school_public_url) {
+                oekoWarningLink.href = data.school_public_url;
+                oekoWarningLink.style.display = '';
+            } else {
+                oekoWarningLink.style.display = 'none';
+            }
+            oekoWarning.style.display = 'block';
+            submitBtn.disabled = true;
+            addParticipantBtn.disabled = true;
+        } else {
+            oekoWarning.style.display = 'none';
+            if (!missingEan) {
+                submitBtn.disabled = false;
+                addParticipantBtn.disabled = false;
+            }
         }
     }
 
@@ -424,7 +458,7 @@ document.addEventListener('DOMContentLoaded', function() {
             seatData = null;
             seatContent = null;
             updateKoordinatorDisplay(null);
-            updateEanWarning(null);
+            updateEanWarning(null); updateOekoWarning(null);
             return;
         }
 
@@ -436,8 +470,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Still fetch koordinator and EAN info even without course
             fetch('{% url "signup:check-school-seats" %}?school_id=' + schoolSelect.value)
                 .then(response => response.json())
-                .then(data => { updateKoordinatorDisplay(data); updateEanWarning(data); })
-                .catch(() => { updateKoordinatorDisplay(null); updateEanWarning(null); });
+                .then(data => { updateKoordinatorDisplay(data); updateEanWarning(data); updateOekoWarning(data); })
+                .catch(() => { updateKoordinatorDisplay(null); updateEanWarning(null); updateOekoWarning(null); });
             return;
         }
 
@@ -448,7 +482,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 seatContent = data.seat_content || {};
                 updateSeatInfoDisplay();
                 updateKoordinatorDisplay(data);
-                updateEanWarning(data);
+                updateEanWarning(data); updateOekoWarning(data);
             })
             .catch(() => {
                 seatInfoBox.style.display = 'none';
@@ -456,7 +490,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 seatData = null;
                 seatContent = null;
                 updateKoordinatorDisplay(null);
-                updateEanWarning(null);
+                updateEanWarning(null); updateOekoWarning(null);
             });
     }
 

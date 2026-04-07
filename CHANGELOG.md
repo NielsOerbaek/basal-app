@@ -6,6 +6,9 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ## 7. april 2026
 
+### Krav om økonomisk ansvarlig før kursustilmelding (OSO-234)
+En skole kan nu kun tilmelde sig et kursus, hvis der er udfyldt en økonomisk ansvarlig på skolen. Hvis feltet mangler, vises en advarsel på tilmeldingssiden med link til skolens side, og tilmeld-knappen er deaktiveret — på samme måde som med EAN/CVR-nummer.
+
 ### Friskoler og efterskoler i databasen (OSO-176, OSO-178, OSO-180)
 Alle frie/private grundskoler og efterskoler, der dækker 7.-10. klasse, er nu importeret fra STIL's institutionsregister.
 
