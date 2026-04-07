@@ -5,7 +5,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from apps.courses.models import Course, CourseSignUp, Location
-from apps.schools.models import School
+from apps.schools.models import Person, School
 
 from .models import (
     FieldType,
@@ -51,7 +51,9 @@ class CourseSignupViewTest(TestCase):
             kommune="Test Kommune",
             enrolled_at=date.today(),
             signup_password="testpass",
+            ean_nummer="5790001234567",
         )
+        Person.objects.create(school=self.school, name="Øko", is_oekonomisk_ansvarlig=True)
         self.location = Location.objects.create(name="Test Location")
         self.course = Course.objects.create(
             start_date=date.today() + timedelta(days=7),
@@ -145,7 +147,9 @@ class CourseSignupWithDynamicFieldsTest(TestCase):
             kommune="Test Kommune",
             enrolled_at=date.today(),
             signup_password="testpass",
+            ean_nummer="5790001234567",
         )
+        Person.objects.create(school=self.school, name="Øko", is_oekonomisk_ansvarlig=True)
         self.location = Location.objects.create(name="Test Location")
         self.course = Course.objects.create(
             start_date=date.today() + timedelta(days=7),

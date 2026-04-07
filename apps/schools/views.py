@@ -31,6 +31,7 @@ class KommuneListView(SortableMixin, ListView):
         "total": "total_schools",
         "enrolled": "enrolled_schools",
         "not_enrolled": "not_enrolled",
+        "enrolled_kommunen_betaler": "enrolled_kommunen_betaler",
     }
     default_sort = "kommune"
 
@@ -41,8 +42,16 @@ class KommuneListView(SortableMixin, ListView):
             .values("kommune")
             .annotate(
                 total_schools=Count("id"),
-                enrolled_schools=Count("id", filter=Q(enrolled_at__isnull=False)),
+                enrolled_schools=Count("id", filter=Q(enrolled_at__isnull=False, opted_out_at__isnull=True)),
                 not_enrolled=F("total_schools") - F("enrolled_schools"),
+                enrolled_kommunen_betaler=Count(
+                    "id",
+                    filter=Q(
+                        enrolled_at__isnull=False,
+                        opted_out_at__isnull=True,
+                        kommunen_betaler=True,
+                    ),
+                ),
             )
         )
 

@@ -17,6 +17,7 @@
                     <th>{% sort_header 'total' 'Skoler i alt' %}</th>
                     <th>{% sort_header 'enrolled' 'Tilmeldt Basal' %}</th>
                     <th>{% sort_header 'not_enrolled' 'Ikke tilmeldt' %}</th>
+                    <th>{% sort_header 'enrolled_kommunen_betaler' 'Kommunen betaler' %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -36,10 +37,17 @@
                         {% endif %}
                     </td>
                     <td>{{ kommune.not_enrolled }}</td>
+                    <td>
+                        {% if kommune.enrolled_kommunen_betaler %}
+                        <span class="text-primary">{{ kommune.enrolled_kommunen_betaler }}</span>
+                        {% else %}
+                        <span class="text-muted">0</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" class="text-center text-muted py-4">Ingen kommuner fundet.</td>
+                    <td colspan="5" class="text-center text-muted py-4">Ingen kommuner fundet.</td>
                 </tr>
                 {% endfor %}
             </tbody>

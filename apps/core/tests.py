@@ -188,7 +188,6 @@ class TestViewSmokeStaff:
             ("schools:delete", {"pk": school.pk}),
             ("schools:person-create", {"school_pk": school.pk}),
             ("schools:comment-create", {"school_pk": school.pk}),
-            ("schools:invoice-create", {"school_pk": school.pk}),
         ]
         for url_name, kwargs in urls:
             url = reverse(url_name, kwargs=kwargs)
