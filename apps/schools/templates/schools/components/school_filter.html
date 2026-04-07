@@ -251,11 +251,21 @@
   }
 
   if (collapseEl) {
-    // Set initial state
+    // Persist open/closed state across filter submits
+    const STORAGE_KEY = 'schoolFilterCollapseOpen';
+    if (localStorage.getItem(STORAGE_KEY) === '1') {
+      collapseEl.classList.add('show');
+    }
     syncToggleIcon(collapseEl.classList.contains('show'));
 
-    collapseEl.addEventListener('show.bs.collapse', function () { syncToggleIcon(true); });
-    collapseEl.addEventListener('hide.bs.collapse', function () { syncToggleIcon(false); });
+    collapseEl.addEventListener('show.bs.collapse', function () {
+      syncToggleIcon(true);
+      localStorage.setItem(STORAGE_KEY, '1');
+    });
+    collapseEl.addEventListener('hide.bs.collapse', function () {
+      syncToggleIcon(false);
+      localStorage.setItem(STORAGE_KEY, '0');
+    });
   }
 }());
 </script>
