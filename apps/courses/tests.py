@@ -98,10 +98,15 @@ class CourseViewTest(TestCase):
             adresse="Test Address",
             kommune="Test Kommune",
             enrolled_at=date.today(),  # School needs to be enrolled to have seats
+            ean_nummer="5790001234567",
         )
+        from apps.schools.models import Person
+
+        Person.objects.create(school=self.school, name="Øko", is_oekonomisk_ansvarlig=True)
         self.course = Course.objects.create(
             start_date=date.today() + timedelta(days=7),
             end_date=date.today() + timedelta(days=7),
+            registration_deadline=date.today() + timedelta(days=5),
             is_published=True,
         )
 

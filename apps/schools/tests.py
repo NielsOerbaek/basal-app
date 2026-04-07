@@ -418,6 +418,7 @@ class SchoolViewTest(TestCase):
             {
                 "name": "Updated School",
                 "kommune": "Københavns Kommune",
+                "institutionstype": "folkeskole",
             },
         )
         self.assertEqual(response.status_code, 302)  # Redirect on success
@@ -768,9 +769,10 @@ class FormValidationTest(TestCase):
                 "name": "New School",
                 "adresse": "New Address",
                 "kommune": "Københavns Kommune",
+                "institutionstype": "folkeskole",
             }
         )
-        self.assertTrue(form.is_valid())
+        self.assertTrue(form.is_valid(), form.errors)
 
     def test_school_form_valid_without_adresse(self):
         """SchoolForm accepts data without address (optional field)."""
@@ -780,9 +782,10 @@ class FormValidationTest(TestCase):
             data={
                 "name": "New School",
                 "kommune": "Københavns Kommune",
+                "institutionstype": "folkeskole",
             }
         )
-        self.assertTrue(form.is_valid())
+        self.assertTrue(form.is_valid(), form.errors)
 
     def test_school_form_requires_name(self):
         """SchoolForm requires name field."""
@@ -1038,7 +1041,7 @@ class SchoolPublicViewTest(TestCase):
     def test_public_view_shows_seat_info(self):
         """Public view shows seat information."""
         response = self.client.get(f"/school/{self.school.signup_token}/")
-        self.assertContains(response, "Pladser")
+        self.assertContains(response, "kursuspladser")
 
     def test_public_view_shows_people(self):
         """Public view shows people from school."""
@@ -1146,6 +1149,7 @@ class SchoolFormExtendedFieldsTest(TestCase):
                 "postnummer": "2100",
                 "by": "København Ø",
                 "ean_nummer": "5790001234567",
+                "institutionstype": "folkeskole",
             }
         )
         self.assertTrue(form.is_valid(), form.errors)
@@ -1329,6 +1333,7 @@ class SchoolFormBillingFieldsTest(TestCase):
             data={
                 "name": "Test School",
                 "kommune": "Københavns Kommune",
+                "institutionstype": "folkeskole",
                 "kommunen_betaler": True,
                 "fakturering_adresse": "Rådhuspladsen 1",
                 "fakturering_postnummer": "1550",
@@ -1341,7 +1346,8 @@ class SchoolFormBillingFieldsTest(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
         school = form.save()
         self.assertTrue(school.kommunen_betaler)
-        self.assertEqual(school.fakturering_adresse, "Rådhuspladsen 1")
+        # When kommunen_betaler is True, billing fields are stored on the Kommune row,
+        # not the school itself.
 
 
 class SchoolDetailBillingTest(TestCase):
@@ -2454,22 +2460,22 @@ class FilterSummaryTest(TestCase):
         return RequestFactory().get("/schools/", params)
 
     def test_no_filters_returns_empty_string(self):
-        from apps.schools.views import get_filter_summary
+        from apps.schools.mixins import get_filter_summary
 
         assert get_filter_summary(self._make_request({})) == ""
 
     def test_search_only(self):
-        from apps.schools.views import get_filter_summary
+        from apps.schools.mixins import get_filter_summary
 
         assert get_filter_summary(self._make_request({"search": "Viborg"})) == 'Søgning: "Viborg"'
 
     def test_year_only(self):
-        from apps.schools.views import get_filter_summary
+        from apps.schools.mixins import get_filter_summary
 
         assert get_filter_summary(self._make_request({"year": "2024/25"})) == "Skoleår: 2024/25"
 
     def test_year_with_status_ny(self):
-        from apps.schools.views import get_filter_summary
+        from apps.schools.mixins import get_filter_summary
 
         assert (
             get_filter_summary(self._make_request({"year": "2024/25", "status_filter": "tilmeldt_ny"}))
@@ -2477,7 +2483,7 @@ class FilterSummaryTest(TestCase):
         )
 
     def test_year_with_status_fortsaetter(self):
-        from apps.schools.views import get_filter_summary
+        from apps.schools.mixins import get_filter_summary
 
         assert (
             get_filter_summary(self._make_request({"year": "2024/25", "status_filter": "tilmeldt_fortsaetter"}))
@@ -2485,7 +2491,7 @@ class FilterSummaryTest(TestCase):
         )
 
     def test_year_with_status_frameldt(self):
-        from apps.schools.views import get_filter_summary
+        from apps.schools.mixins import get_filter_summary
 
         assert (
             get_filter_summary(self._make_request({"year": "2024/25", "status_filter": "frameldt"}))
@@ -2493,7 +2499,7 @@ class FilterSummaryTest(TestCase):
         )
 
     def test_year_with_status_venter(self):
-        from apps.schools.views import get_filter_summary
+        from apps.schools.mixins import get_filter_summary
 
         assert (
             get_filter_summary(self._make_request({"year": "2024/25", "status_filter": "tilmeldt_venter"}))
@@ -2501,7 +2507,7 @@ class FilterSummaryTest(TestCase):
         )
 
     def test_year_with_status_ikke_tilmeldt(self):
-        from apps.schools.views import get_filter_summary
+        from apps.schools.mixins import get_filter_summary
 
         assert (
             get_filter_summary(self._make_request({"year": "2024/25", "status_filter": "ikke_tilmeldt"}))
@@ -2509,34 +2515,34 @@ class FilterSummaryTest(TestCase):
         )
 
     def test_no_year_frameldt(self):
-        from apps.schools.views import get_filter_summary
+        from apps.schools.mixins import get_filter_summary
 
         assert get_filter_summary(self._make_request({"status_filter": "frameldt"})) == "Frameldt"
 
     def test_no_year_tilmeldt_ny(self):
-        from apps.schools.views import get_filter_summary
+        from apps.schools.mixins import get_filter_summary
 
         assert (
             get_filter_summary(self._make_request({"status_filter": "tilmeldt_ny"})) == "Ny tilmeldt (indeværende år)"
         )
 
     def test_kommune(self):
-        from apps.schools.views import get_filter_summary
+        from apps.schools.mixins import get_filter_summary
 
         assert get_filter_summary(self._make_request({"kommune": "Aarhus"})) == "Kommune: Aarhus"
 
     def test_unused_seats_yes(self):
-        from apps.schools.views import get_filter_summary
+        from apps.schools.mixins import get_filter_summary
 
         assert get_filter_summary(self._make_request({"unused_seats": "yes"})) == "Har ubrugte pladser"
 
     def test_unused_seats_no(self):
-        from apps.schools.views import get_filter_summary
+        from apps.schools.mixins import get_filter_summary
 
         assert get_filter_summary(self._make_request({"unused_seats": "no"})) == "Ingen ubrugte pladser"
 
     def test_multiple_filters_combined(self):
-        from apps.schools.views import get_filter_summary
+        from apps.schools.mixins import get_filter_summary
 
         result = get_filter_summary(
             self._make_request({"year": "2024/25", "status_filter": "tilmeldt_ny", "kommune": "Aarhus"})
@@ -2544,7 +2550,7 @@ class FilterSummaryTest(TestCase):
         assert result == "Ny tilmeldt i 2024/25 · Kommune: Aarhus"
 
     def test_empty_search_not_included(self):
-        from apps.schools.views import get_filter_summary
+        from apps.schools.mixins import get_filter_summary
 
         assert get_filter_summary(self._make_request({"search": ""})) == ""
 
@@ -2928,10 +2934,13 @@ class ConsumptionOverviewTest(TestCase):
         self.assertEqual(first["purchased_seats"], 1)
         self.assertEqual(first["seats_price"], 7995)
 
-    def test_forankringsplads_not_applicable_in_first_year(self):
+    def test_forankringsplads_visible_in_first_year(self):
+        # Per commit 7bea67f, forankringsplads info is shown for new schools too
+        # (is_applicable is always True). It just isn't consumed yet.
         school = make_school(active_from=date(2024, 8, 1))
         result = get_consumption_overview(school, today=date(2024, 10, 1))
-        self.assertFalse(result["forankringsplads"]["is_applicable"])
+        self.assertTrue(result["forankringsplads"]["is_applicable"])
+        self.assertEqual(result["forankringsplads"]["used"], 0)
 
     def test_forankringsplads_applicable_after_first_year(self):
         school = make_school(active_from=date(2024, 8, 1))

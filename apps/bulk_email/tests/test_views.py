@@ -12,7 +12,7 @@ User = get_user_model()
 
 
 def make_staff(username="staff"):
-    return User.objects.create_user(username=username, password="pw", is_staff=True)
+    return User.objects.create_user(username=username, password="pw", is_staff=True, is_superuser=True)
 
 
 class BulkEmailListViewTest(TestCase):
