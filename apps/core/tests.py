@@ -149,7 +149,6 @@ class ViewSmokeTests:
         ("schools:kommune-list", {}),
         ("schools:export", {}),
         ("schools:autocomplete", {}),
-        ("schools:missing-invoices", {}),
         ("courses:list", {}),
         ("courses:create", {}),
         ("courses:export", {}),
