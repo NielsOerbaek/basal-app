@@ -57,10 +57,38 @@ class KommuneDetailView(ListView):
             School.objects.active().filter(kommune=self.kwargs["kommune"]).prefetch_related("people").order_by("name")
         )
 
+    def _has_kommunen_betaler_school(self, kommune_name):
+        return School.objects.filter(kommune=kommune_name, kommunen_betaler=True).exists()
+
     def get_context_data(self, **kwargs):
+        from apps.schools.forms import KommuneBillingForm
+        from apps.schools.models import Kommune
+
         context = super().get_context_data(**kwargs)
-        context["kommune"] = self.kwargs["kommune"]
+        kommune_name = self.kwargs["kommune"]
+        context["kommune"] = kommune_name
+        context["kommune_obj"] = Kommune.get_for(kommune_name)
+        context["has_kommunen_betaler"] = self._has_kommunen_betaler_school(kommune_name)
+        context["billing_form"] = KommuneBillingForm(instance=context["kommune_obj"])
         return context
+
+    def post(self, request, *args, **kwargs):
+        from apps.schools.forms import KommuneBillingForm
+        from apps.schools.models import Kommune
+
+        kommune_name = kwargs["kommune"]
+        kommune_obj = Kommune.get_or_create_for(kommune_name)
+        form = KommuneBillingForm(request.POST, instance=kommune_obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Faktureringsoplysninger for {kommune_name} er gemt.")
+            return redirect("schools:kommune-detail", kommune=kommune_name)
+
+        # Re-render with errors
+        self.object_list = self.get_queryset()
+        context = self.get_context_data()
+        context["billing_form"] = form
+        return self.render_to_response(context)
 
 
 @method_decorator(staff_required, name="dispatch")
@@ -159,10 +187,18 @@ class SchoolDetailView(DetailView):
     context_object_name = "school"
 
     def get_context_data(self, **kwargs):
-        from apps.schools.models import get_default_active_from, get_enrollment_cutoff_date
+        from apps.schools.models import Kommune, get_default_active_from, get_enrollment_cutoff_date
         from apps.schools.school_years import get_current_school_year
 
         context = super().get_context_data(**kwargs)
+        # Resolve effective billing source: kommune row when "kommunen betaler",
+        # else the school's own fakturering_* fields.
+        if self.object.kommunen_betaler:
+            context["billing_source"] = Kommune.get_for(self.object.kommune)
+            context["billing_from_kommune"] = bool(context["billing_source"])
+        else:
+            context["billing_source"] = None
+            context["billing_from_kommune"] = False
         context["kursusdeltagere"] = self.object.course_signups.select_related("course").order_by(
             "participant_name", "-course__start_date"
         )

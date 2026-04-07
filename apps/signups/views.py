@@ -435,9 +435,11 @@ class SchoolSignupView(View):
 
             default_active_from = get_default_active_from()
 
+            from apps.schools.models import apply_billing_to_school
+
             if form.cleaned_data.get("school_not_listed"):
-                # Create new school with all fields
-                school = School.objects.create(
+                # Create new school
+                school = School(
                     name=form.cleaned_data["new_school_name"],
                     adresse=form.cleaned_data.get("new_school_address", ""),
                     postnummer=form.cleaned_data.get("new_school_postnummer", ""),
@@ -446,35 +448,18 @@ class SchoolSignupView(View):
                     ean_nummer=ean_nummer,
                     enrolled_at=date.today(),
                     active_from=default_active_from,
-                    # Billing fields
                     kommunen_betaler=kommunen_betaler,
-                    fakturering_adresse=form.cleaned_data.get("fakturering_adresse", "") if kommunen_betaler else "",
-                    fakturering_postnummer=form.cleaned_data.get("fakturering_postnummer", "")
-                    if kommunen_betaler
-                    else "",
-                    fakturering_by=form.cleaned_data.get("fakturering_by", "") if kommunen_betaler else "",
-                    fakturering_ean_nummer=form.cleaned_data.get("fakturering_ean_nummer", "")
-                    if kommunen_betaler
-                    else "",
-                    fakturering_kontakt_navn=form.cleaned_data.get("fakturering_kontakt_navn", "")
-                    if kommunen_betaler
-                    else "",
-                    fakturering_kontakt_email=form.cleaned_data.get("fakturering_kontakt_email", "")
-                    if kommunen_betaler
-                    else "",
                 )
+                if kommunen_betaler:
+                    apply_billing_to_school(school, form.cleaned_data)
+                school.save()
             else:
                 # Use existing school
                 school = form.cleaned_data["school"]
                 school.ean_nummer = ean_nummer
                 school.kommunen_betaler = kommunen_betaler
                 if kommunen_betaler:
-                    school.fakturering_adresse = form.cleaned_data.get("fakturering_adresse", "")
-                    school.fakturering_postnummer = form.cleaned_data.get("fakturering_postnummer", "")
-                    school.fakturering_by = form.cleaned_data.get("fakturering_by", "")
-                    school.fakturering_ean_nummer = form.cleaned_data.get("fakturering_ean_nummer", "")
-                    school.fakturering_kontakt_navn = form.cleaned_data.get("fakturering_kontakt_navn", "")
-                    school.fakturering_kontakt_email = form.cleaned_data.get("fakturering_kontakt_email", "")
+                    apply_billing_to_school(school, form.cleaned_data)
                 if not school.enrolled_at:
                     school.enrolled_at = date.today()
                     school.active_from = default_active_from

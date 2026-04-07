@@ -21,6 +21,88 @@ class TitelChoice(models.TextChoices):
     ANDET = "andet", "Andet"
 
 
+class Kommune(models.Model):
+    """
+    Holds shared billing info for a kommune.
+
+    Linked to schools by name string (no FK on School). A row only exists
+    when someone has filled in billing info for that kommune. Lookup helper
+    is `Kommune.get_for(kommune_name)`.
+    """
+
+    name = models.CharField(max_length=100, unique=True, verbose_name="Kommune")
+    fakturering_adresse = models.CharField(max_length=255, blank=True, verbose_name="Faktureringsadresse")
+    fakturering_postnummer = models.CharField(max_length=4, blank=True, verbose_name="Postnummer")
+    fakturering_by = models.CharField(max_length=100, blank=True, verbose_name="By")
+    fakturering_ean_nummer = models.CharField(max_length=13, blank=True, verbose_name="EAN-nummer")
+    fakturering_kontakt_navn = models.CharField(max_length=255, blank=True, verbose_name="Kontaktperson")
+    fakturering_kontakt_email = models.EmailField(blank=True, verbose_name="E-mail")
+    fakturering_email_bounced_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Fakturerings-e-mail bouncet"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Kommune"
+        verbose_name_plural = "Kommuner"
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            old = Kommune.objects.filter(pk=self.pk).values_list("fakturering_kontakt_email", flat=True).first()
+            if old and old != self.fakturering_kontakt_email:
+                self.fakturering_email_bounced_at = None
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_for(cls, kommune_name):
+        """Return the Kommune row for a kommune string, or None if it doesn't exist."""
+        if not kommune_name:
+            return None
+        return cls.objects.filter(name=kommune_name).first()
+
+    @classmethod
+    def get_or_create_for(cls, kommune_name):
+        if not kommune_name:
+            return None
+        obj, _ = cls.objects.get_or_create(name=kommune_name)
+        return obj
+
+
+def apply_billing_to_school(school, billing_data):
+    """
+    Route billing values onto either the kommune row (if kommunen_betaler)
+    or the school itself. `billing_data` is a dict with the same keys as the
+    fakturering_* fields. The school object is mutated; caller must save it.
+    Returns the Kommune row if one was used, else None.
+    """
+    fields = [
+        "fakturering_adresse",
+        "fakturering_postnummer",
+        "fakturering_by",
+        "fakturering_ean_nummer",
+        "fakturering_kontakt_navn",
+        "fakturering_kontakt_email",
+    ]
+    if school.kommunen_betaler and school.kommune:
+        kommune_row = Kommune.get_or_create_for(school.kommune)
+        for f in fields:
+            setattr(kommune_row, f, billing_data.get(f, "") or "")
+        kommune_row.save()
+        for f in fields:
+            setattr(school, f, "")
+        school.fakturering_email_bounced_at = None
+        return kommune_row
+    else:
+        for f in fields:
+            setattr(school, f, billing_data.get(f, "") or "")
+        return None
+
+
 class SchoolYearManager(models.Manager):
     def get_current(self):
         """Hent det aktuelle skoleår baseret på dags dato."""

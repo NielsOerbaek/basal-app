@@ -13,9 +13,28 @@
 {% endblock %}
 
 {% block content %}
+{% load crispy_forms_tags %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1><i class="bi bi-geo-alt me-2"></i>{{ kommune }}</h1>
 </div>
+
+{% if has_kommunen_betaler %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-receipt me-1"></i>Faktureringsoplysninger for kommunen</span>
+        <small class="text-muted">Deles med alle skoler i {{ kommune }}, hvor "Kommunen betaler" er slået til.</small>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            {{ billing_form|crispy }}
+            <button type="submit" class="btn btn-primary mt-2">
+                <i class="bi bi-save me-1"></i>Gem faktureringsoplysninger
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
 
 <div class="card">
     <div class="table-responsive">

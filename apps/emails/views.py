@@ -36,9 +36,17 @@ def lookup_email_owner(email):
         school_name = signup.school.name if signup.school else "ukendt skole"
         results.append((signup.participant_name, school_name, "kursustilmeldt"))
 
-    # Check school billing email
+    # Check school billing email (per-school override)
     for school in School.objects.filter(fakturering_kontakt_email__iexact=email):
         results.append((school.fakturering_kontakt_navn or "faktureringsmodtager", school.name, "fakturering"))
+
+    # Check kommune-level billing email (shared across schools)
+    from apps.schools.models import Kommune
+
+    for kommune in Kommune.objects.filter(fakturering_kontakt_email__iexact=email):
+        results.append(
+            (kommune.fakturering_kontakt_navn or "faktureringsmodtager", kommune.name, "kommune-fakturering")
+        )
 
     return results
 
@@ -47,7 +55,7 @@ def mark_email_bounced(email, at=None):
     """Mark all records matching this email address as bounced."""
     from apps.bulk_email.models import BulkEmailRecipient
     from apps.courses.models import CourseSignUp
-    from apps.schools.models import Person, School
+    from apps.schools.models import Kommune, Person, School
 
     now = at or timezone.now()
     Person.objects.filter(email__iexact=email, email_bounced_at__isnull=True).update(email_bounced_at=now)
@@ -55,6 +63,9 @@ def mark_email_bounced(email, at=None):
         email_bounced_at=now
     )
     School.objects.filter(fakturering_kontakt_email__iexact=email, fakturering_email_bounced_at__isnull=True).update(
+        fakturering_email_bounced_at=now
+    )
+    Kommune.objects.filter(fakturering_kontakt_email__iexact=email, fakturering_email_bounced_at__isnull=True).update(
         fakturering_email_bounced_at=now
     )
     BulkEmailRecipient.objects.filter(email__iexact=email, bounced_at__isnull=True, success=True).update(bounced_at=now)

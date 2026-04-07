@@ -9,7 +9,7 @@ class AuditConfig(AppConfig):
         from apps.audit import signals  # noqa
         from apps.audit.registry import register_for_audit, AuditConfig as AuditCfg
 
-        from apps.schools.models import School, Person, SchoolComment, SchoolYear, SchoolFile
+        from apps.schools.models import Kommune, School, Person, SchoolComment, SchoolYear, SchoolFile
         from apps.courses.models import Course, CourseSignUp, CourseMaterial
 
         from apps.signups.models import SignupPage, SignupFormField, SeatInfoContent
@@ -63,6 +63,14 @@ class AuditConfig(AppConfig):
 
         # School year tracking
         register_for_audit(SchoolYear, AuditCfg())
+
+        # Kommune (shared billing info)
+        register_for_audit(
+            Kommune,
+            AuditCfg(
+                excluded_fields=["id", "created_at", "updated_at"],
+            ),
+        )
 
         # Course materials
         register_for_audit(

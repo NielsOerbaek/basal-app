@@ -22,6 +22,20 @@ def _to_date(value):
     return value
 
 
+def _billing_field(school, field):
+    """Get a fakturering_* value, falling through to the kommune row if applicable."""
+    val = getattr(school, field, "")
+    if val:
+        return val
+    if school.kommunen_betaler and school.kommune:
+        from apps.schools.models import Kommune
+
+        kommune = Kommune.get_for(school.kommune)
+        if kommune:
+            return getattr(kommune, field, "") or ""
+    return ""
+
+
 # All template variables and their source accessors
 VARIABLE_ACCESSORS = {
     "skole_navn": lambda s, p: s.name,
@@ -30,9 +44,9 @@ VARIABLE_ACCESSORS = {
     "by": lambda s, p: s.by,
     "kommune": lambda s, p: s.kommune,
     "ean_nummer": lambda s, p: s.ean_nummer,
-    "fakturering_ean_nummer": lambda s, p: s.fakturering_ean_nummer,
-    "fakturering_kontakt_navn": lambda s, p: s.fakturering_kontakt_navn,
-    "fakturering_kontakt_email": lambda s, p: s.fakturering_kontakt_email,
+    "fakturering_ean_nummer": lambda s, p: _billing_field(s, "fakturering_ean_nummer"),
+    "fakturering_kontakt_navn": lambda s, p: _billing_field(s, "fakturering_kontakt_navn"),
+    "fakturering_kontakt_email": lambda s, p: _billing_field(s, "fakturering_kontakt_email"),
     "tilmeldt_dato": lambda s, p: date_format(_to_date(s.enrolled_at), "j. F Y") if s.enrolled_at else "",
     "aktiv_fra": lambda s, p: date_format(_to_date(s.active_from), "j. F Y") if s.active_from else "",
     "kontakt_navn": lambda s, p: p.name if p else "",

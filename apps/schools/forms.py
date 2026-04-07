@@ -5,13 +5,22 @@ from crispy_forms.layout import HTML, Column, Div, Layout, Row, Submit
 from django import forms
 
 from .constants import DANISH_KOMMUNER
-from .models import Person, School, SchoolComment, SchoolFile
+from .models import Kommune, Person, School, SchoolComment, SchoolFile, apply_billing_to_school
 from .school_years import (
     calculate_school_year_for_date,
     format_school_year,
     get_school_year_dates,
     parse_school_year,
 )
+
+KOMMUNE_BILLING_FIELDS = [
+    "fakturering_adresse",
+    "fakturering_postnummer",
+    "fakturering_by",
+    "fakturering_ean_nummer",
+    "fakturering_kontakt_navn",
+    "fakturering_kontakt_email",
+]
 
 
 class SchoolForm(forms.ModelForm):
@@ -45,6 +54,24 @@ class SchoolForm(forms.ModelForm):
         self.fields["postnummer"].required = False
         self.fields["by"].required = False
         self.fields["ean_nummer"].required = False
+
+        # If this school's billing comes from the kommune row, prefill the form
+        # with kommune values so the user sees the shared data.
+        self._kommune_row = None
+        if self.instance.pk and self.instance.kommunen_betaler:
+            self._kommune_row = Kommune.get_for(self.instance.kommune)
+            if self._kommune_row and not self.is_bound:
+                for f in KOMMUNE_BILLING_FIELDS:
+                    self.initial[f] = getattr(self._kommune_row, f)
+
+        shared_notice = HTML(
+            '<div class="alert alert-info py-2 small mb-3" id="kommune-billing-notice">'
+            '<i class="bi bi-info-circle me-1"></i>'
+            "<strong>Disse oplysninger deles med alle skoler i kommunen,</strong> "
+            'der har "Kommunen betaler" slået til. Når du gemmer, opdateres de centralt.'
+            "</div>"
+        )
+
         self.helper = FormHelper()
         self.helper.form_tag = False
         self.helper.layout = Layout(
@@ -64,6 +91,7 @@ class SchoolForm(forms.ModelForm):
             HTML("<hr><h5>Fakturering</h5>"),
             "kommunen_betaler",
             Div(
+                shared_notice,
                 Row(
                     Column("fakturering_adresse", css_class="col-md-6"),
                     Column("fakturering_postnummer", css_class="col-md-2"),
@@ -92,6 +120,43 @@ class SchoolForm(forms.ModelForm):
                 raise forms.ValidationError(f'Der findes allerede en skole med navnet "{name}" i {kommune}.')
 
         return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        apply_billing_to_school(instance, self.cleaned_data)
+        if commit:
+            instance.save()
+        return instance
+
+
+class KommuneBillingForm(forms.ModelForm):
+    class Meta:
+        model = Kommune
+        fields = [
+            "fakturering_adresse",
+            "fakturering_postnummer",
+            "fakturering_by",
+            "fakturering_ean_nummer",
+            "fakturering_kontakt_navn",
+            "fakturering_kontakt_email",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.layout = Layout(
+            Row(
+                Column("fakturering_adresse", css_class="col-md-6"),
+                Column("fakturering_postnummer", css_class="col-md-2"),
+                Column("fakturering_by", css_class="col-md-4"),
+            ),
+            Row(
+                Column("fakturering_ean_nummer", css_class="col-md-4"),
+                Column("fakturering_kontakt_navn", css_class="col-md-4"),
+                Column("fakturering_kontakt_email", css_class="col-md-4"),
+            ),
+        )
 
 
 class PersonForm(forms.ModelForm):

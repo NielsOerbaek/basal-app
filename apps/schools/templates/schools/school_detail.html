@@ -63,21 +63,29 @@
                     <dd class="col-sm-8">{{ school.ean_nummer }}</dd>
                     {% endif %}
                     {% if school.kommunen_betaler %}
+                    {% with src=billing_source|default:school %}
                     <dt class="col-sm-4">Fakturering</dt>
                     <dd class="col-sm-8">
-                        <strong>Kommunen betaler</strong><br>
-                        {{ school.fakturering_adresse }}<br>
-                        {{ school.fakturering_postnummer }} {{ school.fakturering_by }}<br>
-                        EAN/CVR: {{ school.fakturering_ean_nummer }}
-                        {% if school.fakturering_kontakt_navn or school.fakturering_kontakt_email %}
+                        <strong>Kommunen betaler</strong>
+                        {% if billing_from_kommune %}
+                        <span class="badge bg-light text-dark border ms-1" title="Faktureringsoplysninger deles med alle skoler i kommunen">
+                            <i class="bi bi-link-45deg"></i> deles med kommunen
+                        </span>
+                        {% endif %}
+                        <br>
+                        {{ src.fakturering_adresse }}<br>
+                        {{ src.fakturering_postnummer }} {{ src.fakturering_by }}<br>
+                        EAN/CVR: {{ src.fakturering_ean_nummer }}
+                        {% if src.fakturering_kontakt_navn or src.fakturering_kontakt_email %}
                         <br><small class="text-muted">
-                            Kontakt: {{ school.fakturering_kontakt_navn }}
-                            {% if school.fakturering_kontakt_email %}
-                            &lt;{{ school.fakturering_kontakt_email }}&gt;{% bounce_icon school.fakturering_email_bounced_at %}
+                            Kontakt: {{ src.fakturering_kontakt_navn }}
+                            {% if src.fakturering_kontakt_email %}
+                            &lt;{{ src.fakturering_kontakt_email }}&gt;{% bounce_icon src.fakturering_email_bounced_at %}
                             {% endif %}
                         </small>
                         {% endif %}
                     </dd>
+                    {% endwith %}
                     {% endif %}
                     <dt class="col-sm-4">Tilmeldingsstatus</dt>
                     <dd class="col-sm-8">
