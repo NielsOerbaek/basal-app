@@ -100,6 +100,36 @@ class SchoolFilterMixinContextTest(TestCase):
         self.assertIn("Efterskolen2", names)
         self.assertNotIn("Testskole", names)  # folkeskole not selected
 
+    def test_school_export_view_respects_institutionstype_filter(self):
+        from apps.schools.models import InstitutionstypeChoice
+        from apps.schools.views import SchoolExportView
+
+        School.objects.create(
+            name="ExportFriskole",
+            kommune="Aarhus",
+            institutionstype=InstitutionstypeChoice.FRISKOLE,
+            signup_token="ex1",
+            signup_password="ex1",
+        )
+        School.objects.create(
+            name="ExportEfterskole",
+            kommune="Aarhus",
+            institutionstype=InstitutionstypeChoice.EFTERSKOLE,
+            signup_token="ex2",
+            signup_password="ex2",
+        )
+        request = self.factory.get("/schools/export/?institutionstype=friskole")
+        view = SchoolExportView()
+        view.request = request
+        view.kwargs = {}
+        qs = view.get_school_filter_queryset()
+        if not isinstance(qs, list):
+            qs = list(qs)
+        names = {s.name for s in qs}
+        self.assertIn("ExportFriskole", names)
+        self.assertNotIn("ExportEfterskole", names)
+        self.assertNotIn("Testskole", names)  # default folkeskole
+
     def test_institutionstype_filter_kombineret_matches_both(self):
         from apps.schools.models import InstitutionstypeChoice
 

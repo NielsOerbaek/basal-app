@@ -243,15 +243,17 @@ class SignUpListView(ListView):
 
 
 @method_decorator(staff_required, name="dispatch")
-class SignUpExportView(View):
-    def get(self, request):
-        queryset = CourseSignUp.objects.select_related("school", "course")
-        course_id = request.GET.get("course")
-        if course_id:
-            queryset = queryset.filter(course_id=course_id)
+class SignUpExportView(SignUpListView):
+    paginate_by = None
+
+    def get(self, request, *args, **kwargs):
+        queryset = list(self.get_base_queryset())
+        for s in queryset:
+            s._export_institutionstype = s.school.get_institutionstype_display() if s.school else ""
         fields = [
             ("course", "Kursus"),
             ("school", "Skole"),
+            ("_export_institutionstype", "Institutionstype"),
             ("school_active_from_year", "Skoleår aktiv fra"),
             ("participant_name", "Deltager"),
             ("participant_email", "E-mail"),

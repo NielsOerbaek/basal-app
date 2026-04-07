@@ -147,12 +147,11 @@ class ContactDeleteView(View):
 
 
 @method_decorator(staff_required, name="dispatch")
-class ContactExportView(View):
-    def get(self, request):
-        queryset = ContactTime.objects.select_related("school", "created_by")
-        school_id = request.GET.get("school")
-        if school_id:
-            queryset = queryset.filter(school_id=school_id)
+class ContactExportView(ContactListView):
+    paginate_by = None
+
+    def get(self, request, *args, **kwargs):
+        queryset = self.get_base_queryset()
         fields = [
             ("school", "Skole"),
             ("created_by", "Oprettet af"),
