@@ -6,6 +6,15 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ## 7. april 2026
 
+### Faktureringsoplysninger deles på kommuneniveau (OSO-164)
+Når flere skoler i samme kommune har **"Kommunen betaler"** slået til, deler de nu faktureringsoplysningerne. Det betyder at man kun skal taste adresse, EAN, kontaktperson og e-mail én gang for fx Fredensborg eller Bornholms Regionskommune — ændringer slår automatisk igennem på alle skolerne.
+
+- På kommune-detaljesiden er der øverst tilføjet en sektion **"Faktureringsoplysninger for kommunen"**, hvor oplysningerne kan redigeres centralt. Sektionen vises kun, hvis mindst én skole i kommunen har "Kommunen betaler" slået til.
+- På skolens redigeringsside vises en notits om at oplysningerne deles, så man ikke ved et uheld kommer til at ændre dem for én skole alene.
+- På skolens detaljeside vises et lille mærke **"deles med kommunen"** ved siden af "Kommunen betaler", så det er tydeligt hvor oplysningerne kommer fra.
+- Hvis fakturerings-e-mailen bouncer, vises advarslen automatisk på alle skolerne i kommunen.
+- Eksisterende data er flyttet automatisk: Bornholms Regionskommune og Fredensborg Kommune (de to kommuner der i dag har "Kommunen betaler" aktiveret) har fået deres faktureringsoplysninger samlet på kommuneniveau.
+
 ### Brugermanual i systemet
 Der er tilføjet en **Brugermanual** under brugermenuen øverst til højre. Manualen gennemgår de 10 mest almindelige arbejdsgange (find skoler, rediger kontaktpersoner, opret kurser, registrér fremmøde, send bulk-mail m.fl.) med skærmbilleder og trin-for-trin vejledninger.
 
