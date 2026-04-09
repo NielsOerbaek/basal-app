@@ -36,3 +36,27 @@
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const fields = {
+    school: document.getElementById("affiliation-school-field"),
+    kommune: document.getElementById("affiliation-kommune-field"),
+    other: document.getElementById("affiliation-other-field"),
+  };
+  const radios = document.querySelectorAll("input[name='affiliation_type']");
+
+  function update() {
+    const selected = document.querySelector("input[name='affiliation_type']:checked")?.value;
+    for (const [key, el] of Object.entries(fields)) {
+      if (!el) continue;
+      el.classList.toggle("d-none", key !== selected);
+    }
+  }
+
+  radios.forEach((r) => r.addEventListener("change", update));
+  update();
+})();
+</script>
+{% endblock %}

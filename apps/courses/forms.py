@@ -5,7 +5,7 @@ from crispy_forms.layout import HTML, Column, Div, Field, Layout, Row, Submit
 from django import forms
 from django.utils import timezone
 
-from apps.schools.models import School
+from apps.schools.models import Kommune, School
 
 from .models import Course, CourseMaterial, CourseSignUp, Instructor, Location
 
@@ -248,10 +248,22 @@ class CourseMaterialForm(forms.ModelForm):
 
 
 class CourseSignUpForm(forms.ModelForm):
+    AFFILIATION_CHOICES = [
+        ("school", "Skole"),
+        ("kommune", "Kommune"),
+        ("other", "Anden organisation"),
+    ]
+    affiliation_type = forms.ChoiceField(
+        choices=AFFILIATION_CHOICES,
+        widget=forms.RadioSelect,
+        label="Tilknytning",
+    )
+
     class Meta:
         model = CourseSignUp
         fields = [
             "school",
+            "kommune",
             "other_organization",
             "course",
             "participant_name",
@@ -266,15 +278,32 @@ class CourseSignUpForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["school"].queryset = School.objects.active()
         self.fields["school"].required = False
-        self.fields["other_organization"].widget.attrs["placeholder"] = "Udfyldes hvis deltageren ikke er fra en skole"
+        self.fields["kommune"].queryset = Kommune.objects.order_by("name")
+        self.fields["kommune"].required = False
+        self.fields["other_organization"].required = False
+        self.fields["other_organization"].widget.attrs[
+            "placeholder"
+        ] = "Fx en forvaltning, et ministerium, en virksomhed"
+
+        if self.instance and self.instance.pk:
+            if self.instance.school_id:
+                self.initial["affiliation_type"] = "school"
+            elif self.instance.kommune_id:
+                self.initial["affiliation_type"] = "kommune"
+            elif self.instance.other_organization:
+                self.initial["affiliation_type"] = "other"
+
         if fixed_course:
             self.fields["course"].initial = fixed_course.pk
             self.fields["course"].widget = forms.HiddenInput()
+
         self.helper = FormHelper()
         self.helper.layout = Layout(
             "course",
-            "school",
-            "other_organization",
+            "affiliation_type",
+            Div("school", css_id="affiliation-school-field"),
+            Div("kommune", css_id="affiliation-kommune-field"),
+            Div("other_organization", css_id="affiliation-other-field"),
             "participant_name",
             Row(
                 Column("participant_email", css_class="col-md-6"),
@@ -287,11 +316,25 @@ class CourseSignUpForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        school = cleaned_data.get("school")
-        other_organization = cleaned_data.get("other_organization")
+        affiliation = cleaned_data.get("affiliation_type")
 
-        if not school and not other_organization:
-            raise forms.ValidationError("Vælg enten en skole eller angiv en anden organisation.")
+        if affiliation == "school":
+            cleaned_data["kommune"] = None
+            cleaned_data["other_organization"] = ""
+            if not cleaned_data.get("school"):
+                self.add_error("school", "Vælg en skole.")
+        elif affiliation == "kommune":
+            cleaned_data["school"] = None
+            cleaned_data["other_organization"] = ""
+            if not cleaned_data.get("kommune"):
+                self.add_error("kommune", "Vælg en kommune.")
+        elif affiliation == "other":
+            cleaned_data["school"] = None
+            cleaned_data["kommune"] = None
+            if not cleaned_data.get("other_organization"):
+                self.add_error("other_organization", "Angiv organisationens navn.")
+        else:
+            raise forms.ValidationError("Vælg tilknytning: skole, kommune eller anden organisation.")
 
         return cleaned_data
 

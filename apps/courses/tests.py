@@ -516,3 +516,83 @@ class CourseSignUpConstraintTest(TestCase):
                     school=school,
                     kommune=kommune,
                 )
+
+
+class CourseSignUpFormTests(TestCase):
+    def setUp(self):
+        from datetime import date
+
+        from apps.courses.models import Course, Location
+        from apps.schools.models import Kommune, School
+
+        loc = Location.objects.create(name="L")
+        self.course = Course.objects.create(start_date=date(2026, 9, 10), end_date=date(2026, 9, 11), location=loc)
+        self.school = School.objects.create(name="Skolen", kommune="Vejen Kommune")
+        self.kommune, _ = Kommune.objects.get_or_create(name="Vejen Kommune")
+
+    def _base(self, **overrides):
+        data = {
+            "course": self.course.pk,
+            "participant_name": "Mette",
+            "participant_email": "m@example.com",
+            "participant_phone": "",
+            "participant_title": "",
+            "is_underviser": "on",
+            "affiliation_type": "",
+            "school": "",
+            "kommune": "",
+            "other_organization": "",
+        }
+        data.update(overrides)
+        return data
+
+    def test_kommune_mode_saves_kommune_fk_and_clears_others(self):
+        from apps.courses.forms import CourseSignUpForm
+
+        form = CourseSignUpForm(
+            self._base(
+                affiliation_type="kommune", kommune=self.kommune.pk, school=self.school.pk, other_organization="Noise"
+            )
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        obj = form.save()
+        self.assertEqual(obj.kommune, self.kommune)
+        self.assertIsNone(obj.school)
+        self.assertEqual(obj.other_organization, "")
+
+    def test_school_mode_saves_school_and_clears_others(self):
+        from apps.courses.forms import CourseSignUpForm
+
+        form = CourseSignUpForm(
+            self._base(
+                affiliation_type="school", school=self.school.pk, kommune=self.kommune.pk, other_organization="Noise"
+            )
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        obj = form.save()
+        self.assertEqual(obj.school, self.school)
+        self.assertIsNone(obj.kommune)
+        self.assertEqual(obj.other_organization, "")
+
+    def test_other_mode_saves_free_text(self):
+        from apps.courses.forms import CourseSignUpForm
+
+        form = CourseSignUpForm(
+            self._base(
+                affiliation_type="other",
+                other_organization="Forvaltning XYZ",
+                school=self.school.pk,
+                kommune=self.kommune.pk,
+            )
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        obj = form.save()
+        self.assertIsNone(obj.school)
+        self.assertIsNone(obj.kommune)
+        self.assertEqual(obj.other_organization, "Forvaltning XYZ")
+
+    def test_no_affiliation_selected_is_error(self):
+        from apps.courses.forms import CourseSignUpForm
+
+        form = CourseSignUpForm(self._base(affiliation_type=""))
+        self.assertFalse(form.is_valid())
