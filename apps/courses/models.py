@@ -149,6 +149,15 @@ class CourseSignUp(models.Model):
         verbose_name="Anden organisation",
         help_text="Udfyldes hvis deltageren ikke er fra en skole (f.eks. kommune, forvaltning)",
     )
+    kommune = models.ForeignKey(
+        "schools.Kommune",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="course_signups",
+        verbose_name="Kommune",
+        help_text="Udfyldes hvis deltageren er ansat i en kommune (ikke på en skole)",
+    )
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="signups", verbose_name="Kursus")
     participant_name = models.CharField(max_length=255, verbose_name="Navn")
     participant_email = models.EmailField(blank=True, verbose_name="E-mail", help_text="E-mail til kontakt")
