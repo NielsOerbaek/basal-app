@@ -1,0 +1,67 @@
+{% load sorting_tags school_tags %}
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{% sort_header 'name' 'Skole' %}</th>
+                    <th>{% sort_header 'type' 'Type' %}</th>
+                    <th>{% sort_header 'status' 'Status' %}</th>
+                    <th>Kontaktperson</th>
+                    <th>Kontaktinfo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for school in schools %}
+                <tr>
+                    <td>
+                        <a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a>
+                    </td>
+                    <td>
+                        {% if school.institutionstype == 'efterskole' %}
+                        <span class="badge bg-warning text-dark">Efterskole</span>
+                        {% elif school.institutionstype == 'friskole' %}
+                        <span class="badge bg-info text-dark">Fri/privat grundskole</span>
+                        {% elif school.institutionstype == 'friskole_efterskole' %}
+                        <span class="badge bg-info text-dark">Fri/privat grundskole</span>
+                        <span class="badge bg-warning text-dark">Efterskole</span>
+                        {% else %}
+                        <span class="badge bg-light text-dark border">Folkeskole</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% with status=school.enrollment_status %}
+                        <span class="badge {{ status.2 }}">{{ status.1 }}</span>
+                        {% endwith %}
+                    </td>
+                    <td>
+                        {% with primary=school.people.all|first %}
+                        {% if primary %}
+                        {{ primary.name }}
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                        {% endwith %}
+                    </td>
+                    <td>
+                        {% with primary=school.people.all|first %}
+                        {% if primary and primary.email or primary and primary.phone %}
+                        <i class="bi bi-check-circle text-success" title="Har kontaktinfo"></i>
+                        {% if primary.email %}<small class="text-muted ms-1">{{ primary.email }}{% bounce_icon primary.email_bounced_at %}</small>{% endif %}
+                        {% else %}
+                        <i class="bi bi-x-circle text-danger" title="Mangler kontaktinfo"></i>
+                        <small class="text-muted ms-1">Mangler</small>
+                        {% endif %}
+                        {% endwith %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">Ingen skoler fundet i denne kommune.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

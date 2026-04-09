@@ -57,14 +57,18 @@ class KommuneListView(SortableMixin, ListView):
 
 
 @method_decorator(staff_required, name="dispatch")
-class KommuneDetailView(ListView):
+class KommuneDetailView(SortableMixin, ListView):
     template_name = "schools/kommune_detail.html"
     context_object_name = "schools"
+    sortable_fields = {
+        "name": "name",
+        "type": "institutionstype",
+        "status": "enrolled_at",
+    }
+    default_sort = "name"
 
-    def get_queryset(self):
-        return (
-            School.objects.active().filter(kommune=self.kwargs["kommune"]).prefetch_related("people").order_by("name")
-        )
+    def get_base_queryset(self):
+        return School.objects.active().filter(kommune=self.kwargs["kommune"]).prefetch_related("people")
 
     def _has_kommunen_betaler_school(self, kommune_name):
         return School.objects.filter(kommune=kommune_name, kommunen_betaler=True).exists()
