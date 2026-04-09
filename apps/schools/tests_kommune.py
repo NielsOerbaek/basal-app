@@ -3,6 +3,7 @@
 from django.test import RequestFactory, TestCase
 
 from apps.schools.forms import SchoolForm
+from apps.schools.kommuner import KOMMUNE_NAMES
 from apps.schools.models import Kommune, School, apply_billing_to_school
 
 
@@ -171,3 +172,11 @@ class BackfillCanonicalPickTest(TestCase):
         mod = importlib.import_module("apps.schools.migrations.0037_backfill_kommune_billing")
         pick = mod._pick_canonical
         self.assertEqual(pick(["", "  ", "real"]), "real")
+
+
+class SeedKommunerTest(TestCase):
+    def test_all_98_kommuner_present(self):
+        names_in_db = set(Kommune.objects.values_list("name", flat=True))
+        for name in KOMMUNE_NAMES:
+            self.assertIn(name, names_in_db, f"{name} missing from Kommune table")
+        self.assertGreaterEqual(Kommune.objects.count(), 98)
