@@ -170,7 +170,7 @@
                             <th>Telefon</th>
                             <th>Titel</th>
                             <th>Underviser</th>
-                            <th>Skole</th>
+                            <th>Skole/kommune/organisation</th>
                             <th>Fremmøde</th>
                             <th></th>
                         </tr>
@@ -198,6 +198,8 @@
                             <td>
                                 {% if signup.school %}
                                 <a href="{% url 'schools:detail' signup.school.pk %}">{{ signup.school.name }}</a>
+                                {% elif signup.kommune %}
+                                <a href="{% url 'schools:kommune-detail' signup.kommune.name %}">{{ signup.kommune.name }}</a>
                                 {% else %}
                                 <span class="text-muted">{{ signup.other_organization }}</span>
                                 {% endif %}
