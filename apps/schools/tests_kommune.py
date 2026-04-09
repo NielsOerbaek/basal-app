@@ -12,9 +12,12 @@ class KommuneModelTest(TestCase):
         self.assertIsNone(Kommune.get_for("Aarhus"))
 
     def test_get_or_create_for_creates_row(self):
+        # "Aarhus" (without suffix) is NOT in the seeded canonical list,
+        # so it should create a brand new row here.
+        before = Kommune.objects.count()
         k = Kommune.get_or_create_for("Aarhus")
         self.assertEqual(k.name, "Aarhus")
-        self.assertEqual(Kommune.objects.count(), 1)
+        self.assertEqual(Kommune.objects.count(), before + 1)
         # Idempotent
         k2 = Kommune.get_or_create_for("Aarhus")
         self.assertEqual(k.pk, k2.pk)
@@ -71,7 +74,10 @@ class ApplyBillingHelperTest(TestCase):
         self.school.save()
 
         self.assertIsNone(result)
-        self.assertEqual(Kommune.objects.count(), 0)
+        # The Kommune row may exist (seeded) but should have no billing info.
+        aarhus = Kommune.objects.filter(name="Aarhus Kommune").first()
+        if aarhus:
+            self.assertEqual(aarhus.fakturering_ean_nummer, "")
         self.school.refresh_from_db()
         self.assertEqual(self.school.fakturering_ean_nummer, "99999999")
 
@@ -107,6 +113,7 @@ class SchoolFormKommuneSaveTest(TestCase):
         self.assertTrue(school.kommunen_betaler)
 
     def test_form_initial_loads_from_kommune(self):
+        Kommune.objects.filter(name="Aarhus Kommune").delete()
         Kommune.objects.create(
             name="Aarhus Kommune",
             fakturering_ean_nummer="55555555",
@@ -122,6 +129,7 @@ class SchoolDetailBillingSourceTest(TestCase):
     def test_kommune_billing_used_in_context(self):
         from apps.schools.views import SchoolDetailView
 
+        Kommune.objects.filter(name="Aarhus Kommune").delete()
         Kommune.objects.create(name="Aarhus Kommune", fakturering_ean_nummer="55555555")
         school = School.objects.create(name="Skole C", kommune="Aarhus Kommune", kommunen_betaler=True)
         view = SchoolDetailView()

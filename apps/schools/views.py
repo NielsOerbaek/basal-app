@@ -62,8 +62,7 @@ class KommuneDetailView(SortableMixin, ListView):
     context_object_name = "schools"
     sortable_fields = {
         "name": "name",
-        "type": "institutionstype",
-        "status": "enrolled_at",
+        "school_year": "active_from",
     }
     default_sort = "name"
 
@@ -245,8 +244,13 @@ class SchoolDetailView(DetailView):
         # Resolve effective billing source: kommune row when "kommunen betaler",
         # else the school's own fakturering_* fields.
         if self.object.kommunen_betaler:
-            context["billing_source"] = Kommune.get_for(self.object.kommune)
-            context["billing_from_kommune"] = bool(context["billing_source"])
+            kommune_row = Kommune.get_for(self.object.kommune)
+            if kommune_row and kommune_row.has_billing_info():
+                context["billing_source"] = kommune_row
+                context["billing_from_kommune"] = True
+            else:
+                context["billing_source"] = None
+                context["billing_from_kommune"] = False
         else:
             context["billing_source"] = None
             context["billing_from_kommune"] = False

@@ -137,7 +137,7 @@
   </div>
 </div>
 
-{% include "schools/_kommune_schools_table.html" %}
+{% include "schools/_schools_table.html" with show_kommune=False %}
 
 <div class="mt-3">
     <a href="{% url 'schools:kommune-list' %}" class="btn btn-outline-secondary">

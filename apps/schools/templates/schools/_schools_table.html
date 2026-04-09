@@ -5,19 +5,19 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th>{% sort_header 'name' 'Skole' %}</th>
-                    <th>{% sort_header 'type' 'Type' %}</th>
-                    <th>{% sort_header 'status' 'Status' %}</th>
-                    <th>Kontaktperson</th>
-                    <th>Kontaktinfo</th>
+                    <th>{% sort_header 'name' 'Navn' %}</th>
+                    {% if show_kommune %}<th>{% sort_header 'kommune' 'Kommune' %}</th>{% endif %}
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>{% sort_header 'school_year' 'Aktiv fra' %}</th>
+                    <th>{% sort_header 'seats' 'Brugte pladser' %}</th>
                 </tr>
             </thead>
             <tbody>
                 {% for school in schools %}
                 <tr>
-                    <td>
-                        <a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a>
-                    </td>
+                    <td><a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a></td>
+                    {% if show_kommune %}<td>{{ school.kommune }}</td>{% endif %}
                     <td>
                         {% if school.institutionstype == 'efterskole' %}
                         <span class="badge bg-warning text-dark">Efterskole</span>
@@ -36,29 +36,20 @@
                         {% endwith %}
                     </td>
                     <td>
-                        {% with primary=school.people.all|first %}
-                        {% if primary %}
-                        {{ primary.name }}
+                        {% school_year_chip school.active_from %}
+                    </td>
+                    <td>
+                        {% if school.enrolled_at and not school.opted_out_at %}
+                        {{ school.used_seats }} <small class="text-muted">/ {{ school.total_seats }}</small>
+                        <br><small class="text-muted">{{ school.current_seats.label }}</small>
                         {% else %}
                         <span class="text-muted">-</span>
                         {% endif %}
-                        {% endwith %}
-                    </td>
-                    <td>
-                        {% with primary=school.people.all|first %}
-                        {% if primary and primary.email or primary and primary.phone %}
-                        <i class="bi bi-check-circle text-success" title="Har kontaktinfo"></i>
-                        {% if primary.email %}<small class="text-muted ms-1">{{ primary.email }}{% bounce_icon primary.email_bounced_at %}</small>{% endif %}
-                        {% else %}
-                        <i class="bi bi-x-circle text-danger" title="Mangler kontaktinfo"></i>
-                        <small class="text-muted ms-1">Mangler</small>
-                        {% endif %}
-                        {% endwith %}
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="text-center text-muted py-4">Ingen skoler fundet i denne kommune.</td>
+                    <td colspan="{% if show_kommune %}6{% else %}5{% endif %}" class="text-center text-muted py-4">Ingen skoler fundet.</td>
                 </tr>
                 {% endfor %}
             </tbody>

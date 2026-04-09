@@ -65,6 +65,20 @@ class Kommune(models.Model):
             return None
         return cls.objects.filter(name=kommune_name).first()
 
+    def has_billing_info(self):
+        """True if this kommune row has any billing field populated."""
+        return any(
+            getattr(self, f)
+            for f in (
+                "fakturering_adresse",
+                "fakturering_postnummer",
+                "fakturering_by",
+                "fakturering_ean_nummer",
+                "fakturering_kontakt_navn",
+                "fakturering_kontakt_email",
+            )
+        )
+
     @classmethod
     def get_or_create_for(cls, kommune_name):
         if not kommune_name:

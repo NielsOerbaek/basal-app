@@ -45,69 +45,7 @@
 
 {% include 'schools/components/school_filter.html' %}
 
-<div class="card">
-    <div class="table-responsive">
-        <table class="table table-hover mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th>{% sort_header 'name' 'Navn' %}</th>
-                    <th>{% sort_header 'kommune' 'Kommune' %}</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>{% sort_header 'school_year' 'Aktiv fra' %}</th>
-                    <th>{% sort_header 'seats' 'Brugte pladser' %}</th>
-                    <th class="table-actions">Handlinger</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for school in schools %}
-                <tr>
-                    <td><a href="{% url 'schools:detail' school.pk %}">{{ school.name }}</a></td>
-                    <td>{{ school.kommune }}</td>
-                    <td>
-                        {% if school.institutionstype == 'efterskole' %}
-                        <span class="badge bg-warning text-dark">Efterskole</span>
-                        {% elif school.institutionstype == 'friskole' %}
-                        <span class="badge bg-info text-dark">Fri/privat grundskole</span>
-                        {% elif school.institutionstype == 'friskole_efterskole' %}
-                        <span class="badge bg-info text-dark">Fri/privat grundskole</span>
-                        <span class="badge bg-warning text-dark">Efterskole</span>
-                        {% else %}
-                        <span class="badge bg-light text-dark border">Folkeskole</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% with status=school.enrollment_status %}
-                        <span class="badge {{ status.2 }}">{{ status.1 }}</span>
-                        {% endwith %}
-                    </td>
-                    <td>
-                        {% school_year_chip school.active_from %}
-                    </td>
-                    <td>
-                        {% if school.enrolled_at and not school.opted_out_at %}
-                        {{ school.used_seats }} <small class="text-muted">/ {{ school.total_seats }}</small>
-                        <br><small class="text-muted">{{ school.current_seats.label }}</small>
-                        {% else %}
-                        <span class="text-muted">-</span>
-                        {% endif %}
-                    </td>
-                    <td class="table-actions">
-                        <a href="{% url 'schools:update' school.pk %}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="text-center text-muted py-4">Ingen skoler fundet.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+{% include "schools/_schools_table.html" with show_kommune=True %}
 
 {% include 'core/components/pagination.html' %}
 {% endblock %}
