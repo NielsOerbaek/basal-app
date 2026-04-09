@@ -60,7 +60,11 @@ class BulkEmail(models.Model):
         from apps.schools.mixins import get_filter_summary
 
         qs = QueryDict(mutable=True)
-        qs.update(self.filter_params)
+        for key, value in (self.filter_params or {}).items():
+            if isinstance(value, (list, tuple)):
+                qs.setlist(key, value)
+            else:
+                qs[key] = value
 
         class _FakeRequest:
             GET = qs
