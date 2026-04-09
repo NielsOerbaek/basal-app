@@ -25,7 +25,7 @@
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
-                    {{ form|crispy }}
+                    {% crispy form %}
                     <div class="mt-3">
                         <button type="submit" class="btn btn-primary">{% if is_create %}Opret tilmelding{% else %}Gem ændringer{% endif %}</button>
                         <a href="{% url 'courses:detail' course.pk %}" class="btn btn-outline-secondary">Annuller</a>

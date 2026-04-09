@@ -298,6 +298,7 @@ class CourseSignUpForm(forms.ModelForm):
             self.fields["course"].widget = forms.HiddenInput()
 
         self.helper = FormHelper()
+        self.helper.form_tag = False
         self.helper.layout = Layout(
             "course",
             "affiliation_type",
@@ -311,7 +312,6 @@ class CourseSignUpForm(forms.ModelForm):
             ),
             "participant_title",
             "is_underviser",
-            Submit("submit", "Gem tilmelding", css_class="btn btn-primary"),
         )
 
     def clean(self):
