@@ -6,8 +6,14 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ## 9. april 2026
 
-### Kursusdeltagere kan tilknyttes til kommune (OSO-xxx)
+### Kursusdeltagere kan tilknyttes til kommune (OSO-235)
 Kursusdeltagere kan nu tilknyttes direkte til en kommune, hvis de er ansat i kommunen (og ikke på en skole). På kommunesiden vises alle deltagere fra kommunen samlet.
+
+- På **tilmeldings-formularen** (Tilføj/redigér tilmelding) vælges tilknytning via radioknapper øverst: *Skole*, *Kommune* eller *Anden organisation*. Kun det relevante felt vises ad gangen, og de andre nulstilles automatisk ved gem.
+- På **kommune-detaljesiden** er der en ny sammenklappelig sektion **"Kursusdeltagere fra kommunen (N)"** der viser alle deltagere tilknyttet kommunen, grupperet efter kursus.
+- Kommune-detaljesidens skoletabel er nu sorterbar (navn, type, status, aktiv fra, brugte pladser) og har fået en **Type**-kolonne magen til oversigten på Skoler-siden. Den bruger samme tabel som /skoler, så visningen er konsistent.
+- På **kursus-detaljesiden** hedder kolonnen "Skole" nu **"Skole/kommune/organisation"** og viser kommunenavnet som link, hvis deltageren er tilknyttet en kommune.
+- Listen over de 98 danske kommuner findes nu som et fast opslagsværk i systemet, så dropdown'en er ens overalt. En enkelt stavefejl ("Vesthimmerland" → "Vesthimmerlands") er samtidig rettet.
 
 ---
 
