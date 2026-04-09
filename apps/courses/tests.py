@@ -455,3 +455,41 @@ class CourseSignUpAffiliationTests(TestCase):
     def test_str_uses_kommune(self):
         signup = self._make(kommune=self.kommune)
         self.assertIn("Vejen Kommune", str(signup))
+
+
+class BackfillCourseSignUpKommuneTest(TestCase):
+    def test_backfill_matches_free_text_to_kommune(self):
+        from datetime import date
+
+        from apps.courses.kommune_backfill import backfill_kommune_affiliations
+        from apps.courses.models import Course, CourseSignUp, Location
+        from apps.schools.models import Kommune
+
+        vejen, _ = Kommune.objects.get_or_create(name="Vejen Kommune")
+        loc = Location.objects.create(name="L")
+        course = Course.objects.create(start_date=date(2026, 9, 10), end_date=date(2026, 9, 11), location=loc)
+
+        # Bypass the clean()/XOR logic by creating via .objects.create with other_organization only.
+        matching = CourseSignUp.objects.create(
+            course=course,
+            participant_name="Mette",
+            other_organization="Vejen Kommune",
+        )
+        ambiguous = CourseSignUp.objects.create(
+            course=course,
+            participant_name="Anna",
+            other_organization="En helt anden organisation",
+        )
+
+        updated, amb = backfill_kommune_affiliations(CourseSignUp, Kommune)
+
+        self.assertEqual(updated, 1)
+        self.assertEqual(amb, 1)
+
+        matching.refresh_from_db()
+        ambiguous.refresh_from_db()
+
+        self.assertEqual(matching.kommune, vejen)
+        self.assertEqual(matching.other_organization, "")
+        self.assertIsNone(ambiguous.kommune)
+        self.assertEqual(ambiguous.other_organization, "En helt anden organisation")
