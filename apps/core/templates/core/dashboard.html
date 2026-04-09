@@ -163,6 +163,8 @@
                     <div class="d-flex justify-content-between">
                         {% if signup.school %}
                         <a href="{% url 'schools:detail' signup.school.pk %}"><strong>{{ signup.school.name }} ({{ signup.school.kommune }})</strong></a>
+                        {% elif signup.kommune %}
+                        <a href="{% url 'schools:kommune-detail' signup.kommune.name %}"><strong>{{ signup.kommune.name }}</strong></a>
                         {% else %}
                         <span class="text-muted"><strong>{{ signup.other_organization }}</strong></span>
                         {% endif %}

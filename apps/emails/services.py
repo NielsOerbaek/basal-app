@@ -61,7 +61,7 @@ def get_signup_context(signup):
         "participant_name": signup.participant_name,
         "participant_email": signup.participant_email,
         "participant_title": signup.participant_title,
-        "school_name": signup.school.name,
+        "school_name": signup.organization_name,
         "course_title": course.display_name,
         "course_date": date_format(course.start_date, "j. F Y"),
         "course_end_date": date_format(course.end_date, "j. F Y"),
@@ -362,7 +362,7 @@ def get_coordinator_signup_context(coordinator, course, signups):
         "course_date": date_format(course.start_date, "j. F Y"),
         "course_end_date": date_format(course.end_date, "j. F Y"),
         "course_location": course.location.full_address if course.location else "",
-        "school_name": signups[0].school.name if signups else "",
+        "school_name": signups[0].organization_name if signups else "",
         "participants_list": mark_safe(participants_html),
         "registration_deadline": date_format(course.registration_deadline, "j. F Y")
         if course.registration_deadline
