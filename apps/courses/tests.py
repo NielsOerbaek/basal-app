@@ -331,6 +331,7 @@ class CourseSignUpParticipantFormTest(TestCase):
             course=course,
             participant_name="Original Name",
             participant_email="original@example.com",
+            other_organization="Test Organisation",
         )
         form = CourseSignUpParticipantForm(
             instance=signup,

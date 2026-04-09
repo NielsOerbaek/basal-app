@@ -4,6 +4,13 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 9. april 2026
+
+### Kursusdeltagere kan tilknyttes til kommune (OSO-xxx)
+Kursusdeltagere kan nu tilknyttes direkte til en kommune, hvis de er ansat i kommunen (og ikke på en skole). På kommunesiden vises alle deltagere fra kommunen samlet.
+
+---
+
 ## 7. april 2026
 
 ### Faktureringsoplysninger deles på kommuneniveau (OSO-164)
