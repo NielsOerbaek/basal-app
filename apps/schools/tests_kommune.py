@@ -200,7 +200,7 @@ class KommuneDetailParticipantsTest(TestCase):
         self.client.login(username="staff", password="pw")
         resp = self.client.get(f"/schools/kommuner/{quote(self.kommune.name)}/")
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "Deltagere fra kommunen")
+        self.assertContains(resp, "Kursusdeltagere fra kommunen")
         self.assertContains(resp, "Mette")
         self.assertEqual(resp.context["stats"]["kommune_participants_count"], 1)
 
