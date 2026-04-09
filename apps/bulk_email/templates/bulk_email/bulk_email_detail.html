@@ -131,16 +131,14 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if r.success %}
-                            <button class="btn btn-sm {% if r.needs_action %}btn-outline-primary{% else %}btn-outline-secondary btn-sm{% endif %} resend-btn"
+                            <button class="btn btn-sm {% if r.needs_action or not r.success %}btn-outline-primary{% else %}btn-outline-secondary btn-sm{% endif %} resend-btn"
                                     data-recipient-pk="{{ r.pk }}"
                                     data-school-name="{{ r.school.name|default:'—' }}"
                                     data-original-email="{{ r.resent_to|default:r.email }}"
                                     data-current-email="{{ r.person.email|default:'' }}"
-                                    data-is-bounced="{% if r.needs_action %}1{% endif %}">
+                                    data-is-bounced="{% if r.needs_action or not r.success %}1{% endif %}">
                                 Gensend
                             </button>
-                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
