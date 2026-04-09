@@ -123,7 +123,7 @@
   </div>
   <div class="card-body">
     {% if kursusdeltagere %}
-      {% include "schools/_participant_list_kommune.html" %}
+      {% include "schools/_participant_list.html" with show_school=True %}
     {% else %}
       <p class="text-muted mb-0">Ingen deltagere fra denne kommune endnu.</p>
     {% endif %}

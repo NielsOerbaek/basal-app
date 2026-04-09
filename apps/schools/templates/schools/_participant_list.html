@@ -8,6 +8,7 @@
                 <div class="mb-1">
                     <strong>{{ signup.participant_name }}</strong>
                     {% if signup.participant_title %}<span class="text-muted">, {{ signup.participant_title|lower }}</span>{% endif %}
+                    {% if show_school and signup.school %}<span class="text-muted small ms-2">— {{ signup.school.name }}</span>{% endif %}
                 </div>
                 <div class="small text-muted">
                     {% if signup.participant_email %}<i class="bi bi-envelope me-1"></i><a href="mailto:{{ signup.participant_email }}">{{ signup.participant_email }}</a>{% bounce_icon signup.email_bounced_at %}{% endif %}
@@ -21,9 +22,11 @@
                     </span>
                 </div>
             </div>
+            {% if school %}
             <a href="{% url 'schools:signup-update' school.pk signup.pk %}" class="btn btn-outline-secondary btn-sm" title="Rediger">
                 <i class="bi bi-pencil"></i>
             </a>
+            {% endif %}
         </div>
     </li>
     {% empty %}
