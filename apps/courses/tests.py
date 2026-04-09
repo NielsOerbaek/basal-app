@@ -400,3 +400,58 @@ class LocationModelTest(TestCase):
         self.assertEqual(location.street_address, "")
         self.assertEqual(location.postal_code, "")
         self.assertEqual(location.municipality, "")
+
+
+class CourseSignUpAffiliationTests(TestCase):
+    def setUp(self):
+        from datetime import date
+
+        from apps.courses.models import Course, Location
+        from apps.schools.models import Kommune
+
+        self.location = Location.objects.create(name="Test Loc")
+        self.course = Course.objects.create(
+            start_date=date(2026, 9, 10), end_date=date(2026, 9, 11), location=self.location
+        )
+        self.kommune, _ = Kommune.objects.get_or_create(name="Vejen Kommune")
+
+    def _make(self, **kwargs):
+        from apps.courses.models import CourseSignUp
+
+        return CourseSignUp(
+            course=self.course,
+            participant_name="Mette",
+            **kwargs,
+        )
+
+    def test_clean_rejects_none_set(self):
+        from django.core.exceptions import ValidationError
+
+        with self.assertRaises(ValidationError):
+            self._make().clean()
+
+    def test_clean_rejects_school_and_kommune(self):
+        from django.core.exceptions import ValidationError
+
+        from apps.schools.models import School
+
+        school = School.objects.create(name="X", kommune="Vejen Kommune")
+        with self.assertRaises(ValidationError):
+            self._make(school=school, kommune=self.kommune).clean()
+
+    def test_clean_rejects_kommune_and_other_org(self):
+        from django.core.exceptions import ValidationError
+
+        with self.assertRaises(ValidationError):
+            self._make(kommune=self.kommune, other_organization="Foo").clean()
+
+    def test_clean_accepts_kommune_only(self):
+        self._make(kommune=self.kommune).clean()  # should not raise
+
+    def test_organization_name_uses_kommune(self):
+        signup = self._make(kommune=self.kommune)
+        self.assertEqual(signup.organization_name, "Vejen Kommune")
+
+    def test_str_uses_kommune(self):
+        signup = self._make(kommune=self.kommune)
+        self.assertIn("Vejen Kommune", str(signup))

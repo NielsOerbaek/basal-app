@@ -172,6 +172,21 @@ class CourseSignUp(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        super().clean()
+        affiliations = [
+            bool(self.school_id),
+            bool(self.kommune_id),
+            bool(self.other_organization),
+        ]
+        count = sum(affiliations)
+        if count == 0:
+            raise ValidationError("Vælg skole, kommune, eller angiv en anden organisation.")
+        if count > 1:
+            raise ValidationError("Angiv kun én tilknytning: skole, kommune, eller anden organisation.")
+
     def save(self, *args, **kwargs):
         if self.pk:
             old = CourseSignUp.objects.filter(pk=self.pk).values_list("participant_email", flat=True).first()
@@ -183,13 +198,16 @@ class CourseSignUp(models.Model):
         ordering = ["school__name", "participant_name"]
 
     def __str__(self):
-        org = self.school.name if self.school else self.other_organization or "Ukendt"
-        return f"{self.participant_name} ({org})"
+        return f"{self.participant_name} ({self.organization_name or 'Ukendt'})"
 
     @property
     def organization_name(self):
-        """Returns the school name or other organization name."""
-        return self.school.name if self.school else self.other_organization or ""
+        """Returns the school name, kommune name, or other organization name."""
+        if self.school:
+            return self.school.name
+        if self.kommune_id:
+            return self.kommune.name
+        return self.other_organization or ""
 
     @property
     def school_active_from_year(self):
