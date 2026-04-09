@@ -7,7 +7,7 @@ from django.db import IntegrityError
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from apps.schools.models import School
+from apps.schools.models import Kommune, School
 
 from .models import AttendanceStatus, Course, CourseMaterial, CourseSignUp
 
@@ -493,3 +493,26 @@ class BackfillCourseSignUpKommuneTest(TestCase):
         self.assertEqual(matching.other_organization, "")
         self.assertIsNone(ambiguous.kommune)
         self.assertEqual(ambiguous.other_organization, "En helt anden organisation")
+
+
+class CourseSignUpConstraintTest(TestCase):
+    def test_db_rejects_school_and_kommune_set(self):
+        from datetime import date
+
+        from django.db import IntegrityError, transaction
+
+        from apps.courses.models import Course, CourseSignUp, Location
+        from apps.schools.models import School
+
+        loc = Location.objects.create(name="L")
+        course = Course.objects.create(start_date=date(2026, 9, 10), end_date=date(2026, 9, 11), location=loc)
+        school = School.objects.create(name="S", kommune="Vejen Kommune")
+        kommune, _ = Kommune.objects.get_or_create(name="Herning Kommune")
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                CourseSignUp.objects.create(
+                    course=course,
+                    participant_name="X",
+                    school=school,
+                    kommune=kommune,
+                )

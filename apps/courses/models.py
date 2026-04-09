@@ -196,6 +196,24 @@ class CourseSignUp(models.Model):
 
     class Meta:
         ordering = ["school__name", "participant_name"]
+        constraints = [
+            models.CheckConstraint(
+                name="coursesignup_exactly_one_affiliation",
+                condition=(
+                    (models.Q(school__isnull=False) & models.Q(kommune__isnull=True) & models.Q(other_organization=""))
+                    | (
+                        models.Q(school__isnull=True)
+                        & models.Q(kommune__isnull=False)
+                        & models.Q(other_organization="")
+                    )
+                    | (
+                        models.Q(school__isnull=True)
+                        & models.Q(kommune__isnull=True)
+                        & ~models.Q(other_organization="")
+                    )
+                ),
+            ),
+        ]
 
     def __str__(self):
         return f"{self.participant_name} ({self.organization_name or 'Ukendt'})"
