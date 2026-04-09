@@ -174,6 +174,37 @@ class BackfillCanonicalPickTest(TestCase):
         self.assertEqual(pick(["", "  ", "real"]), "real")
 
 
+class KommuneDetailParticipantsTest(TestCase):
+    def setUp(self):
+        from datetime import date
+
+        from django.contrib.auth import get_user_model
+
+        from apps.courses.models import Course, CourseSignUp, Location
+        from apps.schools.models import Kommune
+
+        User = get_user_model()
+        self.user = User.objects.create_user(username="staff", password="pw", is_staff=True)
+        self.kommune, _ = Kommune.objects.get_or_create(name="Vejen Kommune")
+        loc = Location.objects.create(name="L")
+        self.course = Course.objects.create(start_date=date(2025, 9, 10), end_date=date(2025, 9, 11), location=loc)
+        CourseSignUp.objects.create(
+            course=self.course,
+            participant_name="Mette",
+            kommune=self.kommune,
+        )
+
+    def test_kommune_detail_lists_kommune_participants(self):
+        from urllib.parse import quote
+
+        self.client.login(username="staff", password="pw")
+        resp = self.client.get(f"/schools/kommuner/{quote(self.kommune.name)}/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Deltagere fra kommunen")
+        self.assertContains(resp, "Mette")
+        self.assertEqual(resp.context["stats"]["kommune_participants_count"], 1)
+
+
 class SeedKommunerTest(TestCase):
     def test_all_98_kommuner_present(self):
         names_in_db = set(Kommune.objects.values_list("name", flat=True))

@@ -107,6 +107,16 @@ class KommuneDetailView(ListView):
                 kommunen_betaler=True,
             ).count(),
         }
+
+        from apps.courses.models import CourseSignUp
+
+        kursusdeltagere = (
+            CourseSignUp.objects.filter(kommune__name=kommune_name)
+            .select_related("course", "course__location")
+            .order_by("-course__start_date", "participant_name")
+        )
+        context["kursusdeltagere"] = kursusdeltagere
+        context["stats"]["kommune_participants_count"] = kursusdeltagere.count()
         return context
 
     def post(self, request, *args, **kwargs):

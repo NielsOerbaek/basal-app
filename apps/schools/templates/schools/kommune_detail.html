@@ -108,10 +108,26 @@
                     <dt class="col-sm-7 ps-3 small text-muted">↳ heraf med "Kommunen betaler"</dt>
                     <dd class="col-sm-5 text-end small text-muted">{{ stats.enrolled_kommunen_betaler }}</dd>
                     {% endif %}
+
+                    <dt class="col-sm-7 mt-2">Deltagere på kurser</dt>
+                    <dd class="col-sm-5 mt-2 text-end fw-semibold">{{ stats.kommune_participants_count }}</dd>
                 </dl>
             </div>
         </div>
     </div>
+</div>
+
+<div class="card mt-4">
+  <div class="card-header">
+    <i class="bi bi-person-check me-2"></i>Deltagere fra kommunen
+  </div>
+  <div class="card-body">
+    {% if kursusdeltagere %}
+      {% include "schools/_participant_list_kommune.html" %}
+    {% else %}
+      <p class="text-muted mb-0">Ingen deltagere fra denne kommune endnu.</p>
+    {% endif %}
+  </div>
 </div>
 
 <div class="card">
