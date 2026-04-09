@@ -117,16 +117,23 @@
     </div>
 </div>
 
-<div class="card mt-4">
-  <div class="card-header">
-    <i class="bi bi-person-check me-2"></i>Deltagere fra kommunen
+<div class="card mt-4 mb-4">
+  <div class="card-header p-0">
+    <button class="btn btn-link text-decoration-none text-reset w-100 text-start px-3 py-2 d-flex align-items-center justify-content-between collapsed"
+            type="button" data-bs-toggle="collapse" data-bs-target="#kommune-participants"
+            aria-expanded="false" aria-controls="kommune-participants">
+      <span><i class="bi bi-person-check me-2"></i>Kursusdeltagere fra kommunen ({{ stats.kommune_participants_count }})</span>
+      <i class="bi bi-chevron-down"></i>
+    </button>
   </div>
-  <div class="card-body">
-    {% if kursusdeltagere %}
-      {% include "schools/_participant_list.html" with show_school=True %}
-    {% else %}
-      <p class="text-muted mb-0">Ingen deltagere fra denne kommune endnu.</p>
-    {% endif %}
+  <div class="collapse" id="kommune-participants">
+    <div class="card-body">
+      {% if kursusdeltagere %}
+        {% include "schools/_participant_list.html" with show_school=True %}
+      {% else %}
+        <p class="text-muted mb-0">Ingen deltagere fra denne kommune endnu.</p>
+      {% endif %}
+    </div>
   </div>
 </div>
 
