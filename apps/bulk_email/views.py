@@ -392,13 +392,13 @@ class BulkEmailDryRunView(View):
                 "school": school.name,
                 "person": person.name,
                 "email": person.email,
-                "kommune": school.kommune or "",
+                "kommune": school.kommune.name if school.kommune else "",
             }
             for school, person in pairs
         ]
 
         skipped_data = [
-            {"school": school.name, "kommune": school.kommune or ""}
+            {"school": school.name, "kommune": school.kommune.name if school.kommune else ""}
             for school in schools
             if school.pk not in matched_school_pks
         ]

@@ -25,9 +25,8 @@ class Kommune(models.Model):
     """
     Holds shared billing info for a kommune.
 
-    Linked to schools by name string (no FK on School). A row only exists
-    when someone has filled in billing info for that kommune. Lookup helper
-    is `Kommune.get_for(kommune_name)`.
+    Linked to schools via School.kommune FK. A row is auto-created when a
+    school is assigned to a kommune (via STIL import, signup form, or admin).
     """
 
     name = models.CharField(max_length=100, unique=True, verbose_name="Kommune")
@@ -58,13 +57,6 @@ class Kommune(models.Model):
                 self.fakturering_email_bounced_at = None
         super().save(*args, **kwargs)
 
-    @classmethod
-    def get_for(cls, kommune_name):
-        """Return the Kommune row for a kommune string, or None if it doesn't exist."""
-        if not kommune_name:
-            return None
-        return cls.objects.filter(name=kommune_name).first()
-
     def has_billing_info(self):
         """True if this kommune row has any billing field populated."""
         return any(
@@ -78,13 +70,6 @@ class Kommune(models.Model):
                 "fakturering_kontakt_email",
             )
         )
-
-    @classmethod
-    def get_or_create_for(cls, kommune_name):
-        if not kommune_name:
-            return None
-        obj, _ = cls.objects.get_or_create(name=kommune_name)
-        return obj
 
 
 def apply_billing_to_school(school, billing_data):
@@ -102,8 +87,8 @@ def apply_billing_to_school(school, billing_data):
         "fakturering_kontakt_navn",
         "fakturering_kontakt_email",
     ]
-    if school.kommunen_betaler and school.kommune:
-        kommune_row = Kommune.get_or_create_for(school.kommune)
+    if school.kommunen_betaler and school.kommune_id:
+        kommune_row = school.kommune
         for f in fields:
             setattr(kommune_row, f, billing_data.get(f, "") or "")
         kommune_row.save()
@@ -167,6 +152,25 @@ class SchoolManager(models.Manager):
     def active(self):
         return self.filter(is_active=True)
 
+    def _coerce_kommune(self, kwargs):
+        """Auto-convert a kommune string to a Kommune FK in kwargs."""
+        kommune_val = kwargs.get("kommune")
+        if isinstance(kommune_val, str):
+            if kommune_val.strip():
+                kwargs["kommune"], _ = Kommune.objects.get_or_create(name=kommune_val.strip())
+            else:
+                kwargs["kommune"] = None
+
+    def create(self, **kwargs):
+        self._coerce_kommune(kwargs)
+        return super().create(**kwargs)
+
+    def get_or_create(self, defaults=None, **kwargs):
+        self._coerce_kommune(kwargs)
+        if defaults:
+            self._coerce_kommune(defaults)
+        return super().get_or_create(defaults=defaults, **kwargs)
+
 
 class School(models.Model):
     BASE_SEATS = 3
@@ -176,7 +180,14 @@ class School(models.Model):
     adresse = models.CharField(max_length=255, verbose_name="Adresse")
     postnummer = models.CharField(max_length=4, blank=True, verbose_name="Postnummer")
     by = models.CharField(max_length=100, blank=True, verbose_name="By")
-    kommune = models.CharField(max_length=100, verbose_name="Kommune")
+    kommune = models.ForeignKey(
+        Kommune,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="schools",
+        verbose_name="Kommune",
+    )
     ean_nummer = models.CharField(max_length=13, blank=True, verbose_name="EAN/CVR-nummer")
     institutionstype = models.CharField(
         max_length=20,
@@ -232,8 +243,8 @@ class School(models.Model):
         ordering = ["name"]
         indexes = [
             models.Index(fields=["is_active", "name"]),
-            models.Index(fields=["kommune"]),
-            models.Index(fields=["is_active", "kommune"]),
+            models.Index(fields=["kommune"], name="schools_sch_kommune_fk_idx"),
+            models.Index(fields=["is_active", "kommune"], name="schools_sch_active_kommune_idx"),
         ]
         constraints = [
             models.UniqueConstraint(fields=["name", "kommune"], name="unique_school_per_kommune"),

@@ -279,7 +279,7 @@ def get_school_enrollment_context(school, contact_name):
         "signup_password": school.signup_password,
         "site_url": settings.SITE_URL,
         "school_address": school.adresse,
-        "school_municipality": school.kommune,
+        "school_municipality": school.kommune.name if school.kommune else "",
         "ean_nummer": school.ean_nummer or "",
     }
 

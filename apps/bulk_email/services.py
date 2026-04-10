@@ -27,10 +27,8 @@ def _billing_field(school, field):
     val = getattr(school, field, "")
     if val:
         return val
-    if school.kommunen_betaler and school.kommune:
-        from apps.schools.models import Kommune
-
-        kommune = Kommune.get_for(school.kommune)
+    if school.kommunen_betaler and school.kommune_id:
+        kommune = school.kommune
         if kommune:
             return getattr(kommune, field, "") or ""
     return ""
@@ -42,7 +40,7 @@ VARIABLE_ACCESSORS = {
     "adresse": lambda s, p: s.adresse,
     "postnummer": lambda s, p: s.postnummer,
     "by": lambda s, p: s.by,
-    "kommune": lambda s, p: s.kommune,
+    "kommune": lambda s, p: s.kommune.name if s.kommune else "",
     "ean_nummer": lambda s, p: s.ean_nummer,
     "fakturering_ean_nummer": lambda s, p: _billing_field(s, "fakturering_ean_nummer"),
     "fakturering_kontakt_navn": lambda s, p: _billing_field(s, "fakturering_kontakt_navn"),

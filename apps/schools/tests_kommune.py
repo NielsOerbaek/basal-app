@@ -8,18 +8,15 @@ from apps.schools.models import Kommune, School, apply_billing_to_school
 
 
 class KommuneModelTest(TestCase):
-    def test_get_for_returns_none_when_missing(self):
-        self.assertIsNone(Kommune.get_for("Aarhus"))
-
-    def test_get_or_create_for_creates_row(self):
-        # "Aarhus" (without suffix) is NOT in the seeded canonical list,
-        # so it should create a brand new row here.
+    def test_get_or_create(self):
         before = Kommune.objects.count()
-        k = Kommune.get_or_create_for("Aarhus")
+        k, created = Kommune.objects.get_or_create(name="Aarhus")
+        self.assertTrue(created)
         self.assertEqual(k.name, "Aarhus")
         self.assertEqual(Kommune.objects.count(), before + 1)
         # Idempotent
-        k2 = Kommune.get_or_create_for("Aarhus")
+        k2, created2 = Kommune.objects.get_or_create(name="Aarhus")
+        self.assertFalse(created2)
         self.assertEqual(k.pk, k2.pk)
 
     def test_email_change_clears_bounce(self):
@@ -105,7 +102,7 @@ class SchoolFormKommuneSaveTest(TestCase):
         self.assertTrue(form.is_valid(), msg=form.errors)
         form.save()
 
-        kommune = Kommune.get_for("Aarhus Kommune")
+        kommune = Kommune.objects.filter(name="Aarhus Kommune").first()
         self.assertIsNotNone(kommune)
         self.assertEqual(kommune.fakturering_ean_nummer, "12345678")
         school.refresh_from_db()
@@ -211,6 +208,92 @@ class KommuneDetailParticipantsTest(TestCase):
         self.assertContains(resp, "Kursusdeltagere fra kommunen")
         self.assertContains(resp, "Mette")
         self.assertEqual(resp.context["stats"]["kommune_participants_count"], 1)
+
+
+class SchoolKommuneFKTest(TestCase):
+    """Tests for the School.kommune FK and related code paths."""
+
+    def test_create_school_with_string_kommune(self):
+        """SchoolManager.create auto-converts string to Kommune FK."""
+        school = School.objects.create(name="Test", kommune="Aarhus Kommune")
+        self.assertIsInstance(school.kommune, Kommune)
+        self.assertEqual(school.kommune.name, "Aarhus Kommune")
+
+    def test_create_school_with_empty_string_kommune(self):
+        school = School.objects.create(name="Test", kommune="")
+        self.assertIsNone(school.kommune)
+
+    def test_create_school_with_none_kommune(self):
+        school = School.objects.create(name="Test", kommune=None)
+        self.assertIsNone(school.kommune)
+
+    def test_get_or_create_with_string_kommune(self):
+        school, created = School.objects.get_or_create(name="Test", kommune="Aarhus Kommune", defaults={"adresse": ""})
+        self.assertTrue(created)
+        self.assertEqual(school.kommune.name, "Aarhus Kommune")
+        # Idempotent
+        school2, created2 = School.objects.get_or_create(
+            name="Test", kommune="Aarhus Kommune", defaults={"adresse": ""}
+        )
+        self.assertFalse(created2)
+        self.assertEqual(school.pk, school2.pk)
+
+
+class KommuneListViewTest(TestCase):
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        self.user = User.objects.create_user(username="staff", password="pw", is_staff=True)
+        School.objects.create(name="School A", kommune="Aarhus Kommune")
+        School.objects.create(name="School B", kommune="Aarhus Kommune")
+        School.objects.create(name="School C", kommune="Odense Kommune")
+
+    def test_kommune_list_returns_200(self):
+        self.client.login(username="staff", password="pw")
+        resp = self.client.get("/schools/kommuner/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Aarhus Kommune")
+        self.assertContains(resp, "Odense Kommune")
+
+    def test_kommune_list_shows_counts(self):
+        self.client.login(username="staff", password="pw")
+        resp = self.client.get("/schools/kommuner/")
+        kommuner = list(resp.context["kommuner"])
+        aarhus = next(k for k in kommuner if k["kommune_name"] == "Aarhus Kommune")
+        self.assertEqual(aarhus["total_schools"], 2)
+
+    def test_kommune_list_sort(self):
+        self.client.login(username="staff", password="pw")
+        resp = self.client.get("/schools/kommuner/?sort=kommune&order=desc")
+        self.assertEqual(resp.status_code, 200)
+
+
+class SchoolAutocompleteViewTest(TestCase):
+    def setUp(self):
+        import json
+
+        from django.contrib.auth import get_user_model
+
+        self.json = json
+        User = get_user_model()
+        self.user = User.objects.create_user(username="staff", password="pw", is_staff=True)
+        School.objects.create(name="Aarhus Skole", kommune="Aarhus Kommune")
+        School.objects.create(name="Null Kommune Skole", kommune=None)
+
+    def test_autocomplete_returns_kommune_name(self):
+        self.client.login(username="staff", password="pw")
+        resp = self.client.get("/schools/autocomplete/?q=Aarhus")
+        data = self.json.loads(resp.content)
+        self.assertEqual(len(data["results"]), 1)
+        self.assertEqual(data["results"][0]["kommune"], "Aarhus Kommune")
+
+    def test_autocomplete_handles_null_kommune(self):
+        self.client.login(username="staff", password="pw")
+        resp = self.client.get("/schools/autocomplete/?q=Null")
+        data = self.json.loads(resp.content)
+        self.assertEqual(len(data["results"]), 1)
+        self.assertEqual(data["results"][0]["kommune"], "")
 
 
 class SeedKommunerTest(TestCase):

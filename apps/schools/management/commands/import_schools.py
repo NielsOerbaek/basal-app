@@ -103,9 +103,12 @@ class Command(BaseCommand):
                         self.stdout.write(f'    Tlf: {person["telefon"]}')
             else:
                 # Create or get school
+                from apps.schools.models import Kommune
+
+                kommune_obj, _ = Kommune.objects.get_or_create(name=kommune)
                 school, created = School.objects.get_or_create(
                     name=skole_navn,
-                    kommune=kommune,
+                    kommune=kommune_obj,
                     defaults={
                         "adresse": "",
                     },

@@ -273,7 +273,7 @@ class SchoolSignupViewTest(TestCase):
         new_school = School.objects.get(name="Brand New School")
         self.assertIsNotNone(new_school.enrolled_at)
         self.assertIsNotNone(new_school.active_from)
-        self.assertEqual(new_school.kommune, "Test Kommune")
+        self.assertEqual(new_school.kommune.name, "Test Kommune")
         self.assertEqual(new_school.adresse, "New Address 123")
         self.assertEqual(len(new_school.signup_password), 19)
 
@@ -713,11 +713,10 @@ class SchoolSignupExtendedFieldsTest(TestCase):
                 "fakturering_kontakt_email": "faktura@kommune.dk",
             },
         )
-        from apps.schools.models import Kommune
 
         self.school.refresh_from_db()
         self.assertTrue(self.school.kommunen_betaler)
         # When kommunen_betaler is set, billing fields are stored on the Kommune row
-        kommune = Kommune.objects.get(name=self.school.kommune)
+        kommune = self.school.kommune
         self.assertEqual(kommune.fakturering_adresse, "Rådhuspladsen 1")
         self.assertEqual(kommune.fakturering_ean_nummer, "5790000000001")

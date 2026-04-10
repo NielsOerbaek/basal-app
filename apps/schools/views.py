@@ -27,7 +27,7 @@ class KommuneListView(SortableMixin, ListView):
     template_name = "schools/kommune_list.html"
     context_object_name = "kommuner"
     sortable_fields = {
-        "kommune": "kommune",
+        "kommune": "kommune_name",
         "total": "total_schools",
         "enrolled": "enrolled_schools",
         "not_enrolled": "not_enrolled",
@@ -38,8 +38,8 @@ class KommuneListView(SortableMixin, ListView):
     def get_base_queryset(self):
         return (
             School.objects.active()
-            .exclude(kommune="")
-            .values("kommune")
+            .exclude(kommune__isnull=True)
+            .values(kommune_name=F("kommune__name"))
             .annotate(
                 total_schools=Count("id"),
                 enrolled_schools=Count("id", filter=Q(enrolled_at__isnull=False, opted_out_at__isnull=True)),
@@ -67,10 +67,10 @@ class KommuneDetailView(SortableMixin, ListView):
     default_sort = "name"
 
     def get_base_queryset(self):
-        return School.objects.active().filter(kommune=self.kwargs["kommune"]).prefetch_related("people")
+        return School.objects.active().filter(kommune__name=self.kwargs["kommune"]).prefetch_related("people")
 
     def _has_kommunen_betaler_school(self, kommune_name):
-        return School.objects.filter(kommune=kommune_name, kommunen_betaler=True).exists()
+        return School.objects.filter(kommune__name=kommune_name, kommunen_betaler=True).exists()
 
     def get_context_data(self, **kwargs):
         from django.db.models import Count
@@ -81,12 +81,12 @@ class KommuneDetailView(SortableMixin, ListView):
         context = super().get_context_data(**kwargs)
         kommune_name = self.kwargs["kommune"]
         context["kommune"] = kommune_name
-        context["kommune_obj"] = Kommune.get_for(kommune_name)
+        context["kommune_obj"] = Kommune.objects.filter(name=kommune_name).first()
         context["has_kommunen_betaler"] = self._has_kommunen_betaler_school(kommune_name)
         context["billing_form"] = KommuneBillingForm(instance=context["kommune_obj"])
 
         # Stats
-        qs = School.objects.active().filter(kommune=kommune_name)
+        qs = School.objects.active().filter(kommune__name=kommune_name)
         type_counts = dict(
             qs.values_list("institutionstype").annotate(c=Count("id")).values_list("institutionstype", "c")
         )
@@ -127,7 +127,7 @@ class KommuneDetailView(SortableMixin, ListView):
         from apps.schools.models import Kommune
 
         kommune_name = kwargs["kommune"]
-        kommune_obj = Kommune.get_or_create_for(kommune_name)
+        kommune_obj, _ = Kommune.objects.get_or_create(name=kommune_name)
         form = KommuneBillingForm(request.POST, instance=kommune_obj)
         if form.is_valid():
             form.save()
@@ -179,7 +179,7 @@ class SchoolListView(SchoolFilterMixin, SortableMixin, ListView):
             elif sort == "name":
                 queryset.sort(key=lambda s: s.name.lower(), reverse=reverse)
             elif sort == "kommune":
-                queryset.sort(key=lambda s: (s.kommune or "").lower(), reverse=reverse)
+                queryset.sort(key=lambda s: (s.kommune.name if s.kommune else "").lower(), reverse=reverse)
             elif sort == "school_year":
                 queryset.sort(key=lambda s: s.active_from or date.min, reverse=reverse)
             return queryset
@@ -237,16 +237,15 @@ class SchoolDetailView(DetailView):
     context_object_name = "school"
 
     def get_context_data(self, **kwargs):
-        from apps.schools.models import Kommune, get_default_active_from, get_enrollment_cutoff_date
+        from apps.schools.models import get_default_active_from, get_enrollment_cutoff_date
         from apps.schools.school_years import get_current_school_year
 
         context = super().get_context_data(**kwargs)
         # Resolve effective billing source: kommune row when "kommunen betaler",
         # else the school's own fakturering_* fields.
-        if self.object.kommunen_betaler:
-            kommune_row = Kommune.get_for(self.object.kommune)
-            if kommune_row and kommune_row.has_billing_info():
-                context["billing_source"] = kommune_row
+        if self.object.kommunen_betaler and self.object.kommune:
+            if self.object.kommune.has_billing_info():
+                context["billing_source"] = self.object.kommune
                 context["billing_from_kommune"] = True
             else:
                 context["billing_source"] = None
@@ -467,7 +466,7 @@ class SchoolAutocompleteView(View):
     def get(self, request):
         query = request.GET.get("q", "")
         schools = School.objects.active().filter(name__icontains=query)[:10]
-        results = [{"id": s.pk, "name": s.name, "kommune": s.kommune} for s in schools]
+        results = [{"id": s.pk, "name": s.name, "kommune": s.kommune.name if s.kommune else ""} for s in schools]
         return JsonResponse({"results": results})
 
 

@@ -55,12 +55,16 @@ class SchoolForm(forms.ModelForm):
         self.fields["by"].required = False
         self.fields["ean_nummer"].required = False
 
+        # Set initial value for kommune ChoiceField from FK
+        if self.instance.pk and self.instance.kommune:
+            self.initial["kommune"] = self.instance.kommune.name
+
         # If this school's billing comes from the kommune row, prefill the form
         # with kommune values so the user sees the shared data.
         self._kommune_row = None
-        if self.instance.pk and self.instance.kommunen_betaler:
-            self._kommune_row = Kommune.get_for(self.instance.kommune)
-            if self._kommune_row and not self.is_bound:
+        if self.instance.pk and self.instance.kommunen_betaler and self.instance.kommune:
+            self._kommune_row = self.instance.kommune
+            if not self.is_bound:
                 for f in KOMMUNE_BILLING_FIELDS:
                     self.initial[f] = getattr(self._kommune_row, f)
 
@@ -106,6 +110,14 @@ class SchoolForm(forms.ModelForm):
             ),
         )
 
+    def clean_kommune(self):
+        """Convert the kommune name string to a Kommune object."""
+        name = self.cleaned_data.get("kommune")
+        if name:
+            obj, _ = Kommune.objects.get_or_create(name=name)
+            return obj
+        return None
+
     def clean(self):
         cleaned_data = super().clean()
         name = cleaned_data.get("name")
@@ -117,7 +129,7 @@ class SchoolForm(forms.ModelForm):
             if self.instance.pk:
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
-                raise forms.ValidationError(f'Der findes allerede en skole med navnet "{name}" i {kommune}.')
+                raise forms.ValidationError(f'Der findes allerede en skole med navnet "{name}" i {kommune.name}.')
 
         return cleaned_data
 

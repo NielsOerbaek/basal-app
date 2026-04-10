@@ -24,8 +24,8 @@
                 {% for kommune in kommuner %}
                 <tr>
                     <td>
-                        <a href="{% url 'schools:kommune-detail' kommune.kommune %}">
-                            {{ kommune.kommune }}
+                        <a href="{% url 'schools:kommune-detail' kommune.kommune_name %}">
+                            {{ kommune.kommune_name }}
                         </a>
                     </td>
                     <td>{{ kommune.total_schools }}</td>

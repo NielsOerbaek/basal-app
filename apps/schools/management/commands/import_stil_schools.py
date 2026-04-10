@@ -128,12 +128,16 @@ class Command(BaseCommand):
         # Strip "Kommune" suffix if present (e.g. "Københavns Kommune" -> "Københavns")
         # — actually keep as-is to match how existing data looks. Leave to user/admin.
 
+        from apps.schools.models import Kommune
+
+        kommune_obj, _ = Kommune.objects.get_or_create(name=kommune) if kommune else (None, False)
+
         defaults = {
             "name": name,
             "adresse": (row.get("INST_ADR") or "").strip(),
             "postnummer": (row.get("POSTNR") or "").strip()[:4],
             "by": (row.get("POSTDISTRIKT") or "").strip(),
-            "kommune": kommune,
+            "kommune": kommune_obj,
             "ean_nummer": (row.get("CVR_NR") or "").strip()[:13],
             "institutionstype": institutionstype,
             "inst_nr": inst_nr,
@@ -143,8 +147,8 @@ class Command(BaseCommand):
         school = None
         if inst_nr:
             school = School.objects.filter(inst_nr=inst_nr).first()
-        if not school:
-            school = School.objects.filter(name=name, kommune=kommune).first()
+        if not school and kommune_obj:
+            school = School.objects.filter(name=name, kommune=kommune_obj).first()
 
         leader_name = (row.get("INST_LEDER") or "").strip()
         # INST_LEDER often has trailing notes like ", konstitueret" — keep as-is.

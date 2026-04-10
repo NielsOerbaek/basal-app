@@ -343,7 +343,7 @@ class SchoolChoiceField(forms.ModelChoiceField):
     """Custom field to display school name with kommune."""
 
     def label_from_instance(self, obj):
-        return f"{obj.name} ({obj.kommune})"
+        return f"{obj.name} ({obj.kommune.name if obj.kommune else ''})"
 
 
 class CourseSignUpParticipantForm(forms.ModelForm):

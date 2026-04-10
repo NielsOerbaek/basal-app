@@ -83,7 +83,7 @@ class ImportStilSchoolsTest(TestCase):
         school = School.objects.get(inst_nr="100001")
         self.assertEqual(school.name, "Testfriskole")
         self.assertEqual(school.institutionstype, InstitutionstypeChoice.FRISKOLE)
-        self.assertEqual(school.kommune, "Aarhus Kommune")
+        self.assertEqual(school.kommune.name, "Aarhus Kommune")
         self.assertEqual(school.ean_nummer, "12345678")
 
         people = list(school.people.order_by("name"))

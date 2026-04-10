@@ -56,7 +56,7 @@ class SchoolChoiceField(forms.ModelChoiceField):
     """Custom field to display school name with kommune."""
 
     def label_from_instance(self, obj):
-        return f"{obj.name} ({obj.kommune})"
+        return f"{obj.name} ({obj.kommune.name if obj.kommune else ''})"
 
 
 class CourseChoiceField(forms.ModelChoiceField):
@@ -240,7 +240,13 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
         super().__init__(*args, **kwargs)
 
         # Get unique municipalities from active schools
-        municipalities = School.objects.active().values_list("kommune", flat=True).distinct().order_by("kommune")
+        municipalities = (
+            School.objects.active()
+            .exclude(kommune__isnull=True)
+            .values_list("kommune__name", flat=True)
+            .distinct()
+            .order_by("kommune__name")
+        )
         self.fields["municipality"].choices = [("", "Vælg kommune...")] + [(m, m) for m in municipalities]
 
         # Add empty choice and set choices for titel fields
@@ -253,7 +259,7 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
             municipality = self.data.get("municipality", "")
             if municipality:
                 self.fields["school"].queryset = (
-                    School.objects.active().filter(kommune__iexact=municipality).order_by("name")
+                    School.objects.active().filter(kommune__name__iexact=municipality).order_by("name")
                 )
 
         # Add dynamic fields if signup_page is provided
@@ -262,20 +268,8 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
 
         # Build layout
         submit_text = signup_page.submit_button_text if signup_page else "Send tilmelding"
-        layout_items = [
-            HTML("<h5>Skoleoplysninger</h5>"),
-            "municipality",
-            Div("school", "school_not_listed", css_id="school-selection"),
-            Div(
-                "new_school_name",
-                "new_school_address",
-                Row(
-                    Column("new_school_postnummer", css_class="col-md-4"),
-                    Column("new_school_by", css_class="col-md-8"),
-                ),
-                css_id="new-school-fields",
-                style="display: none;",
-            ),
+        # Build enrollment detail fields (wrapped in a div for easy toggling)
+        enrollment_detail_items = [
             "ean_nummer",
             HTML(
                 '<hr><h5>Koordinator</h5><p class="text-muted small">En ansat på skolen, som udpeges som primær kontaktperson til Basal, f.eks. en skolesekretær eller en af de ansatte, der skal varetage Basal-forløb i klasserne</p>'
@@ -319,12 +313,29 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
             ),
         ]
 
-        # Add dynamic fields to layout
+        # Add dynamic fields
         if hasattr(self, "dynamic_fields") and self.dynamic_fields:
-            layout_items.append(HTML("<hr>"))
-            layout_items.extend(self.get_dynamic_field_layout())
+            enrollment_detail_items.append(HTML("<hr>"))
+            enrollment_detail_items.extend(self.get_dynamic_field_layout())
 
-        layout_items.append(Submit("submit", submit_text, css_class="btn btn-primary btn-lg"))
+        enrollment_detail_items.append(Submit("submit", submit_text, css_class="btn btn-primary btn-lg"))
+
+        layout_items = [
+            HTML("<h5>Skoleoplysninger</h5>"),
+            "municipality",
+            Div("school", "school_not_listed", css_id="school-selection"),
+            Div(
+                "new_school_name",
+                "new_school_address",
+                Row(
+                    Column("new_school_postnummer", css_class="col-md-4"),
+                    Column("new_school_by", css_class="col-md-8"),
+                ),
+                css_id="new-school-fields",
+                style="display: none;",
+            ),
+            Div(*enrollment_detail_items, css_id="enrollment-details"),
+        ]
 
         self.helper = FormHelper()
         self.helper.layout = Layout(*layout_items)
@@ -347,6 +358,8 @@ class SchoolSignupForm(DynamicFieldsMixin, forms.Form):
         else:
             if not school:
                 raise ValidationError({"school": "Vælg venligst en skole eller marker at din skole ikke er på listen."})
+            elif school.is_enrolled:
+                raise ValidationError({"school": "Denne skole er allerede tilmeldt Basal."})
 
         if kommunen_betaler:
             if not cleaned_data.get("fakturering_adresse"):

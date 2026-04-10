@@ -99,7 +99,7 @@ class SchoolFilterMixin:
             queryset = queryset.filter(
                 Q(name__icontains=search)
                 | Q(adresse__icontains=search)
-                | Q(kommune__icontains=search)
+                | Q(kommune__name__icontains=search)
                 | Q(people__name__icontains=search)
                 | Q(people__email__icontains=search)
             ).distinct()
@@ -228,9 +228,9 @@ class SchoolFilterMixin:
         kommune_filter = self.request.GET.get("kommune", "").strip()
         if kommune_filter:
             if isinstance(queryset, list):
-                queryset = [s for s in queryset if s.kommune == kommune_filter]
+                queryset = [s for s in queryset if s.kommune and s.kommune.name == kommune_filter]
             else:
-                queryset = queryset.filter(kommune=kommune_filter)
+                queryset = queryset.filter(kommune__name=kommune_filter)
 
         institutionstype_filter = [v for v in self.request.GET.getlist("institutionstype") if v]
         if institutionstype_filter:
@@ -256,7 +256,11 @@ class SchoolFilterMixin:
     def get_filter_context(self):
         """Return context variables required by school_filter.html."""
         kommuner = (
-            School.objects.active().exclude(kommune="").values_list("kommune", flat=True).distinct().order_by("kommune")
+            School.objects.active()
+            .exclude(kommune__isnull=True)
+            .values_list("kommune__name", flat=True)
+            .distinct()
+            .order_by("kommune__name")
         )
         school_years = (
             SchoolYear.objects.filter(name__gte="2022/23", name__lte="2028/29")

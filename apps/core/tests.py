@@ -196,7 +196,7 @@ class TestViewSmokeStaff:
     def test_kommune_detail_url(self, staff_client, smoke_test_data):
         """Kommune detail URL should not return 500 error."""
         school = smoke_test_data["school"]
-        url = reverse("schools:kommune-detail", kwargs={"kommune": school.kommune})
+        url = reverse("schools:kommune-detail", kwargs={"kommune": school.kommune.name})
         response = staff_client.get(url)
         assert response.status_code != 500
 

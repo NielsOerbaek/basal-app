@@ -439,12 +439,15 @@ class SchoolSignupView(View):
 
             if form.cleaned_data.get("school_not_listed"):
                 # Create new school
+                from apps.schools.models import Kommune
+
+                kommune_obj, _ = Kommune.objects.get_or_create(name=municipality)
                 school = School(
                     name=form.cleaned_data["new_school_name"],
                     adresse=form.cleaned_data.get("new_school_address", ""),
                     postnummer=form.cleaned_data.get("new_school_postnummer", ""),
                     by=form.cleaned_data.get("new_school_by", ""),
-                    kommune=municipality,
+                    kommune=kommune_obj,
                     ean_nummer=ean_nummer,
                     enrolled_at=date.today(),
                     active_from=default_active_from,
@@ -571,7 +574,8 @@ class SchoolsByKommuneView(View):
         if not kommune:
             return JsonResponse({"schools": []})
 
-        schools = School.objects.active().filter(kommune__iexact=kommune).order_by("name").values("id", "name")
+        schools = School.objects.active().filter(kommune__name__iexact=kommune).order_by("name")
+        schools = [{"id": s.id, "name": s.name, "is_enrolled": s.is_enrolled} for s in schools]
 
         return JsonResponse({"schools": list(schools)})
 
