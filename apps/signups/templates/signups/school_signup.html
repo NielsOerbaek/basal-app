@@ -51,10 +51,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const oekoTitel = document.getElementById('id_oeko_titel');
     const oekoTitelOther = document.getElementById('id_oeko_titel_other');
 
+    // Track enrollment status for each school
+    let schoolEnrollmentMap = {};
+    const enrollmentDetails = document.getElementById('enrollment-details');
+
+    // Info box for already-enrolled schools
+    const enrolledInfo = document.createElement('div');
+    enrolledInfo.className = 'alert alert-info mt-3';
+    enrolledInfo.style.display = 'none';
+    enrolledInfo.innerHTML = '<strong>Denne skole er allerede tilmeldt Basal.</strong><br>Hvis I har brug for at ændre jeres oplysninger eller har spørgsmål til jeres tilmelding, er I velkomne til at kontakte os på <a href="mailto:basal@sundkom.dk">basal@sundkom.dk</a>.';
+    enrollmentDetails.parentNode.insertBefore(enrolledInfo, enrollmentDetails);
+
+    function updateEnrolledInfo() {
+        const selectedId = schoolSelect.value;
+        const isEnrolled = selectedId && schoolEnrollmentMap[selectedId];
+        enrolledInfo.style.display = isEnrolled ? 'block' : 'none';
+        enrollmentDetails.style.display = isEnrolled ? 'none' : '';
+    }
+
+    schoolSelect.addEventListener('change', updateEnrolledInfo);
+
     function updateSchoolDropdown() {
         const kommune = municipalitySelect.value;
+        schoolEnrollmentMap = {};
         if (!kommune) {
             schoolSelect.innerHTML = '<option value="">Vælg en skole...</option>';
+            enrolledInfo.style.display = 'none';
+            enrollmentDetails.style.display = '';
             return;
         }
 
@@ -63,11 +86,13 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 schoolSelect.innerHTML = '<option value="">Vælg en skole...</option>';
                 data.schools.forEach(school => {
+                    schoolEnrollmentMap[school.id] = school.is_enrolled;
                     const option = document.createElement('option');
                     option.value = school.id;
                     option.textContent = school.name;
                     schoolSelect.appendChild(option);
                 });
+                updateEnrolledInfo();
             })
             .catch(() => {
                 schoolSelect.innerHTML = '<option value="">Fejl ved hentning af skoler</option>';
