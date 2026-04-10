@@ -33,7 +33,7 @@ class DashboardView(TemplateView):
             .order_by("start_date")[:5]
         )
 
-        context["recent_signups"] = CourseSignUp.objects.select_related("school", "course")[:10]
+        context["recent_signups"] = CourseSignUp.objects.select_related("school", "course").order_by("-created_at")[:10]
 
         context["recent_enrollments"] = (
             School.objects.active()
