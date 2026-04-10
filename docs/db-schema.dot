@@ -1,0 +1,379 @@
+digraph basal_db {
+    // ── Global ──────────────────────────────────────────────
+    graph [
+        rankdir=TB
+        fontname="Helvetica Neue"
+        fontsize=11
+        bgcolor="#fdfdfd"
+        pad=0.4
+        nodesep=0.6
+        ranksep=1.2
+        splines=polyline        // straight edges with label support
+        dpi=150
+        label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="8"><TR>
+            <TD COLSPAN="6"><B><FONT POINT-SIZE="18">Basal – Databaseskema</FONT></B></TD>
+        </TR><TR>
+            <TD BGCOLOR="#dbeafe" WIDTH="18" HEIGHT="12"></TD><TD>  Skoler</TD>
+            <TD BGCOLOR="#dcfce7" WIDTH="18" HEIGHT="12"></TD><TD>  Kurser</TD>
+            <TD BGCOLOR="#fef3c7" WIDTH="18" HEIGHT="12"></TD><TD>  Masseudsendelse</TD>
+        </TR><TR>
+            <TD BGCOLOR="#f3e8ff" WIDTH="18" HEIGHT="12"></TD><TD>  Brugere</TD>
+            <TD BGCOLOR="#fee2e2" WIDTH="18" HEIGHT="12"></TD><TD>  Aktivitetslog</TD>
+            <TD BGCOLOR="#f1f5f9" WIDTH="18" HEIGHT="12"></TD><TD>  Indstillinger</TD>
+        </TR><TR>
+            <TD COLSPAN="6"><FONT POINT-SIZE="9" COLOR="#6b7280">
+                ── henvisning (mange-til-én)     ─ ─ mange-til-mange
+            </FONT></TD>
+        </TR></TABLE>>
+        labelloc=t
+    ]
+
+    node [
+        shape=plain
+        fontname="Helvetica Neue"
+        fontsize=10
+    ]
+
+    edge [
+        fontname="Helvetica Neue"
+        fontsize=8
+        color="#64748b"
+        arrowsize=0.7
+    ]
+
+    // ════════════════════════════════════════════════════════
+    //  SCHOOLS
+    // ════════════════════════════════════════════════════════
+    subgraph cluster_schools {
+        label=""
+        style=filled
+        fillcolor="#dbeafe"
+        color="#93c5fd"
+        penwidth=1.5
+
+        Kommune [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#3b82f6"><FONT COLOR="white"><B>Kommune</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#eff6ff"><FONT POINT-SIZE="8"><I>Kommuner med fælles faktureringsoplysninger</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">name</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">fakturering_*</TD><TD ALIGN="LEFT">adresse, postnr, by, EAN, kontakt</TD></TR>
+            <TR><TD ALIGN="LEFT">fakturering_kontakt_email</TD><TD ALIGN="LEFT">e-mail</TD></TR>
+            <TR><TD ALIGN="LEFT">fakturering_email_bounced_at</TD><TD ALIGN="LEFT">tidspunkt?</TD></TR>
+            <TR><TD ALIGN="LEFT">created_at / updated_at</TD><TD ALIGN="LEFT">tidspunkt</TD></TR>
+            </TABLE>>]
+
+        School [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#3b82f6"><FONT COLOR="white"><B>School</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#eff6ff"><FONT POINT-SIZE="8"><I>Skoler tilmeldt programmet (folkeskoler, friskoler m.fl.)</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">name</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">adresse, postnummer, by</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">kommune</TD><TD ALIGN="LEFT">→ Kommune?</TD></TR>
+            <TR><TD ALIGN="LEFT">institutionstype</TD><TD ALIGN="LEFT">valg (folkeskole/friskole/…)</TD></TR>
+            <TR><TD ALIGN="LEFT">inst_nr</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">kommunen_betaler</TD><TD ALIGN="LEFT">ja/nej</TD></TR>
+            <TR><TD ALIGN="LEFT">fakturering_*</TD><TD ALIGN="LEFT">adresse, postnr, by, EAN, kontakt</TD></TR>
+            <TR><TD ALIGN="LEFT">enrolled_at / active_from</TD><TD ALIGN="LEFT">dato</TD></TR>
+            <TR><TD ALIGN="LEFT">is_active</TD><TD ALIGN="LEFT">ja/nej</TD></TR>
+            <TR><TD ALIGN="LEFT">opted_out_at</TD><TD ALIGN="LEFT">dato?</TD></TR>
+            <TR><TD ALIGN="LEFT">signup_password / signup_token</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">created_at / updated_at</TD><TD ALIGN="LEFT">tidspunkt</TD></TR>
+            </TABLE>>]
+
+        Person [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#3b82f6"><FONT COLOR="white"><B>Person</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#eff6ff"><FONT POINT-SIZE="8"><I>Kontaktpersoner på en skole (koordinator / økonomiansvarlig)</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">school</TD><TD ALIGN="LEFT">→ School</TD></TR>
+            <TR><TD ALIGN="LEFT">name</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">titel / titel_other</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">phone / email</TD><TD ALIGN="LEFT">tekst / e-mail</TD></TR>
+            <TR><TD ALIGN="LEFT">email_bounced_at</TD><TD ALIGN="LEFT">tidspunkt?</TD></TR>
+            <TR><TD ALIGN="LEFT">is_koordinator</TD><TD ALIGN="LEFT">ja/nej</TD></TR>
+            <TR><TD ALIGN="LEFT">is_oekonomisk_ansvarlig</TD><TD ALIGN="LEFT">ja/nej</TD></TR>
+            <TR><TD ALIGN="LEFT">created_at</TD><TD ALIGN="LEFT">tidspunkt</TD></TR>
+            </TABLE>>]
+
+        SchoolComment [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#3b82f6"><FONT COLOR="white"><B>SchoolComment</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#eff6ff"><FONT POINT-SIZE="8"><I>Interne noter på en skole</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">school</TD><TD ALIGN="LEFT">→ School</TD></TR>
+            <TR><TD ALIGN="LEFT">comment</TD><TD ALIGN="LEFT">lang tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">created_by</TD><TD ALIGN="LEFT">→ User</TD></TR>
+            <TR><TD ALIGN="LEFT">created_at</TD><TD ALIGN="LEFT">tidspunkt</TD></TR>
+            </TABLE>>]
+
+        SchoolFile [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#3b82f6"><FONT COLOR="white"><B>SchoolFile</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#eff6ff"><FONT POINT-SIZE="8"><I>Vedhæftede filer til en skole</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">school</TD><TD ALIGN="LEFT">→ School</TD></TR>
+            <TR><TD ALIGN="LEFT">file</TD><TD ALIGN="LEFT">fil</TD></TR>
+            <TR><TD ALIGN="LEFT">description</TD><TD ALIGN="LEFT">lang tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">uploaded_by</TD><TD ALIGN="LEFT">→ User</TD></TR>
+            <TR><TD ALIGN="LEFT">uploaded_at</TD><TD ALIGN="LEFT">tidspunkt</TD></TR>
+            </TABLE>>]
+
+        SchoolYear [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#3b82f6"><FONT COLOR="white"><B>SchoolYear</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#eff6ff"><FONT POINT-SIZE="8"><I>Skoleår (fx 2025/26) med start- og slutdato</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">name</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">start_date / end_date</TD><TD ALIGN="LEFT">dato</TD></TR>
+            <TR><TD ALIGN="LEFT">created_at</TD><TD ALIGN="LEFT">tidspunkt</TD></TR>
+            </TABLE>>]
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  COURSES
+    // ════════════════════════════════════════════════════════
+    subgraph cluster_courses {
+        label=""
+        style=filled
+        fillcolor="#dcfce7"
+        color="#86efac"
+        penwidth=1.5
+
+        Instructor [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#16a34a"><FONT COLOR="white"><B>Instructor</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#f0fdf4"><FONT POINT-SIZE="8"><I>Undervisere der afholder kurser</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">name</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">created_at</TD><TD ALIGN="LEFT">tidspunkt</TD></TR>
+            </TABLE>>]
+
+        Location [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#16a34a"><FONT COLOR="white"><B>Location</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#f0fdf4"><FONT POINT-SIZE="8"><I>Fysiske lokationer hvor kurser afholdes</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">name</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">street_address</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">postal_code / municipality</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">created_at</TD><TD ALIGN="LEFT">tidspunkt</TD></TR>
+            </TABLE>>]
+
+        Course [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#16a34a"><FONT COLOR="white"><B>Course</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#f0fdf4"><FONT POINT-SIZE="8"><I>Planlagte kursusforløb med kapacitet og tilmeldingsfrist</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">start_date / end_date</TD><TD ALIGN="LEFT">dato</TD></TR>
+            <TR><TD ALIGN="LEFT">location</TD><TD ALIGN="LEFT">→ Location</TD></TR>
+            <TR><TD ALIGN="LEFT">capacity</TD><TD ALIGN="LEFT">tal</TD></TR>
+            <TR><TD ALIGN="LEFT">is_published</TD><TD ALIGN="LEFT">ja/nej</TD></TR>
+            <TR><TD ALIGN="LEFT">registration_deadline</TD><TD ALIGN="LEFT">dato</TD></TR>
+            <TR><TD ALIGN="LEFT">materials</TD><TD ALIGN="LEFT">fil</TD></TR>
+            <TR><TD ALIGN="LEFT">comment</TD><TD ALIGN="LEFT">lang tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">instructors</TD><TD ALIGN="LEFT">mange → Instructor</TD></TR>
+            <TR><TD ALIGN="LEFT">created_at / updated_at</TD><TD ALIGN="LEFT">tidspunkt</TD></TR>
+            </TABLE>>]
+
+        CourseSignUp [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#16a34a"><FONT COLOR="white"><B>CourseSignUp</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#f0fdf4"><FONT POINT-SIZE="8"><I>Individuelle tilmeldinger til et kursus</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">school</TD><TD ALIGN="LEFT">→ School?</TD></TR>
+            <TR><TD ALIGN="LEFT">other_organization</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">kommune</TD><TD ALIGN="LEFT">→ Kommune?</TD></TR>
+            <TR><TD ALIGN="LEFT">course</TD><TD ALIGN="LEFT">→ Course</TD></TR>
+            <TR><TD ALIGN="LEFT">participant_name</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">participant_email</TD><TD ALIGN="LEFT">e-mail</TD></TR>
+            <TR><TD ALIGN="LEFT">participant_phone</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">participant_title</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">attendance</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">is_underviser</TD><TD ALIGN="LEFT">ja/nej</TD></TR>
+            <TR><TD ALIGN="LEFT">created_at</TD><TD ALIGN="LEFT">tidspunkt</TD></TR>
+            </TABLE>>]
+
+        CourseMaterial [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#16a34a"><FONT COLOR="white"><B>CourseMaterial</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#f0fdf4"><FONT POINT-SIZE="8"><I>Kursusmaterialer til download</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">course</TD><TD ALIGN="LEFT">→ Course</TD></TR>
+            <TR><TD ALIGN="LEFT">file</TD><TD ALIGN="LEFT">fil</TD></TR>
+            <TR><TD ALIGN="LEFT">name</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">uploaded_at</TD><TD ALIGN="LEFT">tidspunkt</TD></TR>
+            </TABLE>>]
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  BULK EMAIL
+    // ════════════════════════════════════════════════════════
+    subgraph cluster_bulk_email {
+        label=""
+        style=filled
+        fillcolor="#fef3c7"
+        color="#fcd34d"
+        penwidth=1.5
+
+        BulkEmail [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#d97706"><FONT COLOR="white"><B>BulkEmail</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#fffbeb"><FONT POINT-SIZE="8"><I>Masseudsendelser sendt til filtrerede skoler</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">name</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">subject</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">body_html</TD><TD ALIGN="LEFT">lang tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">recipient_type</TD><TD ALIGN="LEFT">valg</TD></TR>
+            <TR><TD ALIGN="LEFT">filter_params</TD><TD ALIGN="LEFT">data</TD></TR>
+            <TR><TD ALIGN="LEFT">sent_at</TD><TD ALIGN="LEFT">tidspunkt?</TD></TR>
+            <TR><TD ALIGN="LEFT">sent_by</TD><TD ALIGN="LEFT">→ User</TD></TR>
+            <TR><TD ALIGN="LEFT">created_at / updated_at</TD><TD ALIGN="LEFT">tidspunkt</TD></TR>
+            </TABLE>>]
+
+        BulkEmailAttachment [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#d97706"><FONT COLOR="white"><B>BulkEmailAttachment</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#fffbeb"><FONT POINT-SIZE="8"><I>Vedhæftede filer til en masseudsendelse</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">bulk_email</TD><TD ALIGN="LEFT">→ BulkEmail</TD></TR>
+            <TR><TD ALIGN="LEFT">file</TD><TD ALIGN="LEFT">fil</TD></TR>
+            <TR><TD ALIGN="LEFT">filename</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">uploaded_at</TD><TD ALIGN="LEFT">tidspunkt</TD></TR>
+            </TABLE>>]
+
+        BulkEmailRecipient [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#d97706"><FONT COLOR="white"><B>BulkEmailRecipient</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#fffbeb"><FONT POINT-SIZE="8"><I>Afsendestatus pr. modtager – bounces og gensendelser</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">bulk_email</TD><TD ALIGN="LEFT">→ BulkEmail</TD></TR>
+            <TR><TD ALIGN="LEFT">person</TD><TD ALIGN="LEFT">→ Person</TD></TR>
+            <TR><TD ALIGN="LEFT">school</TD><TD ALIGN="LEFT">→ School</TD></TR>
+            <TR><TD ALIGN="LEFT">email</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">success</TD><TD ALIGN="LEFT">ja/nej</TD></TR>
+            <TR><TD ALIGN="LEFT">error_message</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">bounced_at</TD><TD ALIGN="LEFT">tidspunkt?</TD></TR>
+            <TR><TD ALIGN="LEFT">resend_email_id</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">resent_to</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">resent_at</TD><TD ALIGN="LEFT">tidspunkt?</TD></TR>
+            </TABLE>>]
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  USERS
+    // ════════════════════════════════════════════════════════
+    subgraph cluster_users {
+        label=""
+        style=filled
+        fillcolor="#f3e8ff"
+        color="#c4b5fd"
+        penwidth=1.5
+
+        User [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#7c3aed"><FONT COLOR="white"><B>User</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#faf5ff"><FONT POINT-SIZE="8"><I>Django-brugere (personalekonti til admin)</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">username / email</TD><TD ALIGN="LEFT">tekst / e-mail</TD></TR>
+            <TR><TD ALIGN="LEFT">is_staff / is_superuser</TD><TD ALIGN="LEFT">ja/nej</TD></TR>
+            </TABLE>>]
+
+        UserProfile [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#7c3aed"><FONT COLOR="white"><B>UserProfile</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#faf5ff"><FONT POINT-SIZE="8"><I>Udvidet brugerprofil – oprettes automatisk (tom placeholder)</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">user</TD><TD ALIGN="LEFT">1:1 → User</TD></TR>
+            </TABLE>>]
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  AUDIT
+    // ════════════════════════════════════════════════════════
+    subgraph cluster_audit {
+        label=""
+        style=filled
+        fillcolor="#fee2e2"
+        color="#fca5a5"
+        penwidth=1.5
+
+        ActivityLog [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#dc2626"><FONT COLOR="white"><B>ActivityLog</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#fef2f2"><FONT POINT-SIZE="8"><I>Aktivitetslog – sporer alle ændringer i modeller</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">user</TD><TD ALIGN="LEFT">→ User</TD></TR>
+            <TR><TD ALIGN="LEFT">content_type</TD><TD ALIGN="LEFT">→ ContentType</TD></TR>
+            <TR><TD ALIGN="LEFT">object_id</TD><TD ALIGN="LEFT">tal</TD></TR>
+            <TR><TD ALIGN="LEFT">object_repr</TD><TD ALIGN="LEFT">tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">action</TD><TD ALIGN="LEFT">valg (opret/ret/slet)</TD></TR>
+            <TR><TD ALIGN="LEFT">changes</TD><TD ALIGN="LEFT">data</TD></TR>
+            <TR><TD ALIGN="LEFT">related_school</TD><TD ALIGN="LEFT">→ School?</TD></TR>
+            <TR><TD ALIGN="LEFT">related_course</TD><TD ALIGN="LEFT">→ Course?</TD></TR>
+            <TR><TD ALIGN="LEFT">timestamp</TD><TD ALIGN="LEFT">tidspunkt</TD></TR>
+            </TABLE>>]
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  SETTINGS
+    // ════════════════════════════════════════════════════════
+    subgraph cluster_settings {
+        label=""
+        style=filled
+        fillcolor="#f1f5f9"
+        color="#cbd5e1"
+        penwidth=1.5
+
+        ProjectSettings [label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#475569"><FONT COLOR="white"><B>ProjectSettings</B></FONT></TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#f8fafc"><FONT POINT-SIZE="8"><I>Globale indstillinger – kapacitet, visning og samarbejdsvilkår</I></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><B>id</B></TD><TD ALIGN="LEFT">#</TD></TR>
+            <TR><TD ALIGN="LEFT">klasseforloeb_per_teacher_per_year</TD><TD ALIGN="LEFT">tal</TD></TR>
+            <TR><TD ALIGN="LEFT">students_per_klasseforloeb</TD><TD ALIGN="LEFT">tal</TD></TR>
+            <TR><TD ALIGN="LEFT">samarbejdsvilkaar_file</TD><TD ALIGN="LEFT">fil</TD></TR>
+            <TR><TD ALIGN="LEFT">login_info_text</TD><TD ALIGN="LEFT">lang tekst</TD></TR>
+            <TR><TD ALIGN="LEFT">show_seat_info_messages</TD><TD ALIGN="LEFT">ja/nej</TD></TR>
+            <TR><TD ALIGN="LEFT">updated_at</TD><TD ALIGN="LEFT">tidspunkt</TD></TR>
+            </TABLE>>]
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  RELATIONSHIPS  (solid = FK, dashed = M2M)
+    // ════════════════════════════════════════════════════════
+
+    // Schools
+    Kommune -> School          [arrowhead=crow   label="  kommune" color="#3b82f6"]
+    School -> Person           [arrowhead=crow   label="  school" color="#3b82f6"]
+    School -> SchoolComment    [arrowhead=crow   label="  school" color="#3b82f6"]
+    School -> SchoolFile       [arrowhead=crow   label="  school" color="#3b82f6"]
+
+    // Courses
+    Location -> Course         [arrowhead=crow   label="  location" color="#16a34a"]
+    Instructor -> Course       [arrowhead=crow   style=dashed label="  M2M instructors" color="#16a34a"]
+    Course -> CourseSignUp     [arrowhead=crow   label="  course" color="#16a34a"]
+    Course -> CourseMaterial   [arrowhead=crow   label="  course" color="#16a34a"]
+
+    // Cross-domain
+    School -> CourseSignUp     [arrowhead=crow   label="  school" color="#6b7280"]
+    Kommune -> CourseSignUp    [arrowhead=crow   label="  kommune" color="#6b7280"]
+
+    // Bulk email
+    BulkEmail -> BulkEmailAttachment [arrowhead=crow label="  bulk_email" color="#d97706"]
+    BulkEmail -> BulkEmailRecipient  [arrowhead=crow label="  bulk_email" color="#d97706"]
+    Person -> BulkEmailRecipient     [arrowhead=crow label="  person" color="#6b7280"]
+    School -> BulkEmailRecipient     [arrowhead=crow label="  school" color="#6b7280"]
+
+    // User links
+    User -> UserProfile        [arrowhead=odot   label="  1:1" color="#7c3aed"]
+    User -> SchoolComment      [arrowhead=crow   label="  created_by" color="#7c3aed"]
+    User -> SchoolFile         [arrowhead=crow   label="  uploaded_by" color="#7c3aed"]
+    User -> BulkEmail          [arrowhead=crow   label="  sent_by" color="#7c3aed"]
+    User -> ActivityLog        [arrowhead=crow   label="  user" color="#7c3aed"]
+
+    // Audit links
+    School -> ActivityLog      [arrowhead=crow   label="  related_school" color="#dc2626" style=dashed]
+    Course -> ActivityLog      [arrowhead=crow   label="  related_course" color="#dc2626" style=dashed]
+}
