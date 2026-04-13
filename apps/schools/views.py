@@ -340,10 +340,11 @@ class ToggleEnrollmentView(View):
             # Enroll
             school.enrolled_at = enrollment_date
             school.opted_out_at = None  # Clear any previous opt-out
+            school.do_not_contact_at = None  # Clear do-not-contact on re-enrollment
             # Set active_from: use enrollment date if in the future, otherwise use default logic
             default_active = get_default_active_from()
             school.active_from = max(enrollment_date, default_active)
-            school.save(update_fields=["enrolled_at", "opted_out_at", "active_from"])
+            school.save(update_fields=["enrolled_at", "opted_out_at", "do_not_contact_at", "active_from"])
             # Generate credentials if not already set
             if not school.signup_password:
                 school.generate_credentials()
