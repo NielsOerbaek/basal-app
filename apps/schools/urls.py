@@ -16,6 +16,7 @@ urlpatterns = [
     path("<int:pk>/hard-delete/", views.SchoolHardDeleteView.as_view(), name="hard-delete"),
     path("<int:pk>/regenerate-credentials/", views.RegenerateCredentialsView.as_view(), name="regenerate-credentials"),
     path("<int:pk>/toggle-enrollment/", views.ToggleEnrollmentView.as_view(), name="toggle-enrollment"),
+    path("<int:pk>/toggle-do-not-contact/", views.ToggleDoNotContactView.as_view(), name="toggle-do-not-contact"),
     path("<int:pk>/enrollment-dates/", views.EditEnrollmentDatesView.as_view(), name="edit-enrollment-dates"),
     path("<int:pk>/clear-enrollment/", views.ClearEnrollmentView.as_view(), name="clear-enrollment"),
     path("<int:pk>/edit-opted-out-date/", views.EditOptedOutDateView.as_view(), name="edit-opted-out-date"),

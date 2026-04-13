@@ -738,6 +738,24 @@ class RegenerateCredentialsView(View):
 
 
 @method_decorator(staff_required, name="dispatch")
+class ToggleDoNotContactView(View):
+    """Toggle the do_not_contact_at flag for a school."""
+
+    def post(self, request, pk):
+        from django.utils import timezone
+
+        school = get_object_or_404(School, pk=pk)
+        if school.do_not_contact_at:
+            school.do_not_contact_at = None
+            messages.success(request, f'"{school.name}" kan nu kontaktes igen.')
+        else:
+            school.do_not_contact_at = timezone.now()
+            messages.success(request, f'"{school.name}" er markeret som ønsker ikke kontakt.')
+        school.save(update_fields=["do_not_contact_at", "updated_at"])
+        return JsonResponse({"success": True})
+
+
+@method_decorator(staff_required, name="dispatch")
 class EditEnrollmentDatesView(View):
     """Edit enrollment dates (enrolled_at and active_from) for a school."""
 

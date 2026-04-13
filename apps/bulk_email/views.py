@@ -380,6 +380,7 @@ class BulkEmailDryRunView(View):
         view = _FilterView()
         schools = list(view.get_school_filter_queryset())
 
+        do_not_contact_schools = [s for s in schools if s.do_not_contact_at]
         pairs = resolve_recipients(schools, recipient_type)
         matched_school_pks = {school.pk for school, _person in pairs}
 
@@ -400,7 +401,11 @@ class BulkEmailDryRunView(View):
         skipped_data = [
             {"school": school.name, "kommune": school.kommune.name if school.kommune else ""}
             for school in schools
-            if school.pk not in matched_school_pks
+            if school.pk not in matched_school_pks and not school.do_not_contact_at
+        ]
+
+        do_not_contact_data = [
+            {"school": s.name, "kommune": s.kommune.name if s.kommune else ""} for s in do_not_contact_schools
         ]
 
         return JsonResponse(
@@ -411,6 +416,8 @@ class BulkEmailDryRunView(View):
                 "schools_sending": len(matched_school_pks),
                 "skipped": len(skipped_data),
                 "skipped_schools": skipped_data,
+                "do_not_contact": len(do_not_contact_data),
+                "do_not_contact_schools": do_not_contact_data,
                 "warnings": warnings,
             }
         )

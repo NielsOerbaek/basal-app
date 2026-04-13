@@ -215,7 +215,7 @@
                     </div>
                 </div>
                 {% endif %}
-                <div class="mt-3 d-flex gap-2">
+                <div class="mt-3 d-flex gap-2 flex-wrap align-items-center">
                     {% if school.is_enrolled %}
                     <a href="{% url 'schools:edit-enrollment-dates' school.pk %}" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-calendar3 me-1"></i>Rediger tilmeldingsdatoer
@@ -228,6 +228,19 @@
                         <i class="bi bi-check-circle me-1"></i>Tilmeld Basal
                     </button>
                     {% endif %}
+                </div>
+                <div class="mt-3 border-top pt-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="do-not-contact"
+                               {% if school.do_not_contact_at %}checked{% endif %}
+                               onchange="handleDoNotContactChange(this)">
+                        <label class="form-check-label" for="do-not-contact">
+                            <i class="bi bi-bell-slash me-1"></i>Ønsker ikke at blive kontaktet
+                        </label>
+                        {% if school.do_not_contact_at %}
+                        <div class="small text-muted">Siden {{ school.do_not_contact_at|date:"d. M Y" }}</div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -535,6 +548,28 @@
 </div>
 {% endif %}
 
+<!-- Do Not Contact Modal -->
+<div class="modal fade" id="doNotContactModal" tabindex="-1" aria-labelledby="doNotContactModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="doNotContactModalLabel">Ønsker ikke at blive kontaktet</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Er du sikker på at <strong>{{ school.name }}</strong> skal markeres som "ønsker ikke at blive kontaktet"?</p>
+                <p class="text-muted small mb-0">Skolen vil blive undtaget fra alle fremtidige masseudsendelser.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="do-not-contact-cancel">Annuller</button>
+                <button type="button" class="btn btn-warning" id="do-not-contact-confirm">
+                    <i class="bi bi-bell-slash me-1"></i>Markér
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Enrollment Modal -->
 <div class="modal fade" id="enrollmentModal" tabindex="-1" aria-labelledby="enrollmentModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -625,5 +660,30 @@ if (deleteHistoryModal) {
         document.getElementById('deleteHistoryLabel').textContent = button.getAttribute('data-delete-label');
     });
 }
+
+function doNotContactToggle() {
+    fetch("{% url 'schools:toggle-do-not-contact' school.pk %}", {
+        method: "POST",
+        headers: {"X-CSRFToken": "{{ csrf_token }}"},
+    }).then(() => location.reload());
+}
+
+function handleDoNotContactChange(checkbox) {
+    if (checkbox.checked) {
+        // Setting the flag — show confirmation modal
+        checkbox.checked = false;
+        var modal = new bootstrap.Modal(document.getElementById('doNotContactModal'));
+        modal.show();
+    } else {
+        // Clearing the flag — no confirmation needed
+        doNotContactToggle();
+    }
+}
+
+document.getElementById('do-not-contact-confirm').addEventListener('click', function() {
+    bootstrap.Modal.getInstance(document.getElementById('doNotContactModal')).hide();
+    document.getElementById('do-not-contact').checked = true;
+    doNotContactToggle();
+});
 </script>
 {% endblock %}

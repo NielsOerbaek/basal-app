@@ -4,6 +4,13 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 13. april 2026
+
+### "Ønsker ikke at blive kontaktet" på skoler
+Skoler kan nu markeres med "Ønsker ikke at blive kontaktet" via et flueben på skolesiden. Skoler med denne markering undtages automatisk fra masseudsendelser. Ved test-kørsel og afsendelse vises hvor mange skoler der er undtaget.
+
+---
+
 ## 9. april 2026
 
 ### Kursusdeltagere kan tilknyttes til kommune (OSO-235)

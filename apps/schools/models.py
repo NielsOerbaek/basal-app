@@ -228,6 +228,12 @@ class School(models.Model):
     opted_out_at = models.DateField(
         null=True, blank=True, verbose_name="Frameldt dato", help_text="Dato for framelding fra Basal (permanent)"
     )
+    do_not_contact_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Ønsker ikke kontakt",
+        help_text="Skolen ønsker ikke at blive kontaktet – undtages fra masseudsendelser",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     signup_password = models.CharField(

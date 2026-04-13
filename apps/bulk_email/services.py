@@ -121,6 +121,8 @@ def resolve_recipients(schools, recipient_type):
     """
     result = []
     for school in schools:
+        if school.do_not_contact_at:
+            continue
         people = list(school.people.all())
         if recipient_type == BulkEmail.KOORDINATOR:
             person = next((p for p in people if p.is_koordinator and p.email), None)

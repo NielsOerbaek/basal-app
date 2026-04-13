@@ -340,15 +340,24 @@ async function updateRecipientCounter() {
     }
 
     // Show skipped schools
-    if (data.skipped_schools && data.skipped_schools.length > 0) {
-        let html = `<details><summary class="text-warning small" style="cursor:pointer;">${data.skipped_schools.length} skoler springes over (ingen ${typeLabel})</summary>`;
-        html += `<ul class="small mt-1 mb-0">`;
-        for (const s of data.skipped_schools) {
-            html += `<li>${escapeHtml(s.school)}${s.kommune ? " (" + escapeHtml(s.kommune) + ")" : ""}</li>`;
+    let skippedHtml = "";
+    if (data.do_not_contact_schools && data.do_not_contact_schools.length > 0) {
+        skippedHtml += `<details><summary class="text-danger small" style="cursor:pointer;"><i class="bi bi-bell-slash me-1"></i>${data.do_not_contact_schools.length} skoler undtaget (ønsker ikke kontakt)</summary>`;
+        skippedHtml += `<ul class="small mt-1 mb-0">`;
+        for (const s of data.do_not_contact_schools) {
+            skippedHtml += `<li>${escapeHtml(s.school)}${s.kommune ? " (" + escapeHtml(s.kommune) + ")" : ""}</li>`;
         }
-        html += `</ul></details>`;
-        skippedPanel.innerHTML = html;
+        skippedHtml += `</ul></details>`;
     }
+    if (data.skipped_schools && data.skipped_schools.length > 0) {
+        skippedHtml += `<details><summary class="text-warning small" style="cursor:pointer;">${data.skipped_schools.length} skoler springes over (ingen ${typeLabel})</summary>`;
+        skippedHtml += `<ul class="small mt-1 mb-0">`;
+        for (const s of data.skipped_schools) {
+            skippedHtml += `<li>${escapeHtml(s.school)}${s.kommune ? " (" + escapeHtml(s.kommune) + ")" : ""}</li>`;
+        }
+        skippedHtml += `</ul></details>`;
+    }
+    skippedPanel.innerHTML = skippedHtml;
 
     renderWarnings(data.warnings);
 }
@@ -438,7 +447,11 @@ document.getElementById("dry-run-btn").addEventListener("click", async () => {
         html += `<tr><td>${escapeHtml(r.school)}</td><td>${escapeHtml(r.person)}</td><td>${escapeHtml(r.email)}</td></tr>`;
     }
     html += `</tbody></table></div>
-    <p class="text-muted small mt-1">${data.total} modtagere &middot; ${data.skipped} skoler sprunget over</p>`;
+    <p class="text-muted small mt-1">${data.total} modtagere &middot; ${data.skipped} skoler sprunget over`;
+    if (data.do_not_contact > 0) {
+        html += ` &middot; ${data.do_not_contact} undtaget (ønsker ikke kontakt)`;
+    }
+    html += `</p>`;
     panel.innerHTML = html;
     panel.style.display = "block";
     renderWarnings(data.warnings);
