@@ -76,7 +76,7 @@
     <div id="ean-warning" class="alert alert-danger" style="display: none;">
         <strong><i class="bi bi-exclamation-triangle me-2"></i>EAN/CVR-nummer mangler</strong>
         <p class="mb-2">Jeres skole mangler et EAN/CVR-nummer. Det skal udfyldes, før I kan tilmelde jer et kursus.</p>
-        <a id="ean-warning-link" href="#" target="_blank" class="btn btn-sm btn-outline-danger">Udfyld EAN/CVR-nummer på skolens side</a>
+        <a id="ean-warning-link" href="#" target="_blank" class="btn btn-sm btn-outline-danger">Udfyld EAN/CVR-nummer</a>
     </div>
 
     <div id="oeko-warning" class="alert alert-danger" style="display: none;">
@@ -382,8 +382,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateEanWarning(data) {
         missingEan = data && data.missing_ean;
         if (missingEan) {
-            if (data.school_public_url) {
-                eanWarningLink.href = data.school_public_url;
+            if (data.school_billing_url) {
+                eanWarningLink.href = data.school_billing_url;
                 eanWarningLink.style.display = '';
             } else {
                 eanWarningLink.style.display = 'none';

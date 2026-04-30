@@ -141,6 +141,22 @@ class SchoolForm(forms.ModelForm):
         return instance
 
 
+class PublicSchoolBillingForm(forms.ModelForm):
+    """Single-field form for editing the school's EAN/CVR via the public token page."""
+
+    class Meta:
+        model = School
+        fields = ["ean_nummer"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["ean_nummer"].help_text = "13-cifret EAN-nummer eller 8-cifret CVR-nummer"
+        self.fields["ean_nummer"].required = True
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.layout = Layout("ean_nummer")
+
+
 class KommuneBillingForm(forms.ModelForm):
     class Meta:
         model = Kommune

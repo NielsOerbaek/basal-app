@@ -4,6 +4,13 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 30. april 2026
+
+### EAN/CVR-nummer kan udfyldes fra skolens side
+Hvis en skole mangler et EAN/CVR-nummer, vises dette nu som et felt på skolens egen side (token-link), så koordinatoren selv kan udfylde det. Advarslen i kursustilmeldings-formularen linker direkte til redigeringsfeltet — tidligere førte linket til skolens forside, hvor der ikke var nogen EAN/CVR-felt.
+
+---
+
 ## 13. april 2026
 
 ### "Ønsker ikke at blive kontaktet" på skoler

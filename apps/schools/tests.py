@@ -1080,6 +1080,76 @@ class SchoolPublicViewTest(TestCase):
         response = self.client.get(f"/school/{self.school.signup_token}/")
         self.assertContains(response, "bi-pencil")
 
+    def test_public_view_shows_ean_field_when_school_pays(self):
+        """EAN/CVR row appears in Skoleoplysninger when school is the payer."""
+        self.school.ean_nummer = "1234567890123"
+        self.school.save()
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertContains(response, "EAN/CVR-nummer")
+        self.assertContains(response, "1234567890123")
+
+    def test_public_view_shows_missing_badge_when_ean_blank(self):
+        """When EAN is blank and school pays, a 'Mangler' badge is shown."""
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertContains(response, "EAN/CVR-nummer")
+        self.assertContains(response, "Mangler")
+
+    def test_public_view_hides_ean_when_kommunen_betaler(self):
+        """EAN row is hidden when the kommune is the payer."""
+        self.school.kommunen_betaler = True
+        self.school.save()
+        response = self.client.get(f"/school/{self.school.signup_token}/")
+        self.assertNotContains(response, "EAN/CVR-nummer")
+
+
+class PublicSchoolBillingUpdateViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.school = School.objects.create(
+            name="Lykkebo Skole",
+            adresse="Test Address",
+            kommune="Københavns Kommune",
+            signup_token="bill123token456abc",
+        )
+
+    def test_get_renders_form(self):
+        response = self.client.get(f"/school/{self.school.signup_token}/billing/edit/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "EAN/CVR-nummer")
+        self.assertContains(response, "Lykkebo Skole")
+
+    def test_get_with_invalid_token_returns_404(self):
+        response = self.client.get("/school/wrongtoken/billing/edit/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_updates_ean(self):
+        response = self.client.post(
+            f"/school/{self.school.signup_token}/billing/edit/",
+            {"ean_nummer": "1234567890123"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, f"/school/{self.school.signup_token}/")
+        self.school.refresh_from_db()
+        self.assertEqual(self.school.ean_nummer, "1234567890123")
+
+    def test_post_blank_value_is_invalid(self):
+        self.school.ean_nummer = "9999999999999"
+        self.school.save()
+        response = self.client.post(
+            f"/school/{self.school.signup_token}/billing/edit/",
+            {"ean_nummer": ""},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.school.refresh_from_db()
+        self.assertEqual(self.school.ean_nummer, "9999999999999")
+
+    def test_post_with_invalid_token_returns_404(self):
+        response = self.client.post(
+            "/school/wrongtoken/billing/edit/",
+            {"ean_nummer": "1234567890123"},
+        )
+        self.assertEqual(response.status_code, 404)
+
 
 class SchoolDetailMergedPeopleTest(TestCase):
     def setUp(self):

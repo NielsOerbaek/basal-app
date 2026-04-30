@@ -1,0 +1,38 @@
+{% extends 'core/base_public.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}EAN/CVR-nummer - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-cash-coin me-2"></i>EAN/CVR-nummer</h1>
+    </div>
+
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'school-public' school.signup_token %}">{{ school.name }}</a></li>
+            <li class="breadcrumb-item active">EAN/CVR-nummer</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">EAN/CVR-nummer for {{ school.name }}</div>
+                <div class="card-body">
+                    <p class="text-muted small">Bruges ved fakturering af kursuspladser og medlemskab.</p>
+                    <form method="post">
+                        {% csrf_token %}
+                        {% crispy form %}
+                        <div class="d-flex justify-content-between mt-3">
+                            <a href="{% url 'school-public' school.signup_token %}" class="btn btn-outline-secondary">Annuller</a>
+                            <button type="submit" class="btn btn-primary">Gem</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

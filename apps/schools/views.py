@@ -17,7 +17,14 @@ from apps.courses.forms import CourseSignUpParticipantForm
 from apps.courses.models import CourseSignUp
 from apps.schools.consumption import get_consumption_overview
 
-from .forms import EnrollmentDatesForm, PersonForm, SchoolCommentForm, SchoolFileForm, SchoolForm
+from .forms import (
+    EnrollmentDatesForm,
+    PersonForm,
+    PublicSchoolBillingForm,
+    SchoolCommentForm,
+    SchoolFileForm,
+    SchoolForm,
+)
 from .mixins import SchoolFilterMixin
 from .models import Person, School, SchoolComment, SchoolFile, SchoolYear
 
@@ -1117,4 +1124,36 @@ class PublicCourseSignUpUpdateView(View):
             request,
             "schools/public_signup_form.html",
             {"school": school, "signup": signup, "form": form},
+        )
+
+
+class PublicSchoolBillingUpdateView(View):
+    """Public view for editing the school's EAN/CVR via signup token."""
+
+    def get_school(self, token):
+        return get_object_or_404(
+            School.objects.filter(signup_token__isnull=False).exclude(signup_token=""),
+            signup_token=token,
+        )
+
+    def get(self, request, token):
+        school = self.get_school(token)
+        form = PublicSchoolBillingForm(instance=school)
+        return render(
+            request,
+            "schools/public_school_billing_form.html",
+            {"school": school, "form": form},
+        )
+
+    def post(self, request, token):
+        school = self.get_school(token)
+        form = PublicSchoolBillingForm(request.POST, instance=school)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "EAN/CVR-nummer er opdateret.")
+            return redirect("school-public", token=token)
+        return render(
+            request,
+            "schools/public_school_billing_form.html",
+            {"school": school, "form": form},
         )

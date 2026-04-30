@@ -297,8 +297,10 @@ class CheckSchoolSeatsView(View):
             }
 
         school_public_url = None
+        school_billing_url = None
         if school.signup_token:
             school_public_url = reverse("school-public", args=[school.signup_token])
+            school_billing_url = reverse("school-public-billing-update", args=[school.signup_token])
 
         missing_ean = not school.ean_nummer and not school.kommunen_betaler
         missing_oeko = not school.people.filter(is_oekonomisk_ansvarlig=True).exists()
@@ -337,6 +339,7 @@ class CheckSchoolSeatsView(View):
                     "seat_content": seat_content,
                     "koordinator": koordinator_info,
                     "school_public_url": school_public_url,
+                    "school_billing_url": school_billing_url,
                     "missing_ean": missing_ean,
                     "missing_oeko": missing_oeko,
                 }
@@ -349,6 +352,7 @@ class CheckSchoolSeatsView(View):
                 "remaining_seats": school.remaining_seats,
                 "koordinator": koordinator_info,
                 "school_public_url": school_public_url,
+                "school_billing_url": school_billing_url,
                 "missing_ean": missing_ean,
                 "missing_oeko": missing_oeko,
             }

@@ -17,6 +17,20 @@
                         <dd class="col-sm-8">{{ school.adresse }}</dd>
                         <dt class="col-sm-4">Kommune</dt>
                         <dd class="col-sm-8">{{ school.kommune }}</dd>
+                        {% if not school.kommunen_betaler %}
+                        <dt class="col-sm-4">EAN/CVR-nummer</dt>
+                        <dd class="col-sm-8">
+                            {% if school.ean_nummer %}
+                                {{ school.ean_nummer }}
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Mangler</span>
+                            {% endif %}
+                            <a href="{% url 'school-public-billing-update' school.signup_token %}"
+                               class="btn btn-sm btn-link p-0 ms-1" title="Rediger">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </dd>
+                        {% endif %}
                         <dt class="col-sm-4">Tilmeldingsstatus</dt>
                         <dd class="col-sm-8">
                             {% if school.is_enrolled %}

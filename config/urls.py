@@ -10,6 +10,7 @@ from apps.schools.views import (
     PublicPersonCreateView,
     PublicPersonDeleteView,
     PublicPersonUpdateView,
+    PublicSchoolBillingUpdateView,
     SchoolPublicView,
 )
 
@@ -42,6 +43,11 @@ urlpatterns = [
         "school/<str:token>/signup/<int:pk>/edit/",
         PublicCourseSignUpUpdateView.as_view(),
         name="school-public-signup-update",
+    ),
+    path(
+        "school/<str:token>/billing/edit/",
+        PublicSchoolBillingUpdateView.as_view(),
+        name="school-public-billing-update",
     ),
     path("", include("apps.core.urls")),
     path("schools/", include("apps.schools.urls")),
