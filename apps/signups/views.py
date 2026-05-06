@@ -7,6 +7,7 @@ from django.views.generic import TemplateView
 from apps.courses.models import CourseSignUp
 from apps.schools.models import School
 
+from .auth import resolve_signup_auth
 from .forms import CourseSignupForm, SchoolSignupForm
 from .models import SignupPage, SignupPageType
 
@@ -39,78 +40,12 @@ class CourseSignupView(View):
         except SignupPage.DoesNotExist:
             return None
 
-    def get_auth_context(self, request):
-        """Determine authentication state and return context."""
-        # Check if user wants to clear session and switch schools
-        if request.GET.get("clear") == "1":
-            if "course_signup_school_id" in request.session:
-                del request.session["course_signup_school_id"]
-
-        # Staff bypass - full access
-        if request.user.is_authenticated and request.user.is_staff:
-            return {
-                "auth_mode": "staff",
-                "locked_school": None,
-                "show_password_form": False,
-                "auth_error": None,
-            }
-
-        # Check for token in URL
-        token = request.GET.get("token", "").strip()
-        if token:
-            try:
-                school = School.objects.get(
-                    signup_token=token,
-                    enrolled_at__isnull=False,
-                    opted_out_at__isnull=True,
-                )
-                request.session["course_signup_school_id"] = school.pk
-                return {
-                    "auth_mode": "token",
-                    "locked_school": school,
-                    "show_password_form": False,
-                    "auth_error": None,
-                }
-            except School.DoesNotExist:
-                return {
-                    "auth_mode": None,
-                    "locked_school": None,
-                    "show_password_form": True,
-                    "auth_error": "Ugyldigt link. Brug venligst koden fra jeres velkomstmail.",
-                }
-
-        # Check session
-        school_id = request.session.get("course_signup_school_id")
-        if school_id:
-            try:
-                school = School.objects.get(
-                    pk=school_id,
-                    enrolled_at__isnull=False,
-                    opted_out_at__isnull=True,
-                )
-                return {
-                    "auth_mode": "session",
-                    "locked_school": school,
-                    "show_password_form": False,
-                    "auth_error": None,
-                }
-            except School.DoesNotExist:
-                del request.session["course_signup_school_id"]
-
-        # Not authenticated
-        return {
-            "auth_mode": None,
-            "locked_school": None,
-            "show_password_form": True,
-            "auth_error": None,
-        }
-
     def get(self, request):
         page = self.get_signup_page()
         if page and not page.is_active:
             return render(request, "signups/page_unavailable.html", {"page": page})
 
-        auth_context = self.get_auth_context(request)
+        auth_context = resolve_signup_auth(request)
         form = CourseSignupForm(signup_page=page, locked_school=auth_context.get("locked_school"))
 
         return render(
@@ -128,7 +63,7 @@ class CourseSignupView(View):
         if page and not page.is_active:
             return render(request, "signups/page_unavailable.html", {"page": page})
 
-        auth_context = self.get_auth_context(request)
+        auth_context = resolve_signup_auth(request)
 
         # Must be authenticated to submit
         if auth_context["show_password_form"] and not auth_context["locked_school"]:
