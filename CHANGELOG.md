@@ -14,7 +14,7 @@ Det er nu muligt at oprette webinarer, som deles via deres egen URL (f.eks. `/we
 
 Tilmeldinger til webinarer **tæller ikke mod skolens kursus-pladser**.
 
-Oprettelse og redigering sker via admin (**Tilmelding → Webinarer**). Webinarets tilmeldings-URL vises direkte i admin-oversigten og kan kopieres derfra. Hver webinartilmelding logges i aktivitetsloggen ligesom kursustilmeldinger.
+Webinarer oprettes og redigeres fra **Tilmelding → Webinarer** i topmenuen — en oversigtsside i samme stil som Kurser-oversigten, hvor man kan oprette nye webinarer, redigere eksisterende og åbne den enkelte tilmeldingsside. På et webinars detaljeside kan man se alle tilmeldinger og med ét klik **kopiere alle deltagernes e-mailadresser** til udklipsholderen (klar til fx Outlook). Hver webinartilmelding logges i aktivitetsloggen ligesom kursustilmeldinger.
 
 ---
 
