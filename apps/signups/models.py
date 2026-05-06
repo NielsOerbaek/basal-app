@@ -4,6 +4,7 @@ from django.db import models
 class SignupPageType(models.TextChoices):
     COURSE_SIGNUP = "course_signup", "Kursustilmelding"
     SCHOOL_SIGNUP = "school_signup", "Skoletilmelding"
+    WEBINAR_SIGNUP = "webinar_signup", "Webinartilmelding"
 
 
 class SignupPage(models.Model):
