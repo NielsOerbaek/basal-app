@@ -6,6 +6,7 @@ class EmailType(models.TextChoices):
     COURSE_REMINDER = "course_reminder", "Kursuspåmindelse (14 dage før)"
     SCHOOL_ENROLLMENT_CONFIRMATION = "school_enrollment_confirmation", "Skoletilmeldingsbekræftelse"
     COORDINATOR_SIGNUP = "coordinator_signup", "Koordinator-tilmeldingsbekræftelse"
+    WEBINAR_CONFIRMATION = "webinar_confirmation", "Webinarbekræftelse"
 
 
 class EmailTemplate(models.Model):

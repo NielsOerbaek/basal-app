@@ -6,6 +6,11 @@ from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django.utils import timezone
 
+from apps.emails.services import (
+    get_webinar_signup_context,
+    send_webinar_signup_confirmation,
+    send_webinar_signup_notification,
+)
 from apps.schools.models import Kommune, School
 from apps.webinars.forms import GatedWebinarSignupForm, PublicWebinarSignupForm
 from apps.webinars.models import Webinar, WebinarAccessMode, WebinarSignUp
@@ -169,3 +174,30 @@ def test_gated_form_requires_name_and_email():
 def test_gated_form_does_not_have_organization_field():
     form = GatedWebinarSignupForm(data={"name": "A", "email": "a@b.dk"})
     assert "organization" not in form.fields
+
+
+@pytest.mark.django_db
+def test_webinar_signup_context_includes_meeting_url():
+    w = _make_webinar(slug="ctx")
+    s = WebinarSignUp.objects.create(webinar=w, participant_name="Anna", participant_email="a@b.dk")
+    ctx = get_webinar_signup_context(s)
+    assert ctx["meeting_url"] == w.meeting_url
+    assert ctx["webinar_title"] == w.title
+    assert ctx["participant_name"] == "Anna"
+
+
+@pytest.mark.django_db
+def test_send_webinar_signup_confirmation_returns_true_in_dev_mode():
+    # conftest sets RESEND_API_KEY = None — the function should log and return True
+    w = _make_webinar(slug="cf")
+    s = WebinarSignUp.objects.create(webinar=w, participant_name="Anna", participant_email="a@b.dk")
+    assert send_webinar_signup_confirmation(s) is True
+
+
+@pytest.mark.django_db
+def test_send_webinar_signup_notification_returns_true_in_dev_mode():
+    w = _make_webinar(slug="nt")
+    s = WebinarSignUp.objects.create(
+        webinar=w, participant_name="Anna", participant_email="a@b.dk", organization="Acme"
+    )
+    assert send_webinar_signup_notification(w, s) is True

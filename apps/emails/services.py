@@ -470,3 +470,104 @@ def send_coordinator_signup_confirmation(school, course, signups, override_email
             error_message=str(e),
         )
         return False
+
+
+def get_webinar_signup_context(signup):
+    """Build template context for a WebinarSignUp instance."""
+    webinar = signup.webinar
+    return {
+        "participant_name": signup.participant_name,
+        "participant_email": signup.participant_email,
+        "webinar_title": webinar.title,
+        "webinar_date": date_format(webinar.start_at, "j. F Y, H:i"),
+        "webinar_duration": webinar.duration_minutes,
+        "webinar_description": webinar.description,
+        "meeting_url": webinar.meeting_url,
+        "instructors": ", ".join(webinar.instructors.values_list("name", flat=True)),
+    }
+
+
+def send_webinar_signup_confirmation(signup):
+    """Send confirmation email to a webinar participant."""
+    try:
+        template = EmailTemplate.objects.get(email_type=EmailType.WEBINAR_CONFIRMATION, is_active=True)
+    except EmailTemplate.DoesNotExist:
+        logger.warning("No active template found for webinar confirmation")
+        return False
+
+    context = get_webinar_signup_context(signup)
+    subject = render_template(template.subject, context)
+    body_html = render_template(template.body_html, context)
+
+    if not check_email_domain_allowed(signup.participant_email):
+        logger.warning(
+            f"[EMAIL BLOCKED] Recipient {signup.participant_email} not in allowed domains: "
+            f"{settings.EMAIL_ALLOWED_DOMAINS}"
+        )
+        return False
+
+    if not settings.RESEND_API_KEY:
+        logger.info(f"[EMAIL] To: {signup.participant_email}")
+        logger.info(f"[EMAIL] Subject: {subject}")
+        logger.info(f"[EMAIL] Body: {body_html[:200]}...")
+        return True
+
+    try:
+        resend.api_key = settings.RESEND_API_KEY
+        resend.Emails.send(
+            {
+                "from": settings.DEFAULT_FROM_EMAIL,
+                "to": [signup.participant_email],
+                "reply_to": DEFAULT_REPLY_TO,
+                "subject": subject,
+                "html": body_html,
+            }
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send webinar confirmation: {e}")
+        return False
+
+
+def send_webinar_signup_notification(webinar, signup):
+    """Send admin notification when someone signs up for a webinar."""
+    notification_email = getattr(settings, "COURSE_SIGNUP_NOTIFICATION_EMAIL", "basal@sundkom.dk")
+
+    if signup.school_id:
+        org_line = f"<li><strong>Skole:</strong> {signup.school.name}</li>"
+    else:
+        org_line = f"<li><strong>Organisation:</strong> {signup.organization or 'Ikke angivet'}</li>"
+
+    body_html = f"""
+<p><strong>Ny webinartilmelding</strong></p>
+<ul>
+  <li><strong>Webinar:</strong> {webinar.title}</li>
+  <li><strong>Tidspunkt:</strong> {date_format(webinar.start_at, "j. F Y, H:i")}</li>
+  <li><strong>Deltager:</strong> {signup.participant_name} ({signup.participant_email})</li>
+  {f'<li><strong>Telefon:</strong> {signup.participant_phone}</li>' if signup.participant_phone else ''}
+  {f'<li><strong>Titel:</strong> {signup.participant_title}</li>' if signup.participant_title else ''}
+  {org_line}
+</ul>
+"""
+
+    if not getattr(settings, "RESEND_API_KEY", None):
+        logger.info(f"[EMAIL] To: {notification_email}")
+        logger.info(f"[EMAIL] Subject: Ny webinartilmelding – {webinar.title}")
+        logger.info(f"[EMAIL] Body: {body_html[:200]}...")
+        return True
+
+    try:
+        resend.api_key = settings.RESEND_API_KEY
+        resend.Emails.send(
+            {
+                "from": settings.DEFAULT_FROM_EMAIL,
+                "to": [notification_email],
+                "reply_to": DEFAULT_REPLY_TO,
+                "subject": f"Ny webinartilmelding – {webinar.title}",
+                "html": body_html,
+            }
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send webinar notification: {e}")
+        return False
