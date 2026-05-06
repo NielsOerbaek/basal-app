@@ -478,6 +478,8 @@ def get_webinar_signup_context(signup):
     return {
         "participant_name": signup.participant_name,
         "participant_email": signup.participant_email,
+        "kommune": signup.kommune.name if signup.kommune_id else "",
+        "school_name": signup.school_name,
         "webinar_title": webinar.title,
         "webinar_time": webinar.display_time,
         "webinar_description": webinar.description,
@@ -532,7 +534,8 @@ def send_webinar_signup_notification(webinar, signup):
     """Send admin notification when someone signs up for a webinar."""
     notification_email = getattr(settings, "COURSE_SIGNUP_NOTIFICATION_EMAIL", "basal@sundkom.dk")
 
-    org_line = f"<li><strong>Organisation:</strong> {signup.organization or 'Ikke angivet'}</li>"
+    kommune_name = signup.kommune.name if signup.kommune_id else "Ikke angivet"
+    school_name = signup.school_name or "Ikke angivet"
 
     body_html = f"""
 <p><strong>Ny webinartilmelding</strong></p>
@@ -540,9 +543,8 @@ def send_webinar_signup_notification(webinar, signup):
   <li><strong>Webinar:</strong> {webinar.title}</li>
   <li><strong>Tidspunkt:</strong> {webinar.display_time}</li>
   <li><strong>Deltager:</strong> {signup.participant_name} ({signup.participant_email})</li>
-  {f'<li><strong>Telefon:</strong> {signup.participant_phone}</li>' if signup.participant_phone else ''}
-  {f'<li><strong>Titel:</strong> {signup.participant_title}</li>' if signup.participant_title else ''}
-  {org_line}
+  <li><strong>Kommune:</strong> {kommune_name}</li>
+  <li><strong>Skole:</strong> {school_name}</li>
 </ul>
 """
 

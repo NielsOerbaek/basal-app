@@ -17,8 +17,12 @@ class Webinar(models.Model):
     start_at = models.DateTimeField(verbose_name="Starttidspunkt")
     duration_minutes = models.PositiveIntegerField(default=60, verbose_name="Varighed (minutter)")
     meeting_url = models.URLField(
+        blank=True,
         verbose_name="Mødelink",
-        help_text="Zoom/Teams/Meet-link — sendes i bekræftelsesmail, vises ikke offentligt",
+        help_text=(
+            "Zoom/Teams/Meet-link — sendes til deltagerne i bekræftelsesmailen. "
+            "Hvis feltet er tomt, oplyses deltageren om at linket eftersendes tættere på datoen."
+        ),
     )
     instructors = models.ManyToManyField(
         "courses.Instructor",
@@ -81,17 +85,18 @@ class Webinar(models.Model):
 
 class WebinarSignUp(models.Model):
     webinar = models.ForeignKey(Webinar, on_delete=models.CASCADE, related_name="signups", verbose_name="Webinar")
+    kommune = models.ForeignKey(
+        "schools.Kommune",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="webinar_signups",
+        verbose_name="Kommune",
+    )
+    school_name = models.CharField(max_length=255, blank=True, verbose_name="Skole")
     participant_name = models.CharField(max_length=255, verbose_name="Navn")
     participant_email = models.EmailField(verbose_name="E-mail")
     email_bounced_at = models.DateTimeField(null=True, blank=True, verbose_name="E-mail bouncet")
-    participant_phone = models.CharField(max_length=50, blank=True, verbose_name="Telefon")
-    participant_title = models.CharField(max_length=255, blank=True, verbose_name="Titel")
-    organization = models.CharField(
-        max_length=255,
-        blank=True,
-        verbose_name="Organisation",
-        help_text="Hvor deltageren arbejder (valgfrit)",
-    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

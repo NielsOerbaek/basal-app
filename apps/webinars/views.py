@@ -72,11 +72,10 @@ class WebinarDetailView(View):
             else:
                 signup = WebinarSignUp.objects.create(
                     webinar=webinar,
+                    kommune=form.cleaned_data["kommune"],
+                    school_name=form.cleaned_data["school_name"],
                     participant_name=form.cleaned_data["name"],
                     participant_email=form.cleaned_data["email"],
-                    participant_phone=form.cleaned_data.get("phone", ""),
-                    participant_title=form.cleaned_data.get("title", ""),
-                    organization=form.cleaned_data.get("organization", ""),
                 )
                 self._send_emails(webinar, signup)
                 return redirect("webinar:detail-success", slug=webinar.slug)

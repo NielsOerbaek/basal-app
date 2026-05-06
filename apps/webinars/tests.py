@@ -11,6 +11,7 @@ from apps.emails.services import (
     send_webinar_signup_confirmation,
     send_webinar_signup_notification,
 )
+from apps.schools.models import Kommune
 from apps.webinars.forms import WebinarSignupForm
 from apps.webinars.models import Webinar, WebinarSignUp
 
@@ -26,8 +27,13 @@ def _make_webinar(slug="w", **kwargs):
     return Webinar.objects.create(**defaults)
 
 
+@pytest.fixture
+def kommune(db):
+    return Kommune.objects.create(name="Aarhus")
+
+
 # ---------------------------------------------------------------------------
-# Model
+# Webinar model
 # ---------------------------------------------------------------------------
 
 
@@ -73,31 +79,49 @@ def test_webinar_display_time_combines_date_start_end_and_duration():
     assert w.display_time == "12. oktober 2026 18:00 - 19:30 (90 minutter)"
 
 
+@pytest.mark.django_db
+def test_meeting_url_is_optional():
+    """meeting_url is now blank=True so admins can publish a webinar
+    before they have the Zoom link."""
+    w = _make_webinar(slug="no-link", meeting_url="")
+    w.full_clean()  # must not raise
+
+
 # ---------------------------------------------------------------------------
 # WebinarSignUp model
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
-def test_webinar_signup_unique_email_per_webinar():
+def test_webinar_signup_unique_email_per_webinar(kommune):
     w = _make_webinar()
-    WebinarSignUp.objects.create(webinar=w, participant_name="A", participant_email="dup@example.com")
+    WebinarSignUp.objects.create(
+        webinar=w, kommune=kommune, school_name="A", participant_name="A", participant_email="dup@example.com"
+    )
     with pytest.raises(IntegrityError):
-        WebinarSignUp.objects.create(webinar=w, participant_name="B", participant_email="dup@example.com")
+        WebinarSignUp.objects.create(
+            webinar=w, kommune=kommune, school_name="A", participant_name="B", participant_email="dup@example.com"
+        )
 
 
 @pytest.mark.django_db
-def test_webinar_signup_same_email_allowed_across_different_webinars():
+def test_webinar_signup_same_email_allowed_across_different_webinars(kommune):
     w1 = _make_webinar(slug="a")
     w2 = _make_webinar(slug="b")
-    WebinarSignUp.objects.create(webinar=w1, participant_name="A", participant_email="x@y.dk")
-    WebinarSignUp.objects.create(webinar=w2, participant_name="A", participant_email="x@y.dk")
+    WebinarSignUp.objects.create(
+        webinar=w1, kommune=kommune, school_name="A", participant_name="A", participant_email="x@y.dk"
+    )
+    WebinarSignUp.objects.create(
+        webinar=w2, kommune=kommune, school_name="A", participant_name="A", participant_email="x@y.dk"
+    )
 
 
 @pytest.mark.django_db
-def test_webinar_signup_clears_bounce_on_email_change():
+def test_webinar_signup_clears_bounce_on_email_change(kommune):
     w = _make_webinar(slug="bn")
-    s = WebinarSignUp.objects.create(webinar=w, participant_name="A", participant_email="old@example.com")
+    s = WebinarSignUp.objects.create(
+        webinar=w, kommune=kommune, school_name="A", participant_name="A", participant_email="old@example.com"
+    )
     s.email_bounced_at = timezone.now()
     s.save()
     s.participant_email = "new@example.com"
@@ -112,24 +136,26 @@ def test_webinar_signup_clears_bounce_on_email_change():
 
 
 @pytest.mark.django_db
-def test_form_requires_name_and_email():
+def test_form_requires_all_four_fields(kommune):
     form = WebinarSignupForm(data={})
     assert not form.is_valid()
-    assert "name" in form.errors
-    assert "email" in form.errors
+    for field in ["kommune", "school_name", "name", "email"]:
+        assert field in form.errors
 
 
 @pytest.mark.django_db
-def test_form_accepts_minimal_valid_data():
-    form = WebinarSignupForm(data={"name": "Anna", "email": "a@b.dk"})
+def test_form_accepts_complete_data(kommune):
+    form = WebinarSignupForm(
+        data={
+            "kommune": kommune.pk,
+            "school_name": "Skole X",
+            "name": "Anna",
+            "email": "a@b.dk",
+        }
+    )
     assert form.is_valid(), form.errors
-
-
-@pytest.mark.django_db
-def test_form_includes_organization_field():
-    form = WebinarSignupForm(data={"name": "A", "email": "a@b.dk", "organization": "Acme"})
-    assert form.is_valid(), form.errors
-    assert form.cleaned_data["organization"] == "Acme"
+    assert form.cleaned_data["kommune"] == kommune
+    assert form.cleaned_data["school_name"] == "Skole X"
 
 
 # ---------------------------------------------------------------------------
@@ -138,27 +164,41 @@ def test_form_includes_organization_field():
 
 
 @pytest.mark.django_db
-def test_webinar_signup_context_includes_meeting_url():
+def test_webinar_signup_context_includes_kommune_and_school(kommune):
     w = _make_webinar(slug="ctx")
-    s = WebinarSignUp.objects.create(webinar=w, participant_name="Anna", participant_email="a@b.dk")
+    s = WebinarSignUp.objects.create(
+        webinar=w, kommune=kommune, school_name="Skole X", participant_name="Anna", participant_email="a@b.dk"
+    )
     ctx = get_webinar_signup_context(s)
+    assert ctx["kommune"] == "Aarhus"
+    assert ctx["school_name"] == "Skole X"
     assert ctx["meeting_url"] == w.meeting_url
-    assert ctx["webinar_title"] == w.title
-    assert ctx["participant_name"] == "Anna"
 
 
 @pytest.mark.django_db
-def test_send_webinar_signup_confirmation_returns_true_in_dev_mode():
+def test_webinar_signup_context_meeting_url_blank_when_webinar_has_none(kommune):
+    w = _make_webinar(slug="no-link", meeting_url="")
+    s = WebinarSignUp.objects.create(
+        webinar=w, kommune=kommune, school_name="X", participant_name="A", participant_email="a@b.dk"
+    )
+    ctx = get_webinar_signup_context(s)
+    assert ctx["meeting_url"] == ""
+
+
+@pytest.mark.django_db
+def test_send_webinar_signup_confirmation_returns_true_in_dev_mode(kommune):
     w = _make_webinar(slug="cf")
-    s = WebinarSignUp.objects.create(webinar=w, participant_name="Anna", participant_email="a@b.dk")
+    s = WebinarSignUp.objects.create(
+        webinar=w, kommune=kommune, school_name="X", participant_name="A", participant_email="a@b.dk"
+    )
     assert send_webinar_signup_confirmation(s) is True
 
 
 @pytest.mark.django_db
-def test_send_webinar_signup_notification_returns_true_in_dev_mode():
+def test_send_webinar_signup_notification_returns_true_in_dev_mode(kommune):
     w = _make_webinar(slug="nt")
     s = WebinarSignUp.objects.create(
-        webinar=w, participant_name="Anna", participant_email="a@b.dk", organization="Acme"
+        webinar=w, kommune=kommune, school_name="X", participant_name="A", participant_email="a@b.dk"
     )
     assert send_webinar_signup_notification(w, s) is True
 
@@ -177,12 +217,13 @@ def test_unpublished_webinar_returns_404():
 
 
 @pytest.mark.django_db
-def test_published_webinar_renders_form():
+def test_published_webinar_renders_form_and_info_box():
     w = _make_webinar(slug="open", is_published=True)
     client = Client()
     resp = client.get(f"/webinar/{w.slug}/")
     assert resp.status_code == 200
     assert b"Tilmeld" in resp.content
+    assert "modtager en bekr".encode() in resp.content
 
 
 @pytest.mark.django_db
@@ -195,35 +236,53 @@ def test_past_webinar_replaces_form_with_message():
 
 
 @pytest.mark.django_db
-def test_full_webinar_replaces_form_with_message():
+def test_full_webinar_replaces_form_with_message(kommune):
     w = _make_webinar(slug="full", capacity=1, is_published=True)
-    WebinarSignUp.objects.create(webinar=w, participant_name="A", participant_email="a@b.dk")
+    WebinarSignUp.objects.create(
+        webinar=w, kommune=kommune, school_name="X", participant_name="A", participant_email="a@b.dk"
+    )
     client = Client()
     resp = client.get(f"/webinar/{w.slug}/")
     assert b"Fuldt" in resp.content
 
 
 @pytest.mark.django_db
-def test_signup_creates_record_and_redirects():
+def test_signup_creates_record_and_redirects(kommune):
     w = _make_webinar(slug="post", is_published=True)
     client = Client()
     resp = client.post(
         f"/webinar/{w.slug}/",
-        {"name": "Anna", "email": "a@b.dk", "organization": "Acme"},
+        {
+            "kommune": kommune.pk,
+            "school_name": "Skole X",
+            "name": "Anna",
+            "email": "a@b.dk",
+        },
     )
     assert resp.status_code == 302
     assert resp.url == f"/webinar/{w.slug}/tak/"
     s = WebinarSignUp.objects.get(webinar=w)
     assert s.participant_name == "Anna"
-    assert s.organization == "Acme"
+    assert s.kommune_id == kommune.pk
+    assert s.school_name == "Skole X"
 
 
 @pytest.mark.django_db
-def test_signup_rejects_duplicate_email():
+def test_signup_rejects_duplicate_email(kommune):
     w = _make_webinar(slug="dup", is_published=True)
-    WebinarSignUp.objects.create(webinar=w, participant_name="A", participant_email="dup@x.dk")
+    WebinarSignUp.objects.create(
+        webinar=w, kommune=kommune, school_name="X", participant_name="A", participant_email="dup@x.dk"
+    )
     client = Client()
-    resp = client.post(f"/webinar/{w.slug}/", {"name": "B", "email": "dup@x.dk"})
+    resp = client.post(
+        f"/webinar/{w.slug}/",
+        {
+            "kommune": kommune.pk,
+            "school_name": "Skole X",
+            "name": "B",
+            "email": "dup@x.dk",
+        },
+    )
     assert resp.status_code == 200
     assert b"allerede tilmeldt" in resp.content
 
@@ -262,20 +321,24 @@ def test_admin_signup_list_page_loads(admin_client):
 
 
 @pytest.mark.django_db
-def test_admin_form_blocks_publish_without_meeting_url(admin_client):
-    """Cannot publish a webinar without a meeting URL."""
+def test_admin_can_publish_webinar_without_meeting_url(admin_client):
+    """meeting_url is optional now — admin form must let publish go through."""
     resp = admin_client.post(
         "/admin/webinars/webinar/add/",
         {
-            "title": "X",
-            "slug": "x",
+            "title": "Without link",
+            "slug": "no-link",
             "start_at_0": "2030-01-01",
             "start_at_1": "10:00:00",
             "duration_minutes": 60,
             "meeting_url": "",
             "is_published": "on",
             "instructors": [],
+            "signups-TOTAL_FORMS": "0",
+            "signups-INITIAL_FORMS": "0",
+            "signups-MIN_NUM_FORMS": "0",
+            "signups-MAX_NUM_FORMS": "1000",
         },
     )
-    assert resp.status_code == 200  # re-rendered form
-    assert Webinar.objects.filter(slug="x").exists() is False
+    assert resp.status_code in (200, 302)
+    assert Webinar.objects.filter(slug="no-link", is_published=True).exists()

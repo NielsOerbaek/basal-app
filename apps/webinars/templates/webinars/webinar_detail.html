@@ -30,6 +30,10 @@
     {{ gate_message }}
 </div>
 {% else %}
+<div class="alert alert-info" role="status">
+    <i class="bi bi-info-circle me-2"></i>
+    Du modtager en bekræftelses-e-mail med mødelinket og praktiske oplysninger.
+</div>
 <form method="post" novalidate>
     {% csrf_token %}
     {% crispy form %}

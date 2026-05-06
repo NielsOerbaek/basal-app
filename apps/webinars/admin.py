@@ -1,32 +1,19 @@
-from django import forms
 from django.contrib import admin
 from django.utils.html import format_html
 
 from .models import Webinar, WebinarSignUp
 
 
-class WebinarAdminForm(forms.ModelForm):
-    class Meta:
-        model = Webinar
-        fields = "__all__"
-
-    def clean(self):
-        cleaned = super().clean()
-        if cleaned.get("is_published") and not cleaned.get("meeting_url"):
-            raise forms.ValidationError({"meeting_url": "Mødelink skal udfyldes før webinaret kan offentliggøres."})
-        return cleaned
-
-
 class WebinarSignUpInline(admin.TabularInline):
     model = WebinarSignUp
     extra = 0
-    fields = ["participant_name", "participant_email", "organization", "created_at"]
+    fields = ["participant_name", "participant_email", "kommune", "school_name", "created_at"]
     readonly_fields = ["created_at"]
+    raw_id_fields = ["kommune"]
 
 
 @admin.register(Webinar)
 class WebinarAdmin(admin.ModelAdmin):
-    form = WebinarAdminForm
     list_display = [
         "title",
         "start_at",
@@ -56,10 +43,11 @@ class WebinarSignUpAdmin(admin.ModelAdmin):
         "participant_name",
         "participant_email",
         "webinar",
-        "organization",
+        "kommune",
+        "school_name",
         "created_at",
     ]
-    list_filter = ["webinar"]
-    search_fields = ["participant_name", "participant_email", "organization"]
-    raw_id_fields = ["webinar"]
+    list_filter = ["webinar", "kommune"]
+    search_fields = ["participant_name", "participant_email", "school_name"]
+    raw_id_fields = ["webinar", "kommune"]
     readonly_fields = ["created_at", "email_bounced_at"]

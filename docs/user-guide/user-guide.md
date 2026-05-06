@@ -216,10 +216,12 @@ Deltageren modtager en bekræftelses-e-mail med mødelinket umiddelbart efter ti
    - **Titel** og **URL-slug** (slug auto-udfyldes fra titlen — slug bliver en del af webinarets URL).
    - **Beskrivelse** (HTML-tekst der vises på webinarets side over metadata-kortet — fortæl hvad webinaret handler om, hvem det er for, og hvad deltagerne får ud af det).
    - **Starttidspunkt**, **Varighed** (minutter). Tidspunktet vises samlet på webinarets side, fx *"12. oktober 2026 18:00 - 19:30 (90 minutter)"*.
-   - **Mødelink** (Zoom/Teams/Meet) — sendes til deltageren i bekræftelses-mailen, vises ikke offentligt.
+   - **Mødelink** (Zoom/Teams/Meet) — valgfrit. Hvis udfyldt, sendes linket til deltageren i bekræftelses-mailen. Hvis tomt, oplyses deltageren om at linket eftersendes tættere på datoen — så du kan offentliggøre tilmeldingen tidligt og tilføje linket senere.
    - **Oplægsholdere** (valgfrit) — vælges fra listen af eksisterende undervisere/personer.
    - **Kapacitet**: lad være tom for ubegrænset.
-4. Sæt flueben ved **Offentliggjort** og gem. Mødelinket skal være udfyldt før webinaret kan offentliggøres.
+4. Sæt flueben ved **Offentliggjort** og gem.
+
+**Tilmeldingsformularen indeholder fire felter:** *Kommune* (dropdown), *Skole* (fri tekst), *Navn* og *E-mail*. Over formularen vises en infoboks om at mødelinket og praktiske oplysninger sendes via e-mail.
 
 **Sådan finder du tilmeldingssiden:**
 
