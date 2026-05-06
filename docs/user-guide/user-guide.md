@@ -204,9 +204,9 @@ Aktivitetsloggen dækker oprettelser, opdateringer og sletninger på de vigtigst
 
 # 11. Opret et webinar
 
-**Hvad bruges det til?** At oprette et webinar (online oplæg via Zoom/Teams/Meet) som deles via sin egen URL. Webinarer er gratis at deltage i og **tæller ikke mod skolens kursus-pladser**.
+**Hvad bruges det til?** At oprette et webinar (online oplæg via Zoom/Teams/Meet) som deles via sin egen URL. Webinarer er gratis og åbne for alle med linket — der er ingen skolekode eller adgangskontrol. Tilmeldinger til webinarer **tæller ikke mod skolens kursus-pladser**.
 
-Hvert webinar kan enten være **offentligt** (åbent for alle med linket) eller **forbeholdt tilmeldte skoler** (kræver skolekode/link fra velkomstmailen — samme adgang som til kursustilmelding). Deltageren modtager en bekræftelses-e-mail med mødelinket umiddelbart efter tilmelding.
+Deltageren modtager en bekræftelses-e-mail med mødelinket umiddelbart efter tilmelding.
 
 **Sådan gør du:**
 
@@ -215,12 +215,16 @@ Hvert webinar kan enten være **offentligt** (åbent for alle med linket) eller 
 3. Udfyld:
    - **Titel** og **URL-slug** (slug auto-udfyldes fra titlen — slug bliver en del af webinarets URL).
    - **Beskrivelse** (vises på webinarets side under metadata-kortet) og evt. **Introtekst** (vises over formularen — overskriver den fælles standardtekst fra *Tilmeldingsside*-indstillingen).
-   - **Starttidspunkt**, **Varighed** (minutter), evt. **Tilmeldingsfrist**.
+   - **Starttidspunkt**, **Varighed** (minutter).
    - **Mødelink** (Zoom/Teams/Meet) — sendes til deltageren i bekræftelses-mailen, vises ikke offentligt.
-   - **Adgang**: *Offentlig* eller *Kun tilmeldte skoler*.
    - **Kapacitet**: lad være tom for ubegrænset.
 4. Sæt flueben ved **Offentliggjort** og gem. Mødelinket skal være udfyldt før webinaret kan offentliggøres.
-5. Del URL'en `https://<basal-domæne>/webinar/<slug>/` med modtagerne. Tilmeldinger ses som *Webinartilmeldinger* i admin'en og logges i Aktivitetsloggen ligesom kursustilmeldinger.
+
+**Sådan finder du tilmeldingssiden:**
+
+Når webinaret er offentliggjort, vises et link til tilmeldingssiden direkte i webinar-oversigten i admin'en (kolonnen *Tilmeldingsside*). Klik på linket for at åbne siden, eller kopiér URL'en og del den med modtagerne — fx i en e-mail eller på sociale medier. URL-formatet er `https://<basal-domæne>/webinar/<slug>/`.
+
+Tilmeldinger ses som *Webinartilmeldinger* i admin'en og logges i Aktivitetsloggen ligesom kursustilmeldinger.
 
 > 💡 Tekst på success-siden, knaptekst og standard-introtekst redigeres ét sted via **Tilmelding → Rediger tilmeldingssider → Webinartilmelding** — det er den fælles indpakning for alle webinarer.
 

@@ -108,6 +108,5 @@ class AuditConfig(AppConfig):
             WebinarSignUp,
             AuditCfg(
                 excluded_fields=["id", "created_at", "email_bounced_at"],
-                get_school=lambda instance: instance.school,
             ),
         )

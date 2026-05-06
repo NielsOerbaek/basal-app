@@ -533,10 +533,7 @@ def send_webinar_signup_notification(webinar, signup):
     """Send admin notification when someone signs up for a webinar."""
     notification_email = getattr(settings, "COURSE_SIGNUP_NOTIFICATION_EMAIL", "basal@sundkom.dk")
 
-    if signup.school_id:
-        org_line = f"<li><strong>Skole:</strong> {signup.school.name}</li>"
-    else:
-        org_line = f"<li><strong>Organisation:</strong> {signup.organization or 'Ikke angivet'}</li>"
+    org_line = f"<li><strong>Organisation:</strong> {signup.organization or 'Ikke angivet'}</li>"
 
     body_html = f"""
 <p><strong>Ny webinartilmelding</strong></p>

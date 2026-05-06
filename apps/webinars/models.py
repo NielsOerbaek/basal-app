@@ -1,13 +1,8 @@
 from datetime import timedelta
 
-from django.core.exceptions import ValidationError
 from django.db import models
+from django.urls import reverse
 from django.utils import timezone
-
-
-class WebinarAccessMode(models.TextChoices):
-    PUBLIC = "public", "Offentlig (alle kan tilmelde sig)"
-    SCHOOL_GATED = "school_gated", "Kun tilmeldte skoler"
 
 
 class Webinar(models.Model):
@@ -38,12 +33,6 @@ class Webinar(models.Model):
         related_name="webinars",
         verbose_name="Undervisere",
     )
-    access_mode = models.CharField(
-        max_length=20,
-        choices=WebinarAccessMode.choices,
-        default=WebinarAccessMode.PUBLIC,
-        verbose_name="Adgang",
-    )
     capacity = models.PositiveIntegerField(
         null=True,
         blank=True,
@@ -55,11 +44,6 @@ class Webinar(models.Model):
         verbose_name="Offentliggjort",
         help_text="Offentliggjorte webinarer er synlige på deres URL",
     )
-    registration_deadline = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name="Tilmeldingsfrist",
-    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -70,6 +54,9 @@ class Webinar(models.Model):
 
     def __str__(self):
         return self.title
+
+    def get_absolute_url(self):
+        return reverse("webinar:detail", args=[self.slug])
 
     @property
     def signup_count(self):
@@ -92,14 +79,6 @@ class Webinar(models.Model):
 
 class WebinarSignUp(models.Model):
     webinar = models.ForeignKey(Webinar, on_delete=models.CASCADE, related_name="signups", verbose_name="Webinar")
-    school = models.ForeignKey(
-        "schools.School",
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        related_name="webinar_signups",
-        verbose_name="Skole",
-    )
     participant_name = models.CharField(max_length=255, verbose_name="Navn")
     participant_email = models.EmailField(verbose_name="E-mail")
     email_bounced_at = models.DateTimeField(null=True, blank=True, verbose_name="E-mail bouncet")
@@ -109,7 +88,7 @@ class WebinarSignUp(models.Model):
         max_length=255,
         blank=True,
         verbose_name="Organisation",
-        help_text="Kun udfyldt for offentlige webinarer hvor deltageren ikke er fra en tilmeldt skole",
+        help_text="Hvor deltageren arbejder (valgfrit)",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -126,14 +105,6 @@ class WebinarSignUp(models.Model):
 
     def __str__(self):
         return f"{self.participant_name} ({self.webinar.title})"
-
-    def clean(self):
-        super().clean()
-        if self.webinar_id:
-            if self.webinar.access_mode == WebinarAccessMode.SCHOOL_GATED and not self.school_id:
-                raise ValidationError({"school": "En skole-gated webinar kræver en skole på tilmeldingen."})
-            if self.webinar.access_mode == WebinarAccessMode.PUBLIC and self.school_id:
-                raise ValidationError({"school": "En offentlig webinar må ikke have en skole på tilmeldingen."})
 
     def save(self, *args, **kwargs):
         if self.pk:
