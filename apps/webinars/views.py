@@ -1,11 +1,11 @@
-from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views import View
 
+from apps.signups.auth import resolve_signup_auth
 from apps.signups.models import SignupPage, SignupPageType
 
-from .forms import PublicWebinarSignupForm
+from .forms import GatedWebinarSignupForm, PublicWebinarSignupForm
 from .models import Webinar, WebinarAccessMode, WebinarSignUp
 
 
@@ -68,8 +68,17 @@ class WebinarDetailView(View):
                 self._build_context(request, webinar, page, form, gate_state, gate_message),
             )
 
-        # SCHOOL_GATED — added in Task 9
-        raise Http404
+        # SCHOOL_GATED
+        auth = resolve_signup_auth(request)
+        form = None
+        if gate_state == "available" and not auth["show_password_form"]:
+            form = GatedWebinarSignupForm(
+                signup_page=page,
+                submit_label=(page.submit_button_text if page else "Tilmeld"),
+            )
+        ctx = self._build_context(request, webinar, page, form, gate_state, gate_message)
+        ctx.update(auth)
+        return render(request, self.template_name, ctx)
 
     def post(self, request, slug):
         webinar = self._get_webinar(slug)
@@ -110,7 +119,36 @@ class WebinarDetailView(View):
                 self._build_context(request, webinar, page, form, gate_state, gate_message),
             )
 
-        raise Http404
+        # SCHOOL_GATED
+        auth = resolve_signup_auth(request)
+        if auth["show_password_form"]:
+            ctx = self._build_context(request, webinar, page, None, gate_state, gate_message)
+            ctx.update(auth)
+            return render(request, self.template_name, ctx)
+
+        form = GatedWebinarSignupForm(
+            request.POST,
+            signup_page=page,
+            submit_label=(page.submit_button_text if page else "Tilmeld"),
+        )
+        if form.is_valid():
+            if WebinarSignUp.objects.filter(webinar=webinar, participant_email=form.cleaned_data["email"]).exists():
+                form.add_error("email", "Denne e-mail er allerede tilmeldt dette webinar.")
+            else:
+                signup = WebinarSignUp.objects.create(
+                    webinar=webinar,
+                    school=auth["locked_school"],
+                    participant_name=form.cleaned_data["name"],
+                    participant_email=form.cleaned_data["email"],
+                    participant_phone=form.cleaned_data.get("phone", ""),
+                    participant_title=form.cleaned_data.get("title", ""),
+                    organization="",
+                )
+                self._send_emails(webinar, signup)
+                return redirect("webinar:detail-success", slug=webinar.slug)
+        ctx = self._build_context(request, webinar, page, form, gate_state, gate_message)
+        ctx.update(auth)
+        return render(request, self.template_name, ctx)
 
     def _send_emails(self, webinar, signup):
         from apps.emails.services import (

@@ -13,6 +13,7 @@ from apps.emails.services import (
     send_webinar_signup_notification,
 )
 from apps.schools.models import Kommune, School
+from apps.signups.auth import SCHOOL_SESSION_KEY
 from apps.webinars.forms import GatedWebinarSignupForm, PublicWebinarSignupForm
 from apps.webinars.models import Webinar, WebinarAccessMode, WebinarSignUp
 
@@ -292,3 +293,100 @@ def test_success_page_renders():
     client = Client()
     resp = client.get(f"/webinar/{w.slug}/tak/")
     assert resp.status_code == 200
+
+
+@pytest.fixture
+def gated_webinar():
+    return Webinar.objects.create(
+        title="Gated",
+        slug="gated",
+        start_at=timezone.now() + timedelta(days=7),
+        meeting_url="https://example.com/zoom/abc",
+        access_mode=WebinarAccessMode.SCHOOL_GATED,
+        is_published=True,
+    )
+
+
+@pytest.mark.django_db
+def test_gated_webinar_unauthenticated_shows_password_form(gated_webinar):
+    client = Client()
+    resp = client.get(f"/webinar/{gated_webinar.slug}/")
+    assert resp.status_code == 200
+    assert b"Indtast skolekode" in resp.content
+
+
+@pytest.mark.django_db
+def test_gated_webinar_token_in_url_authenticates(gated_webinar, enrolled_school):
+    enrolled_school.generate_credentials()
+    client = Client()
+    resp = client.get(f"/webinar/{gated_webinar.slug}/?token={enrolled_school.signup_token}")
+    assert resp.status_code == 200
+    assert b"Indtast skolekode" not in resp.content
+
+
+@pytest.mark.django_db
+def test_gated_webinar_session_school_authenticates(gated_webinar, enrolled_school):
+    client = Client()
+    session = client.session
+    session[SCHOOL_SESSION_KEY] = enrolled_school.pk
+    session.save()
+    resp = client.get(f"/webinar/{gated_webinar.slug}/")
+    assert resp.status_code == 200
+    assert b"Indtast skolekode" not in resp.content
+
+
+@pytest.mark.django_db
+def test_gated_webinar_signup_creates_record_with_school(gated_webinar, enrolled_school):
+    client = Client()
+    session = client.session
+    session[SCHOOL_SESSION_KEY] = enrolled_school.pk
+    session.save()
+    resp = client.post(
+        f"/webinar/{gated_webinar.slug}/",
+        {"name": "Anna", "email": "a@b.dk"},
+    )
+    assert resp.status_code == 302
+    s = WebinarSignUp.objects.get(webinar=gated_webinar)
+    assert s.school_id == enrolled_school.pk
+    assert s.organization == ""
+
+
+@pytest.mark.django_db
+def test_gated_webinar_does_not_require_ean_or_oekonomisk_ansvarlig(gated_webinar, enrolled_school):
+    """Regression guard: webinars are free, so EAN/økonomisk gating from
+    course signups must NOT be applied here.
+    """
+    enrolled_school.ean_nummer = ""
+    enrolled_school.kommunen_betaler = False
+    enrolled_school.save()
+    # No økonomisk ansvarlig is created either.
+    client = Client()
+    session = client.session
+    session[SCHOOL_SESSION_KEY] = enrolled_school.pk
+    session.save()
+    resp = client.post(f"/webinar/{gated_webinar.slug}/", {"name": "Anna", "email": "a@b.dk"})
+    assert resp.status_code == 302
+    assert WebinarSignUp.objects.filter(webinar=gated_webinar).count() == 1
+
+
+@pytest.mark.django_db
+def test_public_webinar_with_session_school_treats_as_public(enrolled_school):
+    public = Webinar.objects.create(
+        title="Public",
+        slug="pub-with-school",
+        start_at=timezone.now() + timedelta(days=7),
+        meeting_url="https://example.com/zoom/abc",
+        is_published=True,
+    )
+    client = Client()
+    session = client.session
+    session[SCHOOL_SESSION_KEY] = enrolled_school.pk
+    session.save()
+    resp = client.post(
+        f"/webinar/{public.slug}/",
+        {"name": "Anna", "email": "a@b.dk", "organization": "Self"},
+    )
+    assert resp.status_code == 302
+    s = WebinarSignUp.objects.get(webinar=public)
+    assert s.school is None
+    assert s.organization == "Self"
