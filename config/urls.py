@@ -54,6 +54,7 @@ urlpatterns = [
     path("courses/", include("apps.courses.urls")),
     path("accounts/", include("apps.accounts.urls")),
     path("signup/", include("apps.signups.urls")),
+    path("webinar/", include("apps.webinars.public_urls")),
     path("aktivitet/", include("apps.audit.urls")),
     path("projektmaal/", include("apps.goals.urls")),
     path("masseudsendelse/", include("apps.bulk_email.urls")),

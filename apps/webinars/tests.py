@@ -4,6 +4,7 @@ from datetime import timedelta as _td
 import pytest
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
+from django.test import Client
 from django.utils import timezone
 
 from apps.emails.services import (
@@ -201,3 +202,93 @@ def test_send_webinar_signup_notification_returns_true_in_dev_mode():
         webinar=w, participant_name="Anna", participant_email="a@b.dk", organization="Acme"
     )
     assert send_webinar_signup_notification(w, s) is True
+
+
+@pytest.mark.django_db
+def test_unpublished_webinar_returns_404():
+    w = _make_webinar(slug="unpub")
+    client = Client()
+    resp = client.get(f"/webinar/{w.slug}/")
+    assert resp.status_code == 404
+
+
+@pytest.mark.django_db
+def test_published_public_webinar_renders_form():
+    w = _make_webinar(slug="open")
+    w.is_published = True
+    w.save()
+    client = Client()
+    resp = client.get(f"/webinar/{w.slug}/")
+    assert resp.status_code == 200
+    assert b"Tilmeld" in resp.content
+
+
+@pytest.mark.django_db
+def test_past_webinar_replaces_form_with_message():
+    w = Webinar.objects.create(
+        title="Past",
+        slug="ended",
+        start_at=timezone.now() - timedelta(days=1),
+        meeting_url="https://example.com/zoom/abc",
+        is_published=True,
+    )
+    client = Client()
+    resp = client.get(f"/webinar/{w.slug}/")
+    assert resp.status_code == 200
+    assert b"har allerede fundet sted" in resp.content
+
+
+@pytest.mark.django_db
+def test_full_webinar_replaces_form_with_message():
+    w = Webinar.objects.create(
+        title="Full",
+        slug="full",
+        start_at=timezone.now() + timedelta(days=7),
+        meeting_url="https://example.com/zoom/abc",
+        capacity=1,
+        is_published=True,
+    )
+    WebinarSignUp.objects.create(webinar=w, participant_name="A", participant_email="a@b.dk")
+    client = Client()
+    resp = client.get(f"/webinar/{w.slug}/")
+    assert b"Fuldt" in resp.content
+
+
+@pytest.mark.django_db
+def test_public_signup_creates_record_and_redirects():
+    w = _make_webinar(slug="post")
+    w.is_published = True
+    w.save()
+    client = Client()
+    resp = client.post(
+        f"/webinar/{w.slug}/",
+        {"name": "Anna", "email": "a@b.dk", "organization": "Acme"},
+    )
+    assert resp.status_code == 302
+    assert resp.url == f"/webinar/{w.slug}/tak/"
+    s = WebinarSignUp.objects.get(webinar=w)
+    assert s.participant_name == "Anna"
+    assert s.school is None
+    assert s.organization == "Acme"
+
+
+@pytest.mark.django_db
+def test_public_signup_rejects_duplicate_email():
+    w = _make_webinar(slug="dup")
+    w.is_published = True
+    w.save()
+    WebinarSignUp.objects.create(webinar=w, participant_name="A", participant_email="dup@x.dk")
+    client = Client()
+    resp = client.post(f"/webinar/{w.slug}/", {"name": "B", "email": "dup@x.dk"})
+    assert resp.status_code == 200
+    assert b"allerede tilmeldt" in resp.content
+
+
+@pytest.mark.django_db
+def test_success_page_renders():
+    w = _make_webinar(slug="suc")
+    w.is_published = True
+    w.save()
+    client = Client()
+    resp = client.get(f"/webinar/{w.slug}/tak/")
+    assert resp.status_code == 200
