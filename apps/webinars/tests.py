@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from datetime import timedelta as _td
 
 import pytest
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django.test import Client
@@ -390,3 +391,44 @@ def test_public_webinar_with_session_school_treats_as_public(enrolled_school):
     s = WebinarSignUp.objects.get(webinar=public)
     assert s.school is None
     assert s.organization == "Self"
+
+
+@pytest.fixture
+def admin_client(db):
+    User.objects.create_superuser("admin1", "admin1@x.dk", "pw")
+    c = Client()
+    c.login(username="admin1", password="pw")
+    return c
+
+
+@pytest.mark.django_db
+def test_admin_list_page_loads(admin_client):
+    resp = admin_client.get("/admin/webinars/webinar/")
+    assert resp.status_code == 200
+
+
+@pytest.mark.django_db
+def test_admin_signup_list_page_loads(admin_client):
+    resp = admin_client.get("/admin/webinars/webinarsignup/")
+    assert resp.status_code == 200
+
+
+@pytest.mark.django_db
+def test_admin_form_blocks_publish_without_meeting_url(admin_client):
+    """Cannot publish a webinar without a meeting URL."""
+    resp = admin_client.post(
+        "/admin/webinars/webinar/add/",
+        {
+            "title": "X",
+            "slug": "x",
+            "start_at_0": "2030-01-01",
+            "start_at_1": "10:00:00",
+            "duration_minutes": 60,
+            "meeting_url": "",
+            "access_mode": "public",
+            "is_published": "on",
+            "instructors": [],
+        },
+    )
+    assert resp.status_code == 200  # re-rendered form
+    assert Webinar.objects.filter(slug="x").exists() is False
