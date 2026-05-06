@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import date_format
 
 
 class Webinar(models.Model):
@@ -11,15 +12,7 @@ class Webinar(models.Model):
     description = models.TextField(
         blank=True,
         verbose_name="Beskrivelse",
-        help_text="HTML-tekst der vises på webinarets side",
-    )
-    intro_text = models.TextField(
-        blank=True,
-        verbose_name="Introtekst",
-        help_text=(
-            "HTML-tekst over formularen. Lad være tom for at bruge "
-            "standardteksten fra Tilmeldingsside-indstillingen."
-        ),
+        help_text="HTML-tekst der vises på webinarets side over metadata-kortet",
     )
     start_at = models.DateTimeField(verbose_name="Starttidspunkt")
     duration_minutes = models.PositiveIntegerField(default=60, verbose_name="Varighed (minutter)")
@@ -31,7 +24,7 @@ class Webinar(models.Model):
         "courses.Instructor",
         blank=True,
         related_name="webinars",
-        verbose_name="Undervisere",
+        verbose_name="Oplægsholdere",
     )
     capacity = models.PositiveIntegerField(
         null=True,
@@ -75,6 +68,15 @@ class Webinar(models.Model):
     @property
     def end_at(self):
         return self.start_at + timedelta(minutes=self.duration_minutes)
+
+    @property
+    def display_time(self):
+        """Combined date + start/end time + duration, e.g.
+        '12. oktober 2026 18:00 - 19:30 (90 minutter)'."""
+        date_str = date_format(self.start_at, "j. F Y")
+        start_str = date_format(self.start_at, "H:i")
+        end_str = date_format(self.end_at, "H:i")
+        return f"{date_str} {start_str} - {end_str} ({self.duration_minutes} minutter)"
 
 
 class WebinarSignUp(models.Model):

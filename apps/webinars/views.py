@@ -18,13 +18,6 @@ class WebinarDetailView(View):
     def _get_webinar(self, slug):
         return get_object_or_404(Webinar, slug=slug, is_published=True)
 
-    def _resolve_intro_text(self, webinar, page):
-        if webinar.intro_text:
-            return webinar.intro_text
-        if page:
-            return page.intro_text
-        return ""
-
     def _gate_state(self, webinar):
         """Return ('available', None) or (gate_name, gate_message)."""
         if webinar.is_past:
@@ -37,7 +30,6 @@ class WebinarDetailView(View):
         return {
             "webinar": webinar,
             "page": page,
-            "intro_text": self._resolve_intro_text(webinar, page),
             "form": form,
             "gate_state": gate_state,
             "gate_message": gate_message,

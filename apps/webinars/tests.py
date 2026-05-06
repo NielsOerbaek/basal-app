@@ -62,6 +62,17 @@ def test_webinar_get_absolute_url_uses_slug():
     assert w.get_absolute_url() == "/webinar/abs-url/"
 
 
+@pytest.mark.django_db
+def test_webinar_display_time_combines_date_start_end_and_duration():
+    from datetime import datetime
+
+    from django.utils.timezone import make_aware
+
+    start = make_aware(datetime(2026, 10, 12, 18, 0))
+    w = _make_webinar(slug="dt", start_at=start, duration_minutes=90)
+    assert w.display_time == "12. oktober 2026 18:00 - 19:30 (90 minutter)"
+
+
 # ---------------------------------------------------------------------------
 # WebinarSignUp model
 # ---------------------------------------------------------------------------

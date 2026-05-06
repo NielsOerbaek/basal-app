@@ -479,8 +479,7 @@ def get_webinar_signup_context(signup):
         "participant_name": signup.participant_name,
         "participant_email": signup.participant_email,
         "webinar_title": webinar.title,
-        "webinar_date": date_format(webinar.start_at, "j. F Y, H:i"),
-        "webinar_duration": webinar.duration_minutes,
+        "webinar_time": webinar.display_time,
         "webinar_description": webinar.description,
         "meeting_url": webinar.meeting_url,
         "instructors": ", ".join(webinar.instructors.values_list("name", flat=True)),
@@ -539,7 +538,7 @@ def send_webinar_signup_notification(webinar, signup):
 <p><strong>Ny webinartilmelding</strong></p>
 <ul>
   <li><strong>Webinar:</strong> {webinar.title}</li>
-  <li><strong>Tidspunkt:</strong> {date_format(webinar.start_at, "j. F Y, H:i")}</li>
+  <li><strong>Tidspunkt:</strong> {webinar.display_time}</li>
   <li><strong>Deltager:</strong> {signup.participant_name} ({signup.participant_email})</li>
   {f'<li><strong>Telefon:</strong> {signup.participant_phone}</li>' if signup.participant_phone else ''}
   {f'<li><strong>Titel:</strong> {signup.participant_title}</li>' if signup.participant_title else ''}

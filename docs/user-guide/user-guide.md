@@ -214,9 +214,10 @@ Deltageren modtager en bekræftelses-e-mail med mødelinket umiddelbart efter ti
 2. Klik **Tilføj webinar**.
 3. Udfyld:
    - **Titel** og **URL-slug** (slug auto-udfyldes fra titlen — slug bliver en del af webinarets URL).
-   - **Beskrivelse** (vises på webinarets side under metadata-kortet) og evt. **Introtekst** (vises over formularen — overskriver den fælles standardtekst fra *Tilmeldingsside*-indstillingen).
-   - **Starttidspunkt**, **Varighed** (minutter).
+   - **Beskrivelse** (HTML-tekst der vises på webinarets side over metadata-kortet — fortæl hvad webinaret handler om, hvem det er for, og hvad deltagerne får ud af det).
+   - **Starttidspunkt**, **Varighed** (minutter). Tidspunktet vises samlet på webinarets side, fx *"12. oktober 2026 18:00 - 19:30 (90 minutter)"*.
    - **Mødelink** (Zoom/Teams/Meet) — sendes til deltageren i bekræftelses-mailen, vises ikke offentligt.
+   - **Oplægsholdere** (valgfrit) — vælges fra listen af eksisterende undervisere/personer.
    - **Kapacitet**: lad være tom for ubegrænset.
 4. Sæt flueben ved **Offentliggjort** og gem. Mødelinket skal være udfyldt før webinaret kan offentliggøres.
 
@@ -226,7 +227,7 @@ Når webinaret er offentliggjort, vises et link til tilmeldingssiden direkte i w
 
 Tilmeldinger ses som *Webinartilmeldinger* i admin'en og logges i Aktivitetsloggen ligesom kursustilmeldinger.
 
-> 💡 Tekst på success-siden, knaptekst og standard-introtekst redigeres ét sted via **Tilmelding → Rediger tilmeldingssider → Webinartilmelding** — det er den fælles indpakning for alle webinarer.
+> 💡 Tekst på success-siden og knaptekst redigeres ét sted via **Tilmelding → Rediger tilmeldingssider → Webinartilmelding** — det er den fælles indpakning for alle webinarer.
 
 \newpage
 
