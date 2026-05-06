@@ -7,6 +7,7 @@ from django.db.utils import IntegrityError
 from django.utils import timezone
 
 from apps.schools.models import Kommune, School
+from apps.webinars.forms import GatedWebinarSignupForm, PublicWebinarSignupForm
 from apps.webinars.models import Webinar, WebinarAccessMode, WebinarSignUp
 
 
@@ -133,3 +134,38 @@ def test_webinar_signup_clears_bounce_on_email_change():
     s.save()
     s.refresh_from_db()
     assert s.email_bounced_at is None
+
+
+@pytest.mark.django_db
+def test_public_form_requires_name_and_email():
+    form = PublicWebinarSignupForm(data={})
+    assert not form.is_valid()
+    assert "name" in form.errors
+    assert "email" in form.errors
+
+
+@pytest.mark.django_db
+def test_public_form_accepts_minimal_valid_data():
+    form = PublicWebinarSignupForm(data={"name": "Anna", "email": "a@b.dk"})
+    assert form.is_valid(), form.errors
+
+
+@pytest.mark.django_db
+def test_public_form_includes_organization_field():
+    form = PublicWebinarSignupForm(data={"name": "A", "email": "a@b.dk", "organization": "Acme"})
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["organization"] == "Acme"
+
+
+@pytest.mark.django_db
+def test_gated_form_requires_name_and_email():
+    form = GatedWebinarSignupForm(data={})
+    assert not form.is_valid()
+    assert "name" in form.errors
+    assert "email" in form.errors
+
+
+@pytest.mark.django_db
+def test_gated_form_does_not_have_organization_field():
+    form = GatedWebinarSignupForm(data={"name": "A", "email": "a@b.dk"})
+    assert "organization" not in form.fields
