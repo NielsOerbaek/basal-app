@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.urls import reverse
 from django.utils.html import format_html
 
 from .models import Webinar, WebinarSignUp
@@ -20,6 +21,7 @@ class WebinarAdmin(admin.ModelAdmin):
         "is_published",
         "signup_count",
         "capacity",
+        "manage_link",
         "public_link",
     ]
     list_filter = ["is_published"]
@@ -28,6 +30,13 @@ class WebinarAdmin(admin.ModelAdmin):
     filter_horizontal = ["instructors"]
     readonly_fields = ["created_at", "updated_at"]
     inlines = [WebinarSignUpInline]
+
+    @admin.display(description="Detaljer")
+    def manage_link(self, obj):
+        if not obj.pk:
+            return "—"
+        url = reverse("webinars:manage-detail", args=[obj.pk])
+        return format_html('<a href="{}">Vis tilmeldinger</a>', url)
 
     @admin.display(description="Tilmeldingsside")
     def public_link(self, obj):

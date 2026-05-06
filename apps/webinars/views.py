@@ -1,6 +1,9 @@
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.decorators import method_decorator
 from django.views import View
+from django.views.generic import DetailView
 
+from apps.core.decorators import staff_required
 from apps.signups.models import SignupPage, SignupPageType
 
 from .forms import WebinarSignupForm
@@ -106,3 +109,17 @@ class WebinarSignupSuccessView(View):
             self.template_name,
             {"webinar": webinar, "page": page},
         )
+
+
+@method_decorator(staff_required, name="dispatch")
+class WebinarManageDetailView(DetailView):
+    """Admin-facing detail page: webinar metadata + signups table + copy-emails button."""
+
+    model = Webinar
+    template_name = "webinars/webinar_manage_detail.html"
+    context_object_name = "webinar"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["signups"] = self.object.signups.select_related("kommune").all()
+        return context

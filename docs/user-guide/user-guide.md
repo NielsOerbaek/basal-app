@@ -227,7 +227,15 @@ Deltageren modtager en bekræftelses-e-mail med mødelinket umiddelbart efter ti
 
 Når webinaret er offentliggjort, vises et link til tilmeldingssiden direkte i webinar-oversigten i admin'en (kolonnen *Tilmeldingsside*). Klik på linket for at åbne siden, eller kopiér URL'en og del den med modtagerne — fx i en e-mail eller på sociale medier. URL-formatet er `https://<basal-domæne>/webinar/<slug>/`.
 
-Tilmeldinger ses som *Webinartilmeldinger* i admin'en og logges i Aktivitetsloggen ligesom kursustilmeldinger.
+**Sådan ser du tilmeldingerne og kopierer alle e-mails:**
+
+I webinar-oversigten i admin'en (kolonnen *Detaljer*) er der et link **"Vis tilmeldinger"** for hvert webinar. Klik for at åbne en oversigtsside med:
+
+- Webinarets oplysninger og status.
+- En tabel over alle tilmeldinger (navn, e-mail, kommune, skole, tilmeldingsdato).
+- En knap **"Kopiér e-mails"** som kopierer alle deltageres e-mailadresser til udklipsholderen, klar til at indsætte i fx Outlook eller masseudsendelse.
+
+Webinartilmeldinger logges i Aktivitetsloggen ligesom kursustilmeldinger.
 
 > 💡 Tekst på success-siden og knaptekst redigeres ét sted via **Tilmelding → Rediger tilmeldingssider → Webinartilmelding** — det er den fælles indpakning for alle webinarer.
 

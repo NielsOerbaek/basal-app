@@ -1,0 +1,142 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ webinar.title }} - Basal{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'admin:webinars_webinar_changelist' %}">Webinarer</a></li>
+        <li class="breadcrumb-item active">{{ webinar.title }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-camera-video me-2"></i>{{ webinar.title }}</h2>
+    <div>
+        {% if webinar.is_published %}
+        <a href="{{ webinar.get_absolute_url }}" target="_blank" class="btn btn-outline-secondary">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Vis tilmeldingsside
+        </a>
+        {% endif %}
+        <a href="{% url 'admin:webinars_webinar_change' webinar.pk %}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i>Rediger
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header">Webinaroplysninger</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Tidspunkt</dt>
+                    <dd class="col-sm-8">{{ webinar.display_time }}</dd>
+                    <dt class="col-sm-4">Mødelink</dt>
+                    <dd class="col-sm-8">
+                        {% if webinar.meeting_url %}
+                        <a href="{{ webinar.meeting_url }}" target="_blank">{{ webinar.meeting_url }}</a>
+                        {% else %}
+                        <span class="text-muted">Ikke udfyldt — eftersendes til deltagerne</span>
+                        {% endif %}
+                    </dd>
+                    <dt class="col-sm-4">Oplægsholdere</dt>
+                    <dd class="col-sm-8">{% for instructor in webinar.instructors.all %}{{ instructor.name }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</dd>
+                    <dt class="col-sm-4">Kapacitet</dt>
+                    <dd class="col-sm-8">{{ webinar.capacity|default:"Ubegrænset" }}</dd>
+                    <dt class="col-sm-4">Tilmeldinger</dt>
+                    <dd class="col-sm-8">{{ webinar.signup_count }}{% if webinar.capacity %} / {{ webinar.capacity }}{% endif %}</dd>
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">
+                        {% if webinar.is_published %}
+                        <span class="badge bg-success">Offentliggjort</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Kladde</span>
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    {% if webinar.description %}
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header">Beskrivelse</div>
+            <div class="card-body">
+                {{ webinar.description|safe }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Tilmeldinger ({{ signups|length }})</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="copy-emails-btn" title="Kopiér alle e-mails">
+            <i class="bi bi-clipboard me-1"></i>Kopiér e-mails
+        </button>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Navn</th>
+                    <th>E-mail</th>
+                    <th>Kommune</th>
+                    <th>Skole</th>
+                    <th>Tilmeldt</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for signup in signups %}
+                <tr>
+                    <td>{{ signup.participant_name }}</td>
+                    <td>
+                        <a href="mailto:{{ signup.participant_email }}">{{ signup.participant_email }}</a>
+                        {% if signup.email_bounced_at %}
+                        <i class="bi bi-exclamation-triangle text-warning ms-1" title="E-mail bouncet {{ signup.email_bounced_at|date:'d. M Y' }}"></i>
+                        {% endif %}
+                    </td>
+                    <td>{{ signup.kommune.name|default:"-" }}</td>
+                    <td>{{ signup.school_name|default:"-" }}</td>
+                    <td>{{ signup.created_at|date:"d. M Y H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-3">Ingen tilmeldinger endnu.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<input type="hidden" id="all-emails" value="{% for signup in signups %}{{ signup.participant_email }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('copy-emails-btn').addEventListener('click', function() {
+    const emails = document.getElementById('all-emails').value;
+    if (!emails) {
+        alert('Ingen e-mails at kopiere');
+        return;
+    }
+    navigator.clipboard.writeText(emails).then(() => {
+        const btn = this;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check me-1"></i>Kopieret!';
+        btn.classList.remove('btn-outline-secondary');
+        btn.classList.add('btn-success');
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-secondary');
+        }, 2000);
+    });
+});
+</script>
+{% endblock %}

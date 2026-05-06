@@ -321,6 +321,37 @@ def test_admin_signup_list_page_loads(admin_client):
 
 
 @pytest.mark.django_db
+def test_manage_detail_requires_staff(kommune):
+    """Anonymous and non-staff users must not see the admin detail page."""
+    w = _make_webinar(slug="mng", is_published=True)
+    client = Client()
+    resp = client.get(f"/webinars/{w.pk}/")
+    # Anonymous → redirected to login
+    assert resp.status_code in (302, 403)
+
+
+@pytest.mark.django_db
+def test_manage_detail_shows_signups_and_copy_button(admin_client, kommune):
+    w = _make_webinar(slug="mng2", is_published=True)
+    WebinarSignUp.objects.create(
+        webinar=w, kommune=kommune, school_name="Skole A", participant_name="Anna", participant_email="anna@x.dk"
+    )
+    WebinarSignUp.objects.create(
+        webinar=w, kommune=kommune, school_name="Skole B", participant_name="Bo", participant_email="bo@y.dk"
+    )
+    resp = admin_client.get(f"/webinars/{w.pk}/")
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    # Both emails appear in the hidden field for the copy button to read
+    assert 'id="all-emails"' in body
+    assert "anna@x.dk" in body
+    assert "bo@y.dk" in body
+    # The button itself is rendered
+    assert 'id="copy-emails-btn"' in body
+    assert "Kopi" in body
+
+
+@pytest.mark.django_db
 def test_admin_can_publish_webinar_without_meeting_url(admin_client):
     """meeting_url is optional now — admin form must let publish go through."""
     resp = admin_client.post(

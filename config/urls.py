@@ -52,6 +52,7 @@ urlpatterns = [
     path("", include("apps.core.urls")),
     path("schools/", include("apps.schools.urls")),
     path("courses/", include("apps.courses.urls")),
+    path("webinars/", include("apps.webinars.urls")),
     path("accounts/", include("apps.accounts.urls")),
     path("signup/", include("apps.signups.urls")),
     path("webinar/", include("apps.webinars.public_urls")),
