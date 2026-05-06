@@ -1,0 +1,85 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Webinarer - Basal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-camera-video me-2"></i>Webinarer</h1>
+    <div>
+        <a href="{% url 'webinars:create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Tilføj webinar
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-10">
+                <input type="text" name="search" value="{{ request.GET.search }}" class="form-control" placeholder="Søg webinarer...">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-search me-1"></i>Søg
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Tidspunkt</th>
+                    <th>Titel</th>
+                    <th>Oplægsholdere</th>
+                    <th>Tilmeldinger</th>
+                    <th>Status</th>
+                    <th class="table-actions">Handlinger</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for webinar in webinars %}
+                <tr>
+                    <td>
+                        <a href="{% url 'webinars:manage-detail' webinar.pk %}">
+                            {{ webinar.start_at|date:"d. M Y H:i" }}
+                        </a>
+                    </td>
+                    <td>
+                        <a href="{% url 'webinars:manage-detail' webinar.pk %}">{{ webinar.title }}</a>
+                    </td>
+                    <td>{% for instructor in webinar.instructors.all %}{{ instructor.name }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</td>
+                    <td>{{ webinar.signup_count }}{% if webinar.capacity %} / {{ webinar.capacity }}{% endif %}</td>
+                    <td>
+                        {% if webinar.is_past %}
+                        <span class="badge bg-dark">Afholdt</span>
+                        {% elif webinar.is_published %}
+                        <span class="badge bg-success">Offentliggjort</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Kladde</span>
+                        {% endif %}
+                    </td>
+                    <td class="table-actions">
+                        {% if webinar.is_published %}
+                        <a href="{{ webinar.get_absolute_url }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Vis tilmeldingsside">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'webinars:update' webinar.pk %}" class="btn btn-sm btn-outline-primary" title="Rediger">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">Ingen webinarer endnu. <a href="{% url 'webinars:create' %}">Opret det første</a>.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

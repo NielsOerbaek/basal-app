@@ -5,7 +5,7 @@
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'admin:webinars_webinar_changelist' %}">Webinarer</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'webinars:list' %}">Webinarer</a></li>
         <li class="breadcrumb-item active">{{ webinar.title }}</li>
     </ol>
 </nav>
@@ -20,9 +20,14 @@
             <i class="bi bi-box-arrow-up-right me-1"></i>Vis tilmeldingsside
         </a>
         {% endif %}
-        <a href="{% url 'admin:webinars_webinar_change' webinar.pk %}" class="btn btn-outline-primary">
+        <a href="{% url 'webinars:update' webinar.pk %}" class="btn btn-outline-primary">
             <i class="bi bi-pencil me-1"></i>Rediger
         </a>
+        <button type="button" class="btn btn-outline-danger"
+                hx-get="{% url 'webinars:delete' webinar.pk %}"
+                hx-target="#modal-container">
+            <i class="bi bi-trash me-1"></i>Slet permanent
+        </button>
     </div>
 </div>
 

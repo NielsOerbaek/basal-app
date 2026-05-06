@@ -210,8 +210,8 @@ Deltageren modtager en bekræftelses-e-mail med mødelinket umiddelbart efter ti
 
 **Sådan gør du:**
 
-1. I topmenuen vælg **Tilmelding** → **Webinarer**, eller gå til admin'en og find *Webinarer*.
-2. Klik **Tilføj webinar**.
+1. I topmenuen vælg **Tilmelding** → **Webinarer**. Du lander på webinar-oversigten med alle eksisterende webinarer.
+2. Klik **+ Tilføj webinar** øverst til højre.
 3. Udfyld:
    - **Titel** og **URL-slug** (slug auto-udfyldes fra titlen — slug bliver en del af webinarets URL).
    - **Beskrivelse** (HTML-tekst der vises på webinarets side over metadata-kortet — fortæl hvad webinaret handler om, hvem det er for, og hvad deltagerne får ud af det).
@@ -223,17 +223,15 @@ Deltageren modtager en bekræftelses-e-mail med mødelinket umiddelbart efter ti
 
 **Tilmeldingsformularen indeholder fire felter:** *Kommune* (dropdown), *Skole* (fri tekst), *Navn* og *E-mail*. Over formularen vises en infoboks om at mødelinket og praktiske oplysninger sendes via e-mail.
 
-**Sådan finder du tilmeldingssiden:**
+**Sådan deler du tilmeldingssiden, ser tilmeldingerne og kopierer alle e-mails:**
 
-Når webinaret er offentliggjort, vises et link til tilmeldingssiden direkte i webinar-oversigten i admin'en (kolonnen *Tilmeldingsside*). Klik på linket for at åbne siden, eller kopiér URL'en og del den med modtagerne — fx i en e-mail eller på sociale medier. URL-formatet er `https://<basal-domæne>/webinar/<slug>/`.
+Klik på et webinar i oversigten for at åbne dets detaljeside. Her finder du:
 
-**Sådan ser du tilmeldingerne og kopierer alle e-mails:**
-
-I webinar-oversigten i admin'en (kolonnen *Detaljer*) er der et link **"Vis tilmeldinger"** for hvert webinar. Klik for at åbne en oversigtsside med:
-
+- Knappen **"Vis tilmeldingsside"** øverst — åbner den offentlige URL i en ny fane (URL-formatet er `https://<basal-domæne>/webinar/<slug>/`, klar til at kopiere og dele med modtagerne, fx i en e-mail eller på sociale medier).
 - Webinarets oplysninger og status.
 - En tabel over alle tilmeldinger (navn, e-mail, kommune, skole, tilmeldingsdato).
-- En knap **"Kopiér e-mails"** som kopierer alle deltageres e-mailadresser til udklipsholderen, klar til at indsætte i fx Outlook eller masseudsendelse.
+- En knap **"Kopiér e-mails"** øverst over tilmeldingstabellen — kopierer alle deltageres e-mailadresser til udklipsholderen, klar til at indsætte i fx Outlook eller masseudsendelse.
+- Knappen **"Rediger"** for at ændre webinaret, eller **"Slet permanent"** for at fjerne det.
 
 Webinartilmeldinger logges i Aktivitetsloggen ligesom kursustilmeldinger.
 

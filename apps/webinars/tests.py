@@ -352,6 +352,150 @@ def test_manage_detail_shows_signups_and_copy_button(admin_client, kommune):
 
 
 @pytest.mark.django_db
+def test_manage_list_requires_staff():
+    client = Client()
+    resp = client.get("/webinars/")
+    assert resp.status_code in (302, 403)
+
+
+@pytest.mark.django_db
+def test_manage_list_renders_for_staff(admin_client):
+    _make_webinar(slug="a", title="Webinar A", is_published=True)
+    _make_webinar(slug="b", title="Webinar B")
+    resp = admin_client.get("/webinars/")
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    assert "Webinar A" in body
+    assert "Webinar B" in body
+    assert "Tilføj webinar" in body
+
+
+@pytest.mark.django_db
+def test_manage_list_search_filters_by_title(admin_client):
+    _make_webinar(slug="trivsel", title="Trivsel webinar")
+    _make_webinar(slug="bevaegelse", title="Bevægelse webinar")
+    resp = admin_client.get("/webinars/?search=Trivsel")
+    body = resp.content.decode()
+    assert "Trivsel webinar" in body
+    assert "Bevægelse webinar" not in body
+
+
+@pytest.mark.django_db
+def test_create_form_renders(admin_client):
+    resp = admin_client.get("/webinars/create/")
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    assert "Tilføj webinar" in body
+    assert 'name="title"' in body
+    assert 'name="start_at"' in body
+
+
+@pytest.mark.django_db
+def test_create_post_creates_webinar_and_redirects(admin_client):
+    resp = admin_client.post(
+        "/webinars/create/",
+        {
+            "title": "Nyt webinar",
+            "slug": "",  # auto-generated server-side from title
+            "description": "<p>Hej</p>",
+            "start_at": "2030-06-01T10:00",
+            "duration_minutes": 60,
+            "meeting_url": "",
+            "capacity": "",
+            "is_published": "on",
+            "instructor_1": "",
+            "instructor_2": "",
+            "instructor_3": "",
+            "new_instructor_1": "",
+            "new_instructor_2": "",
+            "new_instructor_3": "",
+        },
+    )
+    assert resp.status_code == 302
+    w = Webinar.objects.get(title="Nyt webinar")
+    assert w.slug == "nyt-webinar"  # auto-generated
+    assert w.is_published is True
+    assert resp.url == f"/webinars/{w.pk}/"
+
+
+@pytest.mark.django_db
+def test_update_form_pre_populates_and_saves(admin_client):
+    w = _make_webinar(slug="old", title="Gammel titel")
+    resp = admin_client.get(f"/webinars/{w.pk}/edit/")
+    assert resp.status_code == 200
+    assert b"Gammel titel" in resp.content
+
+    resp = admin_client.post(
+        f"/webinars/{w.pk}/edit/",
+        {
+            "title": "Ny titel",
+            "slug": "old",
+            "description": "",
+            "start_at": w.start_at.strftime("%Y-%m-%dT%H:%M"),
+            "duration_minutes": w.duration_minutes,
+            "meeting_url": w.meeting_url,
+            "capacity": "",
+            "instructor_1": "",
+            "instructor_2": "",
+            "instructor_3": "",
+            "new_instructor_1": "",
+            "new_instructor_2": "",
+            "new_instructor_3": "",
+        },
+    )
+    assert resp.status_code == 302
+    w.refresh_from_db()
+    assert w.title == "Ny titel"
+
+
+@pytest.mark.django_db
+def test_create_with_new_instructor_creates_instructor_record(admin_client):
+    from apps.courses.models import Instructor
+
+    resp = admin_client.post(
+        "/webinars/create/",
+        {
+            "title": "Webinar with new instructor",
+            "slug": "wwni",
+            "description": "",
+            "start_at": "2030-06-01T10:00",
+            "duration_minutes": 60,
+            "meeting_url": "",
+            "capacity": "",
+            "instructor_1": "__new__",
+            "new_instructor_1": "Helle Helt",
+            "instructor_2": "",
+            "instructor_3": "",
+            "new_instructor_2": "",
+            "new_instructor_3": "",
+        },
+    )
+    assert resp.status_code == 302
+    assert Instructor.objects.filter(name="Helle Helt").exists()
+    w = Webinar.objects.get(slug="wwni")
+    assert w.instructors.filter(name="Helle Helt").exists()
+
+
+@pytest.mark.django_db
+def test_delete_get_renders_confirm_modal(admin_client):
+    w = _make_webinar(slug="del")
+    resp = admin_client.get(f"/webinars/{w.pk}/delete/")
+    assert resp.status_code == 200
+    assert b"Slet webinar permanent" in resp.content
+
+
+@pytest.mark.django_db
+def test_delete_post_removes_webinar(admin_client):
+    w = _make_webinar(slug="del2")
+    resp = admin_client.post(f"/webinars/{w.pk}/delete/")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert data["redirect"] == "/webinars/"
+    assert not Webinar.objects.filter(pk=w.pk).exists()
+
+
+@pytest.mark.django_db
 def test_admin_can_publish_webinar_without_meeting_url(admin_client):
     """meeting_url is optional now — admin form must let publish go through."""
     resp = admin_client.post(

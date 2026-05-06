@@ -1,0 +1,95 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% if object %}Rediger{% else %}Tilføj{% endif %} webinar - Basal{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'webinars:list' %}">Webinarer</a></li>
+        {% if object %}
+        <li class="breadcrumb-item"><a href="{% url 'webinars:manage-detail' object.pk %}">{{ object.title }}</a></li>
+        <li class="breadcrumb-item active">Rediger</li>
+        {% else %}
+        <li class="breadcrumb-item active">Tilføj webinar</li>
+        {% endif %}
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-camera-video me-2"></i>{% if object %}Rediger webinar{% else %}Tilføj webinar{% endif %}</h1>
+    {% if object %}
+    <div>
+        <a href="{% url 'webinars:manage-detail' object.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-eye me-1"></i>Vis
+        </a>
+        <button type="button" class="btn btn-outline-danger"
+                hx-get="{% url 'webinars:delete' object.pk %}"
+                hx-target="#modal-container">
+            <i class="bi bi-trash me-1"></i>Slet permanent
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            {% crispy form %}
+            <button type="submit" class="btn btn-primary">Gem webinar</button>
+            {% if object %}
+            <a href="{% url 'webinars:manage-detail' object.pk %}" class="btn btn-outline-secondary">Annuller</a>
+            {% else %}
+            <a href="{% url 'webinars:list' %}" class="btn btn-outline-secondary">Annuller</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-prepopulate slug from title (only if user hasn't manually edited the slug)
+    const titleField = document.getElementById('id_title');
+    const slugField = document.getElementById('id_slug');
+    if (titleField && slugField) {
+        let slugManuallyEdited = slugField.value.trim() !== '';
+        slugField.addEventListener('input', function() { slugManuallyEdited = true; });
+        titleField.addEventListener('input', function() {
+            if (slugManuallyEdited) return;
+            slugField.value = titleField.value
+                .toLowerCase()
+                .replace(/[æä]/g, 'ae')
+                .replace(/[øö]/g, 'oe')
+                .replace(/å/g, 'aa')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+        });
+    }
+
+    // Handle "+ Tilføj ny oplægsholder" toggles
+    function setupInstructorToggle(num) {
+        const select = document.getElementById('id_instructor_' + num);
+        const container = document.getElementById('new-instructor-' + num + '-container');
+        if (select && container) {
+            function toggle() {
+                if (select.value === '__new__') {
+                    container.classList.remove('d-none');
+                } else {
+                    container.classList.add('d-none');
+                }
+            }
+            select.addEventListener('change', toggle);
+            toggle();
+        }
+    }
+    setupInstructorToggle(1);
+    setupInstructorToggle(2);
+    setupInstructorToggle(3);
+});
+</script>
+{% endblock %}

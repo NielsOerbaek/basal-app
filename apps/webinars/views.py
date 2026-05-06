@@ -1,13 +1,21 @@
+from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
+from django.utils.html import format_html
 from django.views import View
-from django.views.generic import DetailView
+from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from apps.core.decorators import staff_required
 from apps.signups.models import SignupPage, SignupPageType
 
-from .forms import WebinarSignupForm
+from .forms import WebinarForm, WebinarSignupForm
 from .models import Webinar, WebinarSignUp
+
+# ---------------------------------------------------------------------------
+# Public per-webinar signup
+# ---------------------------------------------------------------------------
 
 
 class WebinarDetailView(View):
@@ -111,6 +119,40 @@ class WebinarSignupSuccessView(View):
         )
 
 
+# ---------------------------------------------------------------------------
+# Admin-facing CRUD
+# ---------------------------------------------------------------------------
+
+
+@method_decorator(staff_required, name="dispatch")
+class WebinarManageListView(ListView):
+    model = Webinar
+    template_name = "webinars/webinar_list.html"
+    context_object_name = "webinars"
+
+    def get_queryset(self):
+        qs = Webinar.objects.prefetch_related("instructors").order_by("-start_at")
+        search = self.request.GET.get("search", "").strip()
+        if search:
+            qs = qs.filter(title__icontains=search)
+        return qs
+
+
+@method_decorator(staff_required, name="dispatch")
+class WebinarManageCreateView(CreateView):
+    model = Webinar
+    form_class = WebinarForm
+    template_name = "webinars/webinar_form.html"
+
+    def get_success_url(self):
+        return reverse_lazy("webinars:manage-detail", kwargs={"pk": self.object.pk})
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f'Webinaret "{self.object.title}" blev oprettet.')
+        return response
+
+
 @method_decorator(staff_required, name="dispatch")
 class WebinarManageDetailView(DetailView):
     """Admin-facing detail page: webinar metadata + signups table + copy-emails button."""
@@ -123,3 +165,54 @@ class WebinarManageDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         context["signups"] = self.object.signups.select_related("kommune").all()
         return context
+
+
+@method_decorator(staff_required, name="dispatch")
+class WebinarManageUpdateView(UpdateView):
+    model = Webinar
+    form_class = WebinarForm
+    template_name = "webinars/webinar_form.html"
+
+    def get_success_url(self):
+        return reverse_lazy("webinars:manage-detail", kwargs={"pk": self.object.pk})
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f'Webinaret "{self.object.title}" blev opdateret.')
+        return response
+
+
+@method_decorator(staff_required, name="dispatch")
+class WebinarManageDeleteView(View):
+    def get(self, request, pk):
+        webinar = get_object_or_404(Webinar, pk=pk)
+        signup_count = webinar.signups.count()
+
+        warning = (
+            f"Dette vil permanent slette {signup_count} tilmelding"
+            f"{'er' if signup_count != 1 else ''}. Handlingen kan ikke fortrydes!"
+            if signup_count
+            else "Handlingen kan ikke fortrydes!"
+        )
+
+        return render(
+            request,
+            "core/components/confirm_delete_modal.html",
+            {
+                "title": "Slet webinar permanent",
+                "message": format_html(
+                    "Er du sikker på, at du vil <strong>permanent slette</strong> webinaret " "<strong>{}</strong>?",
+                    webinar.title,
+                ),
+                "warning": warning,
+                "delete_url": reverse_lazy("webinars:delete", kwargs={"pk": pk}),
+                "button_text": "Slet permanent",
+            },
+        )
+
+    def post(self, request, pk):
+        webinar = get_object_or_404(Webinar, pk=pk)
+        title = webinar.title
+        webinar.delete()
+        messages.success(request, f'Webinaret "{title}" er blevet permanent slettet.')
+        return JsonResponse({"success": True, "redirect": str(reverse_lazy("webinars:list"))})
