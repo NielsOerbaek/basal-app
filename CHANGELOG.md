@@ -4,6 +4,17 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 6. maj 2026
+
+### Webinarer med egen tilmeldingsside
+Det er nu muligt at oprette webinarer, som deles via deres egen URL (f.eks. `/webinar/<navn>/`). Hvert webinar kan enten være **offentligt** (åbent for alle) eller **forbeholdt tilmeldte skoler** (kræver skolekode/link fra velkomstmailen). Webinaret indeholder titel, beskrivelse, tidspunkt, varighed og et mødelink (Zoom/Teams/Meet), som sendes til deltageren i bekræftelsesmailen efter tilmelding.
+
+Tilmeldinger til webinarer **tæller ikke mod skolens kursus-pladser** — webinarer er gratis at deltage i.
+
+Oprettelse og redigering sker via admin (Webinarer). Hver webinartilmelding logges i aktivitetsloggen ligesom kursustilmeldinger.
+
+---
+
 ## 30. april 2026
 
 ### EAN/CVR-nummer kan udfyldes fra skolens side
