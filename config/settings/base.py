@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "apps.audit",
     "apps.emails",
     "apps.signups",
+    "apps.webinars",
     "apps.goals",
     "apps.bulk_email",
 ]
