@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -78,8 +79,6 @@ class Webinar(models.Model):
     def is_full(self):
         if self.capacity is None:
             return False
-        if self.capacity == 0:
-            return True
         return self.signup_count >= self.capacity
 
     @property
@@ -89,3 +88,56 @@ class Webinar(models.Model):
     @property
     def end_at(self):
         return self.start_at + timedelta(minutes=self.duration_minutes)
+
+
+class WebinarSignUp(models.Model):
+    webinar = models.ForeignKey(Webinar, on_delete=models.CASCADE, related_name="signups", verbose_name="Webinar")
+    school = models.ForeignKey(
+        "schools.School",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="webinar_signups",
+        verbose_name="Skole",
+    )
+    participant_name = models.CharField(max_length=255, verbose_name="Navn")
+    participant_email = models.EmailField(verbose_name="E-mail")
+    email_bounced_at = models.DateTimeField(null=True, blank=True, verbose_name="E-mail bouncet")
+    participant_phone = models.CharField(max_length=50, blank=True, verbose_name="Telefon")
+    participant_title = models.CharField(max_length=255, blank=True, verbose_name="Titel")
+    organization = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Organisation",
+        help_text="Kun udfyldt for offentlige webinarer hvor deltageren ikke er fra en tilmeldt skole",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["webinar", "participant_name"]
+        verbose_name = "Webinartilmelding"
+        verbose_name_plural = "Webinartilmeldinger"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["webinar", "participant_email"],
+                name="webinarsignup_unique_email_per_webinar",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.participant_name} ({self.webinar.title})"
+
+    def clean(self):
+        super().clean()
+        if self.webinar_id:
+            if self.webinar.access_mode == WebinarAccessMode.SCHOOL_GATED and not self.school_id:
+                raise ValidationError({"school": "En skole-gated webinar kræver en skole på tilmeldingen."})
+            if self.webinar.access_mode == WebinarAccessMode.PUBLIC and self.school_id:
+                raise ValidationError({"school": "En offentlig webinar må ikke have en skole på tilmeldingen."})
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            old_email = WebinarSignUp.objects.filter(pk=self.pk).values_list("participant_email", flat=True).first()
+            if old_email and old_email != self.participant_email:
+                self.email_bounced_at = None
+        super().save(*args, **kwargs)
