@@ -97,6 +97,7 @@
                             <li><a class="dropdown-item" href="{% url 'signup:school' %}" target="_blank"><i class="bi bi-building-add me-2"></i>Skoletilmelding</a></li>
                             {% if can_manage_signups %}
                             <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'admin:webinars_webinar_changelist' %}"><i class="bi bi-camera-video me-2"></i>Webinarer</a></li>
                             <li><a class="dropdown-item" href="{% url 'admin:signups_signuppage_changelist' %}"><i class="bi bi-pencil-square me-2"></i>Rediger tilmeldingssider</a></li>
                             {% endif %}
                         </ul>

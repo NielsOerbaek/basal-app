@@ -1,6 +1,6 @@
 ---
 title: Basal — Brugervejledning
-subtitle: De 10 mest almindelige arbejdsgange
+subtitle: De 11 mest almindelige arbejdsgange
 author: Os & Data for Komiteen for Sundhedsoplysning
 date: April 2026
 lang: da
@@ -15,7 +15,7 @@ toc-depth: 2
 
 # Introduktion
 
-Denne vejledning gennemgår de 10 mest almindelige arbejdsgange i **Basal**, det administrative system til Komiteen for Sundhedsopvlysnings Basal-projekt. Den er tænkt som et opslagsværk: hver arbejdsgang står for sig selv med en kort forklaring, trin-for-trin instruktion og et skærmbillede af den relevante side.
+Denne vejledning gennemgår de 11 mest almindelige arbejdsgange i **Basal**, det administrative system til Komiteen for Sundhedsopvlysnings Basal-projekt. Den er tænkt som et opslagsværk: hver arbejdsgang står for sig selv med en kort forklaring, trin-for-trin instruktion og et skærmbillede af den relevante side.
 
 **Loginsiden** ligger på `{{LOGIN_URL}}`. Når du er logget ind, lander du på *Oversigt* (forsiden), som giver et hurtigt overblik over kommende kurser, seneste tilmeldinger og status på projektmålet for det aktuelle skoleår.
 
@@ -199,6 +199,30 @@ Aktivitetsloggen dækker oprettelser, opdateringer og sletninger på de vigtigst
 4. Fra en skole eller et kursus kan du også åbne en filtreret aktivitetslog kun for det objekt — link i feltet *Seneste aktivitet*.
 
 ![Aktivitetslog med filtre og detaljeret historik](screenshots/13-aktivitetslog.png)
+
+\newpage
+
+# 11. Opret et webinar
+
+**Hvad bruges det til?** At oprette et webinar (online oplæg via Zoom/Teams/Meet) som deles via sin egen URL. Webinarer er gratis at deltage i og **tæller ikke mod skolens kursus-pladser**.
+
+Hvert webinar kan enten være **offentligt** (åbent for alle med linket) eller **forbeholdt tilmeldte skoler** (kræver skolekode/link fra velkomstmailen — samme adgang som til kursustilmelding). Deltageren modtager en bekræftelses-e-mail med mødelinket umiddelbart efter tilmelding.
+
+**Sådan gør du:**
+
+1. I topmenuen vælg **Tilmelding** → **Webinarer**, eller gå til admin'en og find *Webinarer*.
+2. Klik **Tilføj webinar**.
+3. Udfyld:
+   - **Titel** og **URL-slug** (slug auto-udfyldes fra titlen — slug bliver en del af webinarets URL).
+   - **Beskrivelse** (vises på webinarets side under metadata-kortet) og evt. **Introtekst** (vises over formularen — overskriver den fælles standardtekst fra *Tilmeldingsside*-indstillingen).
+   - **Starttidspunkt**, **Varighed** (minutter), evt. **Tilmeldingsfrist**.
+   - **Mødelink** (Zoom/Teams/Meet) — sendes til deltageren i bekræftelses-mailen, vises ikke offentligt.
+   - **Adgang**: *Offentlig* eller *Kun tilmeldte skoler*.
+   - **Kapacitet**: lad være tom for ubegrænset.
+4. Sæt flueben ved **Offentliggjort** og gem. Mødelinket skal være udfyldt før webinaret kan offentliggøres.
+5. Del URL'en `https://<basal-domæne>/webinar/<slug>/` med modtagerne. Tilmeldinger ses som *Webinartilmeldinger* i admin'en og logges i Aktivitetsloggen ligesom kursustilmeldinger.
+
+> 💡 Tekst på success-siden, knaptekst og standard-introtekst redigeres ét sted via **Tilmelding → Rediger tilmeldingssider → Webinartilmelding** — det er den fælles indpakning for alle webinarer.
 
 \newpage
 
