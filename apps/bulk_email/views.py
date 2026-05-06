@@ -332,6 +332,18 @@ class BulkEmailPreviewView(View):
             person = people.first()
         elif recipient_type == BulkEmail.ALLE_KONTAKTER:
             person = people.first()
+        elif recipient_type == BulkEmail.UNDERVISERE_KURSUS:
+            from apps.courses.models import CourseSignUp
+
+            signup = (
+                CourseSignUp.objects.filter(school=school, is_underviser=True).exclude(participant_email="").first()
+            )
+            if signup:
+                person = Person(
+                    name=signup.participant_name,
+                    email=signup.participant_email,
+                    phone=signup.participant_phone,
+                )
         if person is None:
             person = school.people.first()
 

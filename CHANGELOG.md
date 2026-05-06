@@ -6,6 +6,9 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ## 6. maj 2026
 
+### Masseudsendelse til kursusundervisere
+Ved oprettelse af en masseudsendelse er der nu en ny modtagertype: **"Undervisere der har deltaget på kursus"**. Når denne vælges, sendes e-mailen til alle kursustilmeldinger, der er markeret som underviser, fra de filtrerede skoler — uanset om kurset har været afholdt eller ej. Hver e-mailadresse modtager kun én besked per skole, selv om personen er tilmeldt flere kurser. Skoler markeret med "Ønsker ikke at blive kontaktet" undtages som vanligt.
+
 ### Webinarer med egen tilmeldingsside
 Det er nu muligt at oprette webinarer, som deles via deres egen URL (f.eks. `/webinar/<navn>/`). Webinarer er gratis og **åbne for alle med linket** — der er ingen skolekode eller adgangskontrol. Et webinar indeholder titel, beskrivelse, tidspunkt, varighed og et mødelink (Zoom/Teams/Meet), som sendes til deltageren i bekræftelsesmailen efter tilmelding.
 

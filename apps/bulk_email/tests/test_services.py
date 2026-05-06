@@ -1,4 +1,5 @@
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from apps.bulk_email.models import BulkEmail, BulkEmailRecipient
 from apps.bulk_email.services import (
@@ -102,6 +103,94 @@ class ResolveRecipientsTest(TestCase):
         self.assertEqual(len(recipients), 1)
 
 
+class ResolveRecipientsUndervisereKursusTest(TestCase):
+    def setUp(self):
+        from datetime import date
+
+        from apps.courses.models import Course, CourseSignUp
+
+        self.school_a = School.objects.create(name="Skole A", signup_token="ta", signup_password="pa")
+        self.school_b = School.objects.create(name="Skole B", signup_token="tb", signup_password="pb")
+        self.school_silent = School.objects.create(
+            name="Skole Tavs",
+            signup_token="tc",
+            signup_password="pc",
+            do_not_contact_at=timezone.now(),
+        )
+        self.course = Course.objects.create(start_date=date.today(), end_date=date.today())
+
+        # School A: one underviser with email, one without email, one non-underviser
+        CourseSignUp.objects.create(
+            school=self.school_a,
+            course=self.course,
+            participant_name="Anna Underviser",
+            participant_email="anna@a.dk",
+            is_underviser=True,
+        )
+        CourseSignUp.objects.create(
+            school=self.school_a,
+            course=self.course,
+            participant_name="Bo Uden Email",
+            participant_email="",
+            is_underviser=True,
+        )
+        CourseSignUp.objects.create(
+            school=self.school_a,
+            course=self.course,
+            participant_name="Carl Leder",
+            participant_email="carl@a.dk",
+            is_underviser=False,
+        )
+        # School B: duplicate emails across two courses for same school
+        CourseSignUp.objects.create(
+            school=self.school_b,
+            course=self.course,
+            participant_name="Dina",
+            participant_email="dina@b.dk",
+            is_underviser=True,
+        )
+        CourseSignUp.objects.create(
+            school=self.school_b,
+            course=self.course,
+            participant_name="Dina (again)",
+            participant_email="DINA@b.dk",
+            is_underviser=True,
+        )
+        # Silent school: should be skipped despite eligible signup
+        CourseSignUp.objects.create(
+            school=self.school_silent,
+            course=self.course,
+            participant_name="Erik",
+            participant_email="erik@c.dk",
+            is_underviser=True,
+        )
+
+    def test_only_includes_undervisere_with_email(self):
+        schools = School.objects.filter(pk__in=[self.school_a.pk])
+        pairs = resolve_recipients(schools, BulkEmail.UNDERVISERE_KURSUS)
+        emails = [p.email for _, p in pairs]
+        self.assertEqual(emails, ["anna@a.dk"])
+
+    def test_dedupes_by_email_per_school(self):
+        schools = School.objects.filter(pk__in=[self.school_b.pk])
+        pairs = resolve_recipients(schools, BulkEmail.UNDERVISERE_KURSUS)
+        self.assertEqual(len(pairs), 1)
+        self.assertEqual(pairs[0][1].email, "dina@b.dk")
+
+    def test_skips_do_not_contact_schools(self):
+        schools = School.objects.filter(pk__in=[self.school_silent.pk])
+        pairs = resolve_recipients(schools, BulkEmail.UNDERVISERE_KURSUS)
+        self.assertEqual(pairs, [])
+
+    def test_pseudo_person_is_unsaved(self):
+        schools = School.objects.filter(pk__in=[self.school_a.pk])
+        pairs = resolve_recipients(schools, BulkEmail.UNDERVISERE_KURSUS)
+        _, person = pairs[0]
+        self.assertIsNone(person.pk)
+        self.assertEqual(person.name, "Anna Underviser")
+        self.assertEqual(person.email, "anna@a.dk")
+
+
 @override_settings(RESEND_API_KEY=None)
 class SendToSchoolTest(TestCase):
     def setUp(self):
@@ -131,3 +220,10 @@ class SendToSchoolTest(TestCase):
     def test_dev_mode_snapshots_email(self):
         recipient = send_to_school(self.campaign, self.school, self.person)
         self.assertEqual(recipient.email, "person@test.dk")
+
+    def test_unsaved_person_persists_recipient_with_null_person_fk(self):
+        pseudo = Person(name="Kursus Underviser", email="u@test.dk", phone="")
+        recipient = send_to_school(self.campaign, self.school, pseudo)
+        self.assertTrue(recipient.success)
+        self.assertEqual(recipient.email, "u@test.dk")
+        self.assertIsNone(recipient.person_id)

@@ -12,12 +12,14 @@ class BulkEmail(models.Model):
     BEGGE = "begge"
     FOERSTE_KONTAKT = "foerste_kontakt"
     ALLE_KONTAKTER = "alle_kontakter"
+    UNDERVISERE_KURSUS = "undervisere_kursus"
     RECIPIENT_TYPE_CHOICES = [
         (KOORDINATOR, "Koordinator"),
         (OEKONOMISK_ANSVARLIG, "Økonomiansvarlig"),
         (BEGGE, "Koordinator + Økonomiansvarlig"),
         (FOERSTE_KONTAKT, "Første kontakt"),
         (ALLE_KONTAKTER, "Alle kontakter"),
+        (UNDERVISERE_KURSUS, "Undervisere der har deltaget på kursus"),
     ]
 
     name = models.CharField(max_length=255, blank=True, default="")

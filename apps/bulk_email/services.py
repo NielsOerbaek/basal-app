@@ -9,6 +9,7 @@ from django.utils.formats import date_format
 
 from apps.bulk_email.models import BulkEmail, BulkEmailRecipient
 from apps.emails.services import DEFAULT_REPLY_TO, check_email_domain_allowed
+from apps.schools.models import Person
 
 logger = logging.getLogger(__name__)
 
@@ -118,8 +119,38 @@ def resolve_recipients(schools, recipient_type):
     Returns:
         List of (school, person) tuples — schools with no matching contact are omitted.
         A school may appear multiple times if recipient_type yields more than one person.
+
+        For UNDERVISERE_KURSUS, the person is an unsaved Person built from a CourseSignUp's
+        participant fields (no pk — caller must not save it as a FK).
     """
     result = []
+
+    if recipient_type == BulkEmail.UNDERVISERE_KURSUS:
+        from apps.courses.models import CourseSignUp
+
+        schools_by_pk = {s.pk: s for s in schools if not s.do_not_contact_at}
+        signups = (
+            CourseSignUp.objects.filter(
+                school_id__in=schools_by_pk.keys(),
+                is_underviser=True,
+            )
+            .exclude(participant_email="")
+            .order_by("school_id", "participant_name")
+        )
+        seen = set()
+        for signup in signups:
+            key = (signup.school_id, signup.participant_email.lower())
+            if key in seen:
+                continue
+            seen.add(key)
+            pseudo = Person(
+                name=signup.participant_name,
+                email=signup.participant_email,
+                phone=signup.participant_phone,
+            )
+            result.append((schools_by_pk[signup.school_id], pseudo))
+        return result
+
     for school in schools:
         if school.do_not_contact_at:
             continue
@@ -165,7 +196,7 @@ def send_to_school(bulk_email, school, person, attachment_data=None):
 
     recipient = BulkEmailRecipient(
         bulk_email=bulk_email,
-        person=person,
+        person=person if (person and person.pk) else None,
         school=school,
         email=email_address,
     )
