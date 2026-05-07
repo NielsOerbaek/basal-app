@@ -9,23 +9,29 @@ User = get_user_model()
 class BulkEmail(models.Model):
     KOORDINATOR = "koordinator"
     OEKONOMISK_ANSVARLIG = "oekonomisk_ansvarlig"
-    BEGGE = "begge"
     FOERSTE_KONTAKT = "foerste_kontakt"
     ALLE_KONTAKTER = "alle_kontakter"
     UNDERVISERE_KURSUS = "undervisere_kursus"
     RECIPIENT_TYPE_CHOICES = [
         (KOORDINATOR, "Koordinator"),
         (OEKONOMISK_ANSVARLIG, "Økonomiansvarlig"),
-        (BEGGE, "Koordinator + Økonomiansvarlig"),
         (FOERSTE_KONTAKT, "Første kontakt"),
         (ALLE_KONTAKTER, "Alle kontakter"),
         (UNDERVISERE_KURSUS, "Undervisere der har deltaget på kursus"),
     ]
+    RECIPIENT_TYPE_LABELS = dict(RECIPIENT_TYPE_CHOICES)
+    RECIPIENT_ROLE_LABELS = {
+        KOORDINATOR: "Koordinator",
+        OEKONOMISK_ANSVARLIG: "Økonomiansvarlig",
+        FOERSTE_KONTAKT: "Første kontakt",
+        ALLE_KONTAKTER: "Alle kontakter",
+        UNDERVISERE_KURSUS: "Underviser",
+    }
 
     name = models.CharField(max_length=255, blank=True, default="")
     subject = models.CharField(max_length=500)
     body_html = models.TextField()
-    recipient_type = models.CharField(max_length=30, choices=RECIPIENT_TYPE_CHOICES)
+    recipient_types = models.JSONField(default=list)
     filter_params = models.JSONField(default=dict)
     sent_at = models.DateTimeField(null=True, blank=True)
     sent_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
@@ -40,6 +46,11 @@ class BulkEmail(models.Model):
     def __str__(self):
         label = self.name or self.subject
         return f"{label} ({self.sent_at or 'ikke sendt'})"
+
+    @property
+    def recipient_types_display(self):
+        """Comma-joined human labels for the selected recipient types."""
+        return ", ".join(self.RECIPIENT_TYPE_LABELS.get(t, t) for t in (self.recipient_types or []))
 
     @property
     def is_sent(self):

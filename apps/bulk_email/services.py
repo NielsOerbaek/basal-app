@@ -101,7 +101,8 @@ def find_missing_variables(template_str, school_person_pairs):
             continue
         accessor = VARIABLE_ACCESSORS[var]
         missing_schools = []
-        for school, person in school_person_pairs:
+        for tup in school_person_pairs:
+            school, person = tup[0], tup[1]
             value = accessor(school, person)
             if not value:
                 missing_schools.append(school.name)
@@ -110,75 +111,93 @@ def find_missing_variables(template_str, school_person_pairs):
     return warnings
 
 
-def resolve_recipients(schools, recipient_type):
+def resolve_recipients(schools, recipient_types):
     """
-    For each school, find the matching contact person(s).
+    For each school, find the matching contact person(s) across all selected types.
 
     Note: schools should have prefetch_related("people") applied for performance.
 
+    Args:
+        recipient_types: list of BulkEmail.RECIPIENT_TYPE_* values.
+
     Returns:
-        List of (school, person) tuples — schools with no matching contact are omitted.
-        A school may appear multiple times if recipient_type yields more than one person.
+        List of (school, person, roles) triples where `roles` is a list of human-readable
+        role labels (in the model's defined order) describing which selected types matched.
+        Recipients are deduped per school by lowercase email — a person matching multiple
+        types appears once with multiple role labels.
 
-        For UNDERVISERE_KURSUS, the person is an unsaved Person built from a CourseSignUp's
-        participant fields (no pk — caller must not save it as a FK).
+        For UNDERVISERE_KURSUS, person is an unsaved Person built from a CourseSignUp's
+        participant fields (no pk — `send_to_school` handles this and stores the recipient
+        with a null Person FK).
     """
-    result = []
+    types = set(recipient_types or [])
+    if not types:
+        return []
 
-    if recipient_type == BulkEmail.UNDERVISERE_KURSUS:
+    role_label = BulkEmail.RECIPIENT_ROLE_LABELS
+    role_order = list(BulkEmail.RECIPIENT_ROLE_LABELS.keys())
+
+    underviser_signups_by_school = {}
+    if BulkEmail.UNDERVISERE_KURSUS in types:
         from apps.courses.models import CourseSignUp
 
-        schools_by_pk = {s.pk: s for s in schools if not s.do_not_contact_at}
+        eligible_pks = [s.pk for s in schools if not s.do_not_contact_at]
         signups = (
             CourseSignUp.objects.filter(
-                school_id__in=schools_by_pk.keys(),
+                school_id__in=eligible_pks,
                 is_underviser=True,
             )
             .exclude(participant_email="")
             .order_by("school_id", "participant_name")
         )
-        seen = set()
-        for signup in signups:
-            key = (signup.school_id, signup.participant_email.lower())
-            if key in seen:
-                continue
-            seen.add(key)
-            pseudo = Person(
-                name=signup.participant_name,
-                email=signup.participant_email,
-                phone=signup.participant_phone,
-            )
-            result.append((schools_by_pk[signup.school_id], pseudo))
-        return result
+        for su in signups:
+            underviser_signups_by_school.setdefault(su.school_id, []).append(su)
 
+    result = []
     for school in schools:
         if school.do_not_contact_at:
             continue
-        people = list(school.people.all())
-        if recipient_type == BulkEmail.KOORDINATOR:
-            person = next((p for p in people if p.is_koordinator and p.email), None)
-            if person:
-                result.append((school, person))
-        elif recipient_type == BulkEmail.OEKONOMISK_ANSVARLIG:
-            person = next((p for p in people if p.is_oekonomisk_ansvarlig and p.email), None)
-            if person:
-                result.append((school, person))
-        elif recipient_type == BulkEmail.BEGGE:
-            seen_emails = set()
-            for p in people:
-                if p.email and (p.is_koordinator or p.is_oekonomisk_ansvarlig) and p.email not in seen_emails:
-                    seen_emails.add(p.email)
-                    result.append((school, p))
-        elif recipient_type == BulkEmail.FOERSTE_KONTAKT:
-            person = next((p for p in people if p.email), None)
-            if person:
-                result.append((school, person))
-        elif recipient_type == BulkEmail.ALLE_KONTAKTER:
-            seen_emails = set()
-            for p in people:
-                if p.email and p.email not in seen_emails:
-                    seen_emails.add(p.email)
-                    result.append((school, p))
+
+        # candidates: dict keyed by email.lower() -> {"person": Person, "type_keys": set[str]}
+        candidates = {}
+
+        people_with_email = [p for p in school.people.all() if p.email]
+        first_contact = people_with_email[0] if people_with_email else None
+
+        for p in people_with_email:
+            matched = []
+            if BulkEmail.KOORDINATOR in types and p.is_koordinator:
+                matched.append(BulkEmail.KOORDINATOR)
+            if BulkEmail.OEKONOMISK_ANSVARLIG in types and p.is_oekonomisk_ansvarlig:
+                matched.append(BulkEmail.OEKONOMISK_ANSVARLIG)
+            if BulkEmail.FOERSTE_KONTAKT in types and p is first_contact:
+                matched.append(BulkEmail.FOERSTE_KONTAKT)
+            if BulkEmail.ALLE_KONTAKTER in types:
+                matched.append(BulkEmail.ALLE_KONTAKTER)
+            if not matched:
+                continue
+            key = p.email.lower()
+            entry = candidates.setdefault(key, {"person": p, "type_keys": set()})
+            entry["type_keys"].update(matched)
+
+        for su in underviser_signups_by_school.get(school.pk, []):
+            key = su.participant_email.lower()
+            if key in candidates:
+                candidates[key]["type_keys"].add(BulkEmail.UNDERVISERE_KURSUS)
+            else:
+                candidates[key] = {
+                    "person": Person(
+                        name=su.participant_name,
+                        email=su.participant_email,
+                        phone=su.participant_phone,
+                    ),
+                    "type_keys": {BulkEmail.UNDERVISERE_KURSUS},
+                }
+
+        for entry in candidates.values():
+            roles = [role_label[t] for t in role_order if t in entry["type_keys"]]
+            result.append((school, entry["person"], roles))
+
     return result
 
 

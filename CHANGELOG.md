@@ -4,6 +4,13 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 7. maj 2026
+
+### Vælg flere modtagertyper på samme udsendelse
+Modtagervalget i masseudsendelser er ændret fra radioknapper til afkrydsningsfelter, så man kan vælge flere typer på én gang — f.eks. både koordinator, økonomiansvarlig og kursusundervisere. Personer der matcher flere typer modtager kun én e-mail. Test-kørsel og oversigt viser nu en **Roller**-kolonne, så det er tydeligt, hvilke kriterier hver modtager opfylder. Den tidligere kombinerede mulighed "Koordinator + Økonomiansvarlig" er fjernet, fordi man nu opnår det samme ved at krydse begge felter af.
+
+---
+
 ## 6. maj 2026
 
 ### Masseudsendelse til kursusundervisere

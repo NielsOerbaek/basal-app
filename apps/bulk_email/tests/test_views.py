@@ -23,7 +23,7 @@ class BulkEmailListViewTest(TestCase):
         self.campaign = BulkEmail.objects.create(
             subject="Test",
             body_html="<p>x</p>",
-            recipient_type=BulkEmail.KOORDINATOR,
+            recipient_types=[BulkEmail.KOORDINATOR],
         )
 
     def test_list_requires_login(self):
@@ -43,9 +43,9 @@ class BulkEmailListViewTest(TestCase):
         from django.utils import timezone
 
         BulkEmail.objects.create(
-            subject="Sent", body_html="", recipient_type=BulkEmail.KOORDINATOR, sent_at=timezone.now()
+            subject="Sent", body_html="", recipient_types=[BulkEmail.KOORDINATOR], sent_at=timezone.now()
         )
-        interrupted = BulkEmail.objects.create(subject="Afbrudt", body_html="", recipient_type=BulkEmail.KOORDINATOR)
+        interrupted = BulkEmail.objects.create(subject="Afbrudt", body_html="", recipient_types=[BulkEmail.KOORDINATOR])
         from apps.schools.models import School
 
         s = School.objects.create(name="S", signup_token="t", signup_password="p")
@@ -67,7 +67,7 @@ class BulkEmailDetailViewTest(TestCase):
         self.campaign = BulkEmail.objects.create(
             subject="Detaljetest",
             body_html="<p>x</p>",
-            recipient_type=BulkEmail.KOORDINATOR,
+            recipient_types=[BulkEmail.KOORDINATOR],
             sent_at=timezone.now(),
         )
         BulkEmailRecipient.objects.create(
@@ -147,7 +147,7 @@ class PreviewViewTest(TestCase):
                     "school_pk": self.school.pk,
                     "subject": "Hej {{ skole_navn }}",
                     "body_html": "<p>Kære {{ kontakt_navn }}</p>",
-                    "recipient_type": BulkEmail.KOORDINATOR,
+                    "recipient_types": [BulkEmail.KOORDINATOR],
                 }
             ),
             content_type="application/json",
@@ -159,7 +159,9 @@ class PreviewViewTest(TestCase):
     def test_preview_returns_404_for_unknown_school(self):
         response = self.client.post(
             reverse("bulk_email:preview"),
-            json.dumps({"school_pk": 99999, "subject": "x", "body_html": "x", "recipient_type": BulkEmail.KOORDINATOR}),
+            json.dumps(
+                {"school_pk": 99999, "subject": "x", "body_html": "x", "recipient_types": [BulkEmail.KOORDINATOR]}
+            ),
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
@@ -185,7 +187,7 @@ class DryRunViewTest(TestCase):
             reverse("bulk_email:dry_run"),
             json.dumps(
                 {
-                    "recipient_type": BulkEmail.KOORDINATOR,
+                    "recipient_types": [BulkEmail.KOORDINATOR],
                     "subject": "{{ skole_navn }}",
                     "body_html": "",
                     "filter_params": {"kommune": "Vejle"},
@@ -204,7 +206,7 @@ class DryRunViewTest(TestCase):
             reverse("bulk_email:dry_run"),
             json.dumps(
                 {
-                    "recipient_type": BulkEmail.KOORDINATOR,
+                    "recipient_types": [BulkEmail.KOORDINATOR],
                     "subject": "{{ ean_nummer }}",
                     "body_html": "",
                     "filter_params": {"kommune": "Vejle"},
@@ -248,7 +250,7 @@ class SendViewTest(TestCase):
                 {
                     "subject": "Test",
                     "body_html": "<p>Test</p>",
-                    "recipient_type": BulkEmail.KOORDINATOR,
+                    "recipient_types": [BulkEmail.KOORDINATOR],
                     "filter_params": {"kommune": "Odense"},
                     "attachment_pks": [],
                 }
@@ -265,7 +267,7 @@ class SendViewTest(TestCase):
                 {
                     "subject": "Test",
                     "body_html": "<p>Test</p>",
-                    "recipient_type": BulkEmail.KOORDINATOR,
+                    "recipient_types": [BulkEmail.KOORDINATOR],
                     "filter_params": {"kommune": "Odense"},
                     "attachment_pks": [],
                 }
@@ -282,7 +284,7 @@ class SendViewTest(TestCase):
                 {
                     "subject": "Test",
                     "body_html": "<p>Test</p>",
-                    "recipient_type": BulkEmail.KOORDINATOR,
+                    "recipient_types": [BulkEmail.KOORDINATOR],
                     "filter_params": {"kommune": "Odense"},
                     "attachment_pks": [],
                 }
@@ -300,7 +302,7 @@ class SendViewTest(TestCase):
                 {
                     "subject": "Test",
                     "body_html": "<p>Test</p>",
-                    "recipient_type": BulkEmail.KOORDINATOR,
+                    "recipient_types": [BulkEmail.KOORDINATOR],
                     "filter_params": {"kommune": "Odense"},
                     "attachment_pks": [],
                 }
@@ -335,7 +337,7 @@ class TestEmailSendTest(TestCase):
                 {
                     "subject": "Test",
                     "body_html": "<p>x</p>",
-                    "recipient_type": BulkEmail.KOORDINATOR,
+                    "recipient_types": [BulkEmail.KOORDINATOR],
                     "filter_params": {},
                     "attachment_pks": [],
                     "test_email": "test@example.com",
@@ -354,7 +356,7 @@ class TestEmailSendTest(TestCase):
                 {
                     "subject": "Test",
                     "body_html": "<p>x</p>",
-                    "recipient_type": BulkEmail.KOORDINATOR,
+                    "recipient_types": [BulkEmail.KOORDINATOR],
                     "filter_params": {},
                     "attachment_pks": [],
                     "test_email": "test@example.com",

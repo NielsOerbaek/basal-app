@@ -93,14 +93,56 @@ class ResolveRecipientsTest(TestCase):
 
     def test_returns_only_schools_with_matching_contact(self):
         schools = School.objects.filter(pk__in=[self.school_with_coord.pk, self.school_without_coord.pk])
-        recipients = resolve_recipients(schools, BulkEmail.KOORDINATOR)
-        self.assertEqual(len(recipients), 1)
-        self.assertEqual(recipients[0][0], self.school_with_coord)
+        triples = resolve_recipients(schools, [BulkEmail.KOORDINATOR])
+        self.assertEqual(len(triples), 1)
+        self.assertEqual(triples[0][0], self.school_with_coord)
+        self.assertEqual(triples[0][2], ["Koordinator"])
 
     def test_skipped_count_correct(self):
         schools = School.objects.filter(pk__in=[self.school_with_coord.pk, self.school_without_coord.pk])
-        recipients = resolve_recipients(schools, BulkEmail.KOORDINATOR)
-        self.assertEqual(len(recipients), 1)
+        triples = resolve_recipients(schools, [BulkEmail.KOORDINATOR])
+        self.assertEqual(len(triples), 1)
+
+
+class ResolveRecipientsMultiTypeTest(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(name="Multi", signup_token="mt", signup_password="mp")
+        self.koord_only = Person.objects.create(
+            school=self.school, name="A Koord", email="a@test.dk", is_koordinator=True
+        )
+        self.oek_only = Person.objects.create(
+            school=self.school, name="B Oek", email="b@test.dk", is_oekonomisk_ansvarlig=True
+        )
+        self.both = Person.objects.create(
+            school=self.school,
+            name="C Begge",
+            email="c@test.dk",
+            is_koordinator=True,
+            is_oekonomisk_ansvarlig=True,
+        )
+        self.plain = Person.objects.create(school=self.school, name="D Almen", email="d@test.dk")
+
+    def test_dedupes_person_matching_multiple_types_with_combined_roles(self):
+        triples = resolve_recipients(
+            School.objects.filter(pk=self.school.pk),
+            [BulkEmail.KOORDINATOR, BulkEmail.OEKONOMISK_ANSVARLIG],
+        )
+        emails_to_roles = {t[1].email: t[2] for t in triples}
+        self.assertEqual(set(emails_to_roles.keys()), {"a@test.dk", "b@test.dk", "c@test.dk"})
+        self.assertEqual(emails_to_roles["c@test.dk"], ["Koordinator", "Økonomiansvarlig"])
+
+    def test_alle_kontakter_combined_with_koordinator_tags_both(self):
+        triples = resolve_recipients(
+            School.objects.filter(pk=self.school.pk),
+            [BulkEmail.KOORDINATOR, BulkEmail.ALLE_KONTAKTER],
+        )
+        emails_to_roles = {t[1].email: t[2] for t in triples}
+        self.assertEqual(len(triples), 4)
+        self.assertEqual(emails_to_roles["a@test.dk"], ["Koordinator", "Alle kontakter"])
+        self.assertEqual(emails_to_roles["d@test.dk"], ["Alle kontakter"])
+
+    def test_empty_types_returns_empty(self):
+        self.assertEqual(resolve_recipients(School.objects.filter(pk=self.school.pk), []), [])
 
 
 class ResolveRecipientsUndervisereKursusTest(TestCase):
@@ -167,28 +209,44 @@ class ResolveRecipientsUndervisereKursusTest(TestCase):
 
     def test_only_includes_undervisere_with_email(self):
         schools = School.objects.filter(pk__in=[self.school_a.pk])
-        pairs = resolve_recipients(schools, BulkEmail.UNDERVISERE_KURSUS)
-        emails = [p.email for _, p in pairs]
+        triples = resolve_recipients(schools, [BulkEmail.UNDERVISERE_KURSUS])
+        emails = [p.email for _, p, _ in triples]
         self.assertEqual(emails, ["anna@a.dk"])
+        self.assertEqual(triples[0][2], ["Underviser"])
 
     def test_dedupes_by_email_per_school(self):
         schools = School.objects.filter(pk__in=[self.school_b.pk])
-        pairs = resolve_recipients(schools, BulkEmail.UNDERVISERE_KURSUS)
-        self.assertEqual(len(pairs), 1)
-        self.assertEqual(pairs[0][1].email, "dina@b.dk")
+        triples = resolve_recipients(schools, [BulkEmail.UNDERVISERE_KURSUS])
+        self.assertEqual(len(triples), 1)
+        self.assertEqual(triples[0][1].email, "dina@b.dk")
 
     def test_skips_do_not_contact_schools(self):
         schools = School.objects.filter(pk__in=[self.school_silent.pk])
-        pairs = resolve_recipients(schools, BulkEmail.UNDERVISERE_KURSUS)
-        self.assertEqual(pairs, [])
+        triples = resolve_recipients(schools, [BulkEmail.UNDERVISERE_KURSUS])
+        self.assertEqual(triples, [])
 
     def test_pseudo_person_is_unsaved(self):
         schools = School.objects.filter(pk__in=[self.school_a.pk])
-        pairs = resolve_recipients(schools, BulkEmail.UNDERVISERE_KURSUS)
-        _, person = pairs[0]
+        triples = resolve_recipients(schools, [BulkEmail.UNDERVISERE_KURSUS])
+        _, person, _ = triples[0]
         self.assertIsNone(person.pk)
         self.assertEqual(person.name, "Anna Underviser")
         self.assertEqual(person.email, "anna@a.dk")
+
+    def test_underviser_with_existing_person_email_combines_roles(self):
+        # Add a koordinator on school_a whose email matches the underviser
+        Person.objects.create(
+            school=self.school_a,
+            name="Anna Underviser",
+            email="anna@a.dk",
+            is_koordinator=True,
+        )
+        triples = resolve_recipients(
+            School.objects.filter(pk=self.school_a.pk),
+            [BulkEmail.KOORDINATOR, BulkEmail.UNDERVISERE_KURSUS],
+        )
+        self.assertEqual(len(triples), 1)
+        self.assertEqual(triples[0][2], ["Koordinator", "Underviser"])
 
 
 @override_settings(RESEND_API_KEY=None)
@@ -208,7 +266,7 @@ class SendToSchoolTest(TestCase):
         self.campaign = BulkEmail.objects.create(
             subject="Test {{ skole_navn }}",
             body_html="<p>Hej {{ kontakt_navn }}</p>",
-            recipient_type=BulkEmail.KOORDINATOR,
+            recipient_types=[BulkEmail.KOORDINATOR],
         )
 
     def test_dev_mode_creates_recipient_with_success(self):

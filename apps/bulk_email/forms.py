@@ -20,9 +20,9 @@ class BulkEmailComposeForm(forms.Form):
         widget=SummernoteWidget(),
         required=False,
     )
-    recipient_type = forms.ChoiceField(
+    recipient_types = forms.MultipleChoiceField(
         choices=BulkEmail.RECIPIENT_TYPE_CHOICES,
-        label="Modtagertype",
-        widget=forms.RadioSelect(),
-        initial=BulkEmail.KOORDINATOR,
+        label="Modtagertyper",
+        widget=forms.CheckboxSelectMultiple(),
+        initial=[BulkEmail.KOORDINATOR],
     )

@@ -10,7 +10,7 @@ class BulkEmailModelTest(TestCase):
         self.campaign = BulkEmail.objects.create(
             subject="Test emne",
             body_html="<p>Hej {{ skole_navn }}</p>",
-            recipient_type=BulkEmail.KOORDINATOR,
+            recipient_types=[BulkEmail.KOORDINATOR],
             filter_params={"kommune": "Aarhus"},
         )
 

@@ -221,7 +221,7 @@ class BulkEmailCreateView(SchoolFilterMixin, View):
                 draft = BulkEmail.objects.get(pk=draft_pk, sent_at__isnull=True)
                 initial["subject"] = draft.subject
                 initial["body_html"] = draft.body_html
-                initial["recipient_type"] = draft.recipient_type
+                initial["recipient_types"] = list(draft.recipient_types or [])
             except BulkEmail.DoesNotExist:
                 draft = None
 
@@ -232,7 +232,8 @@ class BulkEmailCreateView(SchoolFilterMixin, View):
                 copy_source = BulkEmail.objects.get(pk=copy_from_pk)
                 initial["subject"] = request.GET.get("subject", copy_source.subject)
                 initial["body_html"] = copy_source.body_html
-                initial["recipient_type"] = request.GET.get("recipient_type", copy_source.recipient_type)
+                from_url = request.GET.getlist("recipient_types")
+                initial["recipient_types"] = from_url if from_url else list(copy_source.recipient_types or [])
             except BulkEmail.DoesNotExist:
                 pass
 
@@ -270,7 +271,7 @@ class BulkEmailDraftSaveView(View):
         name = data.get("name", "")
         subject = data.get("subject", "")
         body_html = data.get("body_html", "")
-        recipient_type = data.get("recipient_type", BulkEmail.KOORDINATOR)
+        recipient_types = data.get("recipient_types") or [BulkEmail.KOORDINATOR]
         filter_params = data.get("filter_params", {})
         attachment_pks = data.get("attachment_pks", [])
 
@@ -283,7 +284,7 @@ class BulkEmailDraftSaveView(View):
                 draft.name = name
                 draft.subject = subject
                 draft.body_html = body_html
-                draft.recipient_type = recipient_type
+                draft.recipient_types = recipient_types
                 draft.filter_params = filter_params
                 draft.save()
             except BulkEmail.DoesNotExist:
@@ -293,7 +294,7 @@ class BulkEmailDraftSaveView(View):
                 name=name or "(unavngivet)",
                 subject=subject,
                 body_html=body_html,
-                recipient_type=recipient_type,
+                recipient_types=recipient_types,
                 filter_params=filter_params,
             )
 
@@ -315,24 +316,22 @@ class BulkEmailPreviewView(View):
         school_pk = payload.get("school_pk")
         subject = payload.get("subject", "")
         body_html = payload.get("body_html", "")
-        recipient_type = payload.get("recipient_type", BulkEmail.KOORDINATOR)
+        recipient_types = set(payload.get("recipient_types") or [BulkEmail.KOORDINATOR])
 
         school = get_object_or_404(School, pk=school_pk)
 
-        # Find the contact person based on recipient type (use first match for preview)
+        # Pick first matching person across all selected types (for preview only)
         person = None
         people = school.people.exclude(email="").filter(email__isnull=False)
-        if recipient_type == BulkEmail.KOORDINATOR:
+        if BulkEmail.KOORDINATOR in recipient_types:
             person = people.filter(is_koordinator=True).first()
-        elif recipient_type == BulkEmail.OEKONOMISK_ANSVARLIG:
+        if person is None and BulkEmail.OEKONOMISK_ANSVARLIG in recipient_types:
             person = people.filter(is_oekonomisk_ansvarlig=True).first()
-        elif recipient_type == BulkEmail.BEGGE:
-            person = people.filter(is_koordinator=True).first() or people.filter(is_oekonomisk_ansvarlig=True).first()
-        elif recipient_type == BulkEmail.FOERSTE_KONTAKT:
+        if person is None and (
+            BulkEmail.FOERSTE_KONTAKT in recipient_types or BulkEmail.ALLE_KONTAKTER in recipient_types
+        ):
             person = people.first()
-        elif recipient_type == BulkEmail.ALLE_KONTAKTER:
-            person = people.first()
-        elif recipient_type == BulkEmail.UNDERVISERE_KURSUS:
+        if person is None and BulkEmail.UNDERVISERE_KURSUS in recipient_types:
             from apps.courses.models import CourseSignUp
 
             signup = (
@@ -369,7 +368,7 @@ class BulkEmailDryRunView(View):
         except (json.JSONDecodeError, ValueError):
             return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-        recipient_type = payload.get("recipient_type", BulkEmail.KOORDINATOR)
+        recipient_types = payload.get("recipient_types") or [BulkEmail.KOORDINATOR]
         subject = payload.get("subject", "")
         body_html = payload.get("body_html", "")
         filter_params = payload.get("filter_params", {})
@@ -393,12 +392,12 @@ class BulkEmailDryRunView(View):
         schools = list(view.get_school_filter_queryset())
 
         do_not_contact_schools = [s for s in schools if s.do_not_contact_at]
-        pairs = resolve_recipients(schools, recipient_type)
-        matched_school_pks = {school.pk for school, _person in pairs}
+        triples = resolve_recipients(schools, recipient_types)
+        matched_school_pks = {school.pk for school, _person, _roles in triples}
 
         # Combined template for variable analysis
         combined = subject + " " + body_html
-        warnings = find_missing_variables(combined, pairs)
+        warnings = find_missing_variables(combined, triples)
 
         recipients_data = [
             {
@@ -406,8 +405,9 @@ class BulkEmailDryRunView(View):
                 "person": person.name,
                 "email": person.email,
                 "kommune": school.kommune.name if school.kommune else "",
+                "roles": roles,
             }
-            for school, person in pairs
+            for school, person, roles in triples
         ]
 
         skipped_data = [
@@ -446,7 +446,7 @@ class BulkEmailSendView(SchoolFilterMixin, View):
         name = data.get("name", "")
         subject = data.get("subject", "")
         body_html = data.get("body_html", "")
-        recipient_type = data.get("recipient_type", BulkEmail.KOORDINATOR)
+        recipient_types = data.get("recipient_types") or [BulkEmail.KOORDINATOR]
         filter_params = data.get("filter_params", {})
         attachment_pks = data.get("attachment_pks", [])
 
@@ -458,7 +458,7 @@ class BulkEmailSendView(SchoolFilterMixin, View):
             cutoff = timezone.now() - timedelta(seconds=60)
             if BulkEmail.objects.filter(
                 subject=subject,
-                recipient_type=recipient_type,
+                recipient_types=recipient_types,
                 filter_params=filter_params,
                 sent_by=request.user,
                 created_at__gte=cutoff,
@@ -538,7 +538,7 @@ class BulkEmailSendView(SchoolFilterMixin, View):
         schools = list(self.get_school_filter_queryset())
         request.GET = original_get
 
-        school_person_pairs = resolve_recipients(schools, recipient_type)
+        recipient_triples = resolve_recipients(schools, recipient_types)
 
         # Use existing draft or create new campaign
         draft_pk = data.get("draft_pk")
@@ -550,7 +550,7 @@ class BulkEmailSendView(SchoolFilterMixin, View):
                 campaign.name = name
                 campaign.subject = subject
                 campaign.body_html = body_html
-                campaign.recipient_type = recipient_type
+                campaign.recipient_types = recipient_types
                 campaign.filter_params = filter_params
                 campaign.sent_by = request.user
                 campaign.save()
@@ -561,7 +561,7 @@ class BulkEmailSendView(SchoolFilterMixin, View):
                 name=name,
                 subject=subject,
                 body_html=body_html,
-                recipient_type=recipient_type,
+                recipient_types=recipient_types,
                 filter_params=filter_params,
                 sent_by=request.user,
             )
@@ -575,14 +575,16 @@ class BulkEmailSendView(SchoolFilterMixin, View):
             with att.file.open("rb") as f:
                 attachment_data.append({"filename": att.filename, "content": list(f.read())})
 
+        matched_school_pks = {t[0].pk for t in recipient_triples}
+
         def event_stream():
             sent = 0
             failed = 0
-            skipped = len(schools) - len(school_person_pairs)
+            skipped = sum(1 for s in schools if s.pk not in matched_school_pks)
 
-            yield f"data: {json.dumps({'type': 'start', 'total': len(school_person_pairs), 'skipped': skipped})}\n\n"
+            yield f"data: {json.dumps({'type': 'start', 'total': len(recipient_triples), 'skipped': skipped})}\n\n"
 
-            for n, (school, person) in enumerate(school_person_pairs, start=1):
+            for n, (school, person, _roles) in enumerate(recipient_triples, start=1):
                 if n > 1:
                     time.sleep(0.25)
                 recipient = send_to_school(campaign, school, person, attachment_data=attachment_data)
@@ -593,7 +595,7 @@ class BulkEmailSendView(SchoolFilterMixin, View):
                 event = {
                     "type": "progress",
                     "n": n,
-                    "total": len(school_person_pairs),
+                    "total": len(recipient_triples),
                     "school": school.name,
                     "email": recipient.email,
                     "success": recipient.success,

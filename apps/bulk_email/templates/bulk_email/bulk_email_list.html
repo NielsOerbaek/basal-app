@@ -39,7 +39,7 @@
                                 <span class="badge bg-warning text-dark ms-1">Afbrudt</span>
                             {% endif %}
                         </td>
-                        <td>{{ campaign.get_recipient_type_display }}</td>
+                        <td>{{ campaign.recipient_types_display|default:"—" }}</td>
                         <td class="text-muted small">{{ campaign.get_filter_summary_display|default:"—" }}</td>
                         <td>
                             {% if campaign.sent_at %}
@@ -62,7 +62,7 @@
                                 Rediger
                             </a>
                             {% endif %}
-                            <a href="{% url 'bulk_email:create' %}?copy_from={{ campaign.pk }}&subject={{ campaign.subject|urlencode }}&recipient_type={{ campaign.recipient_type }}{% for k, v in campaign.filter_params.items %}&{{ k }}={{ v|urlencode }}{% endfor %}"
+                            <a href="{% url 'bulk_email:create' %}?copy_from={{ campaign.pk }}&subject={{ campaign.subject|urlencode }}{% for t in campaign.recipient_types %}&recipient_types={{ t|urlencode }}{% endfor %}{% for k, v in campaign.filter_params.items %}&{{ k }}={{ v|urlencode }}{% endfor %}"
                                class="btn btn-sm btn-outline-secondary">
                                 Kopier til ny
                             </a>

@@ -15,7 +15,7 @@
 <div class="container-fluid py-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="h3 mb-0">{{ campaign.name|default:campaign.subject|truncatechars:60 }}</h1>
-        <a href="{% url 'bulk_email:create' %}?copy_from={{ campaign.pk }}&subject={{ campaign.subject|urlencode }}&recipient_type={{ campaign.recipient_type }}{% for k, v in campaign.filter_params.items %}&{{ k }}={{ v|urlencode }}{% endfor %}"
+        <a href="{% url 'bulk_email:create' %}?copy_from={{ campaign.pk }}&subject={{ campaign.subject|urlencode }}{% for t in campaign.recipient_types %}&recipient_types={{ t|urlencode }}{% endfor %}{% for k, v in campaign.filter_params.items %}&{{ k }}={{ v|urlencode }}{% endfor %}"
            class="btn btn-outline-secondary">
             Kopier til ny
         </a>
@@ -24,8 +24,8 @@
     <div class="row mb-4">
         <div class="col-md-6">
             <dl class="row">
-                <dt class="col-5">Modtagertype</dt>
-                <dd class="col-7">{{ campaign.get_recipient_type_display }}</dd>
+                <dt class="col-5">Modtagertyper</dt>
+                <dd class="col-7">{{ campaign.recipient_types_display|default:"—" }}</dd>
                 <dt class="col-5">Filter</dt>
                 <dd class="col-7">{{ filter_summary|default:"Ingen filtre" }}</dd>
                 <dt class="col-5">Sendt</dt>
