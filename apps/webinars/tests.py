@@ -11,7 +11,7 @@ from apps.emails.services import (
     send_webinar_signup_confirmation,
     send_webinar_signup_notification,
 )
-from apps.schools.models import Kommune
+from apps.schools.models import Kommune, School
 from apps.webinars.forms import WebinarSignupForm
 from apps.webinars.models import Webinar, WebinarSignUp
 
@@ -30,6 +30,18 @@ def _make_webinar(slug="w", **kwargs):
 @pytest.fixture
 def kommune(db):
     return Kommune.objects.create(name="Aarhus")
+
+
+@pytest.fixture
+def school(db, kommune):
+    from datetime import date
+
+    return School.objects.create(
+        name="Skovvangskolen",
+        adresse="Skovvangsvej 100",
+        kommune=kommune,
+        enrolled_at=date.today() - timedelta(days=30),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -136,26 +148,84 @@ def test_webinar_signup_clears_bounce_on_email_change(kommune):
 
 
 @pytest.mark.django_db
-def test_form_requires_all_four_fields(kommune):
+def test_form_requires_kommune_school_name_email(kommune):
+    """Empty form: kommune, school, name, email all flagged."""
     form = WebinarSignupForm(data={})
     assert not form.is_valid()
-    for field in ["kommune", "school_name", "name", "email"]:
+    for field in ["kommune", "name", "email"]:
         assert field in form.errors
+    # school_name's "vælg en skole" message lands on school_name
+    assert "school_name" in form.errors
 
 
 @pytest.mark.django_db
-def test_form_accepts_complete_data(kommune):
+def test_form_school_dropdown_populated_from_bound_kommune(kommune, school):
+    """When the form is bound with a kommune, the school dropdown
+    should contain that kommune's schools as choices."""
+    form = WebinarSignupForm(data={"kommune": kommune.pk})
+    choices = form.fields["school_name"].widget.choices
+    school_names = [c[0] for c in choices if c[0]]
+    assert school.name in school_names
+
+
+@pytest.mark.django_db
+def test_form_accepts_school_picked_from_kommune(kommune, school):
     form = WebinarSignupForm(
         data={
             "kommune": kommune.pk,
-            "school_name": "Skole X",
+            "school_name": school.name,
             "name": "Anna",
             "email": "a@b.dk",
         }
     )
     assert form.is_valid(), form.errors
-    assert form.cleaned_data["kommune"] == kommune
-    assert form.cleaned_data["school_name"] == "Skole X"
+    assert form.cleaned_data["school_name"] == school.name
+
+
+@pytest.mark.django_db
+def test_form_rejects_school_not_in_chosen_kommune(kommune, school):
+    other_kommune = Kommune.objects.create(name="København")
+    form = WebinarSignupForm(
+        data={
+            "kommune": other_kommune.pk,
+            "school_name": school.name,  # belongs to a different kommune
+            "name": "Anna",
+            "email": "a@b.dk",
+        }
+    )
+    assert not form.is_valid()
+    assert "school_name" in form.errors
+
+
+@pytest.mark.django_db
+def test_form_accepts_school_not_listed_with_other_text(kommune):
+    form = WebinarSignupForm(
+        data={
+            "kommune": kommune.pk,
+            "school_name": "",
+            "school_not_listed": "on",
+            "school_other": "En privat skole",
+            "name": "Anna",
+            "email": "a@b.dk",
+        }
+    )
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["school_name"] == "En privat skole"
+
+
+@pytest.mark.django_db
+def test_form_school_not_listed_requires_other_text(kommune):
+    form = WebinarSignupForm(
+        data={
+            "kommune": kommune.pk,
+            "school_not_listed": "on",
+            "school_other": "",
+            "name": "Anna",
+            "email": "a@b.dk",
+        }
+    )
+    assert not form.is_valid()
+    assert "school_other" in form.errors
 
 
 # ---------------------------------------------------------------------------
@@ -247,14 +317,14 @@ def test_full_webinar_replaces_form_with_message(kommune):
 
 
 @pytest.mark.django_db
-def test_signup_creates_record_and_redirects(kommune):
+def test_signup_creates_record_and_redirects(kommune, school):
     w = _make_webinar(slug="post", is_published=True)
     client = Client()
     resp = client.post(
         f"/webinar/{w.slug}/",
         {
             "kommune": kommune.pk,
-            "school_name": "Skole X",
+            "school_name": school.name,
             "name": "Anna",
             "email": "a@b.dk",
         },
@@ -264,11 +334,30 @@ def test_signup_creates_record_and_redirects(kommune):
     s = WebinarSignUp.objects.get(webinar=w)
     assert s.participant_name == "Anna"
     assert s.kommune_id == kommune.pk
-    assert s.school_name == "Skole X"
+    assert s.school_name == school.name
 
 
 @pytest.mark.django_db
-def test_signup_rejects_duplicate_email(kommune):
+def test_signup_with_other_school_creates_record(kommune):
+    w = _make_webinar(slug="post-other", is_published=True)
+    client = Client()
+    resp = client.post(
+        f"/webinar/{w.slug}/",
+        {
+            "kommune": kommune.pk,
+            "school_not_listed": "on",
+            "school_other": "Privat institut",
+            "name": "Anna",
+            "email": "a@b.dk",
+        },
+    )
+    assert resp.status_code == 302
+    s = WebinarSignUp.objects.get(webinar=w)
+    assert s.school_name == "Privat institut"
+
+
+@pytest.mark.django_db
+def test_signup_rejects_duplicate_email(kommune, school):
     w = _make_webinar(slug="dup", is_published=True)
     WebinarSignUp.objects.create(
         webinar=w, kommune=kommune, school_name="X", participant_name="A", participant_email="dup@x.dk"
@@ -278,7 +367,7 @@ def test_signup_rejects_duplicate_email(kommune):
         f"/webinar/{w.slug}/",
         {
             "kommune": kommune.pk,
-            "school_name": "Skole X",
+            "school_name": school.name,
             "name": "B",
             "email": "dup@x.dk",
         },

@@ -4,7 +4,7 @@ from django import forms
 from django_summernote.widgets import SummernoteWidget
 
 from apps.courses.models import Instructor
-from apps.schools.models import Kommune
+from apps.schools.models import Kommune, School
 from apps.signups.forms import DynamicFieldsMixin
 
 from .models import Webinar
@@ -15,22 +15,61 @@ from .models import Webinar
 
 
 class WebinarSignupForm(DynamicFieldsMixin, forms.Form):
-    """Public webinar signup form. Anyone can submit — no school auth."""
+    """Public webinar signup form. Anyone can submit — no school auth.
+
+    Skole-feltet er en dropdown der filtreres efter den valgte kommune
+    (populeres client-side via /signup/school/schools-by-kommune/). Hvis
+    deltageren ikke arbejder på en skole i listen, kan de markere
+    "Min skole er ikke på listen" og skrive et fritekst-navn.
+    """
 
     kommune = forms.ModelChoiceField(
         queryset=Kommune.objects.order_by("name"),
         label="Kommune",
         empty_label="Vælg kommune...",
     )
-    school_name = forms.CharField(max_length=255, label="Skole")
+    school_name = forms.CharField(
+        max_length=255,
+        label="Skole",
+        required=False,
+        widget=forms.Select(),
+    )
+    school_not_listed = forms.BooleanField(
+        required=False,
+        label="Min skole er ikke på listen",
+    )
+    school_other = forms.CharField(
+        max_length=255,
+        required=False,
+        label="Skolens navn",
+    )
     name = forms.CharField(max_length=255, label="Navn")
     email = forms.EmailField(label="E-mail")
 
     def __init__(self, *args, signup_page=None, submit_label="Tilmeld", **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Populate school_name choices based on the (possibly bound) kommune.
+        choices = [("", "Vælg skole...")]
+        kommune_pk = None
+        if self.is_bound:
+            kommune_pk = self.data.get("kommune")
+        elif self.initial.get("kommune"):
+            kommune_pk = self.initial["kommune"]
+        if kommune_pk:
+            try:
+                kommune = Kommune.objects.get(pk=kommune_pk)
+                schools = School.objects.active().filter(kommune=kommune).order_by("name")
+                choices.extend([(s.name, s.name) for s in schools])
+            except (Kommune.DoesNotExist, ValueError, TypeError):
+                pass
+        self.fields["school_name"].widget.choices = choices
+
         layout_items = [
             Field("kommune"),
             Field("school_name"),
+            Field("school_not_listed"),
+            Div(Field("school_other"), css_id="school-other-container", css_class="d-none"),
             Field("name"),
             Field("email"),
         ]
@@ -43,6 +82,32 @@ class WebinarSignupForm(DynamicFieldsMixin, forms.Form):
         self.helper = FormHelper()
         self.helper.form_tag = False
         self.helper.layout = Layout(*layout_items)
+
+    def clean(self):
+        cleaned = super().clean()
+        kommune = cleaned.get("kommune")
+
+        if cleaned.get("school_not_listed"):
+            other = (cleaned.get("school_other") or "").strip()
+            if not other:
+                self.add_error("school_other", "Angiv venligst skolens navn.")
+            else:
+                cleaned["school_name"] = other
+        else:
+            school_name = (cleaned.get("school_name") or "").strip()
+            if not school_name:
+                self.add_error(
+                    "school_name",
+                    "Vælg en skole fra listen, eller markér 'Min skole er ikke på listen'.",
+                )
+            elif kommune and not School.objects.active().filter(kommune=kommune, name=school_name).exists():
+                self.add_error(
+                    "school_name",
+                    "Vælg en skole fra listen i den valgte kommune.",
+                )
+            else:
+                cleaned["school_name"] = school_name
+        return cleaned
 
 
 # ---------------------------------------------------------------------------

@@ -40,3 +40,66 @@
 </form>
 {% endif %}
 {% endblock %}
+
+{% block signup_extra_js %}
+<script>
+(function () {
+    var kommuneSel = document.getElementById('id_kommune');
+    var schoolSel = document.getElementById('id_school_name');
+    var notListedCb = document.getElementById('id_school_not_listed');
+    var otherContainer = document.getElementById('school-other-container');
+    var otherInput = document.getElementById('id_school_other');
+    if (!kommuneSel || !schoolSel) return;
+
+    function populateSchools(kommuneName, selectedName) {
+        // Clear current options except the placeholder
+        schoolSel.innerHTML = '<option value="">Vælg skole...</option>';
+        if (!kommuneName) return;
+        fetch('{% url "signup:schools-by-kommune" %}?kommune=' + encodeURIComponent(kommuneName))
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                (data.schools || []).forEach(function (s) {
+                    var opt = document.createElement('option');
+                    opt.value = s.name;
+                    opt.textContent = s.name;
+                    if (selectedName && s.name === selectedName) opt.selected = true;
+                    schoolSel.appendChild(opt);
+                });
+            });
+    }
+
+    function selectedKommuneName() {
+        var idx = kommuneSel.selectedIndex;
+        if (idx < 0) return '';
+        var txt = kommuneSel.options[idx].text || '';
+        // empty_label is "Vælg kommune..." — treat that as no selection
+        if (kommuneSel.options[idx].value === '') return '';
+        return txt;
+    }
+
+    kommuneSel.addEventListener('change', function () {
+        populateSchools(selectedKommuneName(), null);
+    });
+
+    // On initial load, if a kommune is already selected (e.g. server re-rendered after a validation error),
+    // populate schools and preserve the previously chosen school
+    var preSelectedSchool = schoolSel.value;
+    if (selectedKommuneName()) populateSchools(selectedKommuneName(), preSelectedSchool);
+
+    function toggleOther() {
+        if (notListedCb && notListedCb.checked) {
+            otherContainer.classList.remove('d-none');
+            schoolSel.disabled = true;
+        } else {
+            otherContainer.classList.add('d-none');
+            schoolSel.disabled = false;
+            if (otherInput) otherInput.value = '';
+        }
+    }
+    if (notListedCb) {
+        notListedCb.addEventListener('change', toggleOther);
+        toggleOther();
+    }
+})();
+</script>
+{% endblock %}

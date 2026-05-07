@@ -76,10 +76,16 @@ class Webinar(models.Model):
     @property
     def display_time(self):
         """Combined date + start/end time + duration, e.g.
-        '12. oktober 2026 18:00 - 19:30 (90 minutter)'."""
-        date_str = date_format(self.start_at, "j. F Y")
-        start_str = date_format(self.start_at, "H:i")
-        end_str = date_format(self.end_at, "H:i")
+        '12. oktober 2026 18:00 - 19:30 (90 minutter)'.
+
+        Localized to the project timezone — `start_at` is stored in UTC,
+        and `date_format` does NOT auto-localize, so we convert first.
+        """
+        local_start = timezone.localtime(self.start_at)
+        local_end = timezone.localtime(self.end_at)
+        date_str = date_format(local_start, "j. F Y")
+        start_str = date_format(local_start, "H:i")
+        end_str = date_format(local_end, "H:i")
         return f"{date_str} {start_str} - {end_str} ({self.duration_minutes} minutter)"
 
 
