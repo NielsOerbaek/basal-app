@@ -10,4 +10,5 @@ urlpatterns = [
     path("<int:pk>/", views.WebinarManageDetailView.as_view(), name="manage-detail"),
     path("<int:pk>/edit/", views.WebinarManageUpdateView.as_view(), name="update"),
     path("<int:pk>/delete/", views.WebinarManageDeleteView.as_view(), name="delete"),
+    path("signups/<int:pk>/delete/", views.WebinarSignupDeleteView.as_view(), name="signup-delete"),
 ]

@@ -4,6 +4,16 @@ Oversigt over nye funktioner og ændringer i Basal-systemet, siden 16. januar 20
 
 ---
 
+## 11. maj 2026
+
+### Fjerne tilmeldinger fra webinar
+På et webinars detaljeside er hver tilmelding nu udstyret med et lille kryds yderst til højre, så man kan fjerne en enkelt tilmelding direkte fra listen. Handlingen kræver bekræftelse og logges som vanligt i aktivitetsloggen.
+
+### Bedre visning af kursusunderviser-modtagere i masseudsendelses-oversigten
+Når en masseudsendelse blev sendt til **undervisere der har deltaget på kursus**, kunne de pågældende rækker i oversigten efter udsendelsen fejlagtigt vise "Person slettet" — selv om underviseren slet ikke var slettet. Det skete fordi underviseren kun fandtes på kursustilmeldingen og ikke som en almindelig kontaktperson på skolen. Nu vises underviserens navn og rollen "Underviser" i stedet. Eksisterende udsendelser er også opdateret med det rigtige navn.
+
+---
+
 ## 7. maj 2026
 
 ### Vælg flere modtagertyper på samme udsendelse

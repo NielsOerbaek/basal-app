@@ -585,6 +585,31 @@ def test_delete_post_removes_webinar(admin_client):
 
 
 @pytest.mark.django_db
+def test_signup_delete_get_renders_confirm_modal(admin_client, kommune):
+    w = _make_webinar(slug="sd1")
+    s = WebinarSignUp.objects.create(
+        webinar=w, kommune=kommune, school_name="Skole", participant_name="Anna", participant_email="anna@x.dk"
+    )
+    resp = admin_client.get(f"/webinars/signups/{s.pk}/delete/")
+    assert resp.status_code == 200
+    assert b"Anna" in resp.content
+
+
+@pytest.mark.django_db
+def test_signup_delete_post_removes_signup_and_redirects_to_manage(admin_client, kommune):
+    w = _make_webinar(slug="sd2")
+    s = WebinarSignUp.objects.create(
+        webinar=w, kommune=kommune, school_name="Skole", participant_name="Bo", participant_email="bo@x.dk"
+    )
+    resp = admin_client.post(f"/webinars/signups/{s.pk}/delete/")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert data["redirect"] == f"/webinars/{w.pk}/"
+    assert not WebinarSignUp.objects.filter(pk=s.pk).exists()
+
+
+@pytest.mark.django_db
 def test_admin_can_publish_webinar_without_meeting_url(admin_client):
     """meeting_url is optional now — admin form must let publish go through."""
     resp = admin_client.post(

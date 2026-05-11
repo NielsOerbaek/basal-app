@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
 from django.utils.html import format_html
 from django.views import View
@@ -216,3 +216,28 @@ class WebinarManageDeleteView(View):
         webinar.delete()
         messages.success(request, f'Webinaret "{title}" er blevet permanent slettet.')
         return JsonResponse({"success": True, "redirect": str(reverse_lazy("webinars:list"))})
+
+
+@method_decorator(staff_required, name="dispatch")
+class WebinarSignupDeleteView(View):
+    def get(self, request, pk):
+        signup = get_object_or_404(WebinarSignUp, pk=pk)
+        return render(
+            request,
+            "core/components/confirm_delete_modal.html",
+            {
+                "title": "Slet tilmelding",
+                "message": format_html(
+                    "Er du sikker på, at du vil fjerne tilmeldingen for <strong>{}</strong>?",
+                    signup.participant_name,
+                ),
+                "delete_url": reverse("webinars:signup-delete", kwargs={"pk": pk}),
+            },
+        )
+
+    def post(self, request, pk):
+        signup = get_object_or_404(WebinarSignUp, pk=pk)
+        webinar_pk = signup.webinar.pk
+        signup.delete()
+        messages.success(request, "Tilmeldingen er blevet fjernet.")
+        return JsonResponse({"success": True, "redirect": reverse("webinars:manage-detail", kwargs={"pk": webinar_pk})})

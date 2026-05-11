@@ -94,6 +94,7 @@
                     <th>Kommune</th>
                     <th>Skole</th>
                     <th>Tilmeldt</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -109,10 +110,17 @@
                     <td>{{ signup.kommune.name|default:"-" }}</td>
                     <td>{{ signup.school_name|default:"-" }}</td>
                     <td>{{ signup.created_at|date:"d. M Y H:i" }}</td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-sm btn-link text-danger p-0" title="Fjern tilmelding"
+                                hx-get="{% url 'webinars:signup-delete' signup.pk %}"
+                                hx-target="#modal-container">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="text-center text-muted py-3">Ingen tilmeldinger endnu.</td>
+                    <td colspan="6" class="text-center text-muted py-3">Ingen tilmeldinger endnu.</td>
                 </tr>
                 {% endfor %}
             </tbody>
