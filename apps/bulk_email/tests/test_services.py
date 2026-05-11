@@ -210,7 +210,7 @@ class ResolveRecipientsUndervisereKursusTest(TestCase):
     def test_only_includes_undervisere_with_email(self):
         schools = School.objects.filter(pk__in=[self.school_a.pk])
         triples = resolve_recipients(schools, [BulkEmail.UNDERVISERE_KURSUS])
-        emails = [p.email for _, p, _ in triples]
+        emails = [p.email for _, p, _, _ in triples]
         self.assertEqual(emails, ["anna@a.dk"])
         self.assertEqual(triples[0][2], ["Underviser"])
 
@@ -228,10 +228,14 @@ class ResolveRecipientsUndervisereKursusTest(TestCase):
     def test_pseudo_person_is_unsaved(self):
         schools = School.objects.filter(pk__in=[self.school_a.pk])
         triples = resolve_recipients(schools, [BulkEmail.UNDERVISERE_KURSUS])
-        _, person, _ = triples[0]
+        _, person, _, course_signup = triples[0]
         self.assertIsNone(person.pk)
         self.assertEqual(person.name, "Anna Underviser")
         self.assertEqual(person.email, "anna@a.dk")
+        # Underviser-only recipients carry a CourseSignUp link so the detail
+        # view can render participant_name/role instead of "Person slettet".
+        self.assertIsNotNone(course_signup)
+        self.assertEqual(course_signup.participant_email, "anna@a.dk")
 
     def test_underviser_with_existing_person_email_combines_roles(self):
         # Add a koordinator on school_a whose email matches the underviser
@@ -247,6 +251,8 @@ class ResolveRecipientsUndervisereKursusTest(TestCase):
         )
         self.assertEqual(len(triples), 1)
         self.assertEqual(triples[0][2], ["Koordinator", "Underviser"])
+        # Person-backed: course_signup is not needed for display.
+        self.assertIsNone(triples[0][3])
 
 
 @override_settings(RESEND_API_KEY=None)

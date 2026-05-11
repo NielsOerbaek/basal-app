@@ -59,7 +59,9 @@ class BulkEmailDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         campaign = self.object
-        recipients = list(campaign.recipients.select_related("school", "person").order_by("success", "school__name"))
+        recipients = list(
+            campaign.recipients.select_related("school", "person", "course_signup").order_by("success", "school__name")
+        )
 
         # Collect person bounce status (for recipients where person still exists)
         person_pks = [r.person_id for r in recipients if r.person_id]
@@ -393,7 +395,7 @@ class BulkEmailDryRunView(View):
 
         do_not_contact_schools = [s for s in schools if s.do_not_contact_at]
         triples = resolve_recipients(schools, recipient_types)
-        matched_school_pks = {school.pk for school, _person, _roles in triples}
+        matched_school_pks = {school.pk for school, _person, _roles, _signup in triples}
 
         # Combined template for variable analysis
         combined = subject + " " + body_html
@@ -407,7 +409,7 @@ class BulkEmailDryRunView(View):
                 "kommune": school.kommune.name if school.kommune else "",
                 "roles": roles,
             }
-            for school, person, roles in triples
+            for school, person, roles, _signup in triples
         ]
 
         skipped_data = [
@@ -584,10 +586,12 @@ class BulkEmailSendView(SchoolFilterMixin, View):
 
             yield f"data: {json.dumps({'type': 'start', 'total': len(recipient_triples), 'skipped': skipped})}\n\n"
 
-            for n, (school, person, _roles) in enumerate(recipient_triples, start=1):
+            for n, (school, person, _roles, course_signup) in enumerate(recipient_triples, start=1):
                 if n > 1:
                     time.sleep(0.25)
-                recipient = send_to_school(campaign, school, person, attachment_data=attachment_data)
+                recipient = send_to_school(
+                    campaign, school, person, attachment_data=attachment_data, course_signup=course_signup
+                )
                 if recipient.success:
                     sent += 1
                 else:

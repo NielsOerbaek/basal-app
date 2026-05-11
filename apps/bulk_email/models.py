@@ -103,6 +103,9 @@ class BulkEmailAttachment(models.Model):
 class BulkEmailRecipient(models.Model):
     bulk_email = models.ForeignKey(BulkEmail, on_delete=models.CASCADE, related_name="recipients")
     person = models.ForeignKey(Person, null=True, on_delete=models.SET_NULL)
+    course_signup = models.ForeignKey(
+        "courses.CourseSignUp", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
     school = models.ForeignKey(School, null=True, on_delete=models.SET_NULL)
     email = models.CharField(max_length=254)
     success = models.BooleanField(default=False)

@@ -121,14 +121,16 @@ def resolve_recipients(schools, recipient_types):
         recipient_types: list of BulkEmail.RECIPIENT_TYPE_* values.
 
     Returns:
-        List of (school, person, roles) triples where `roles` is a list of human-readable
-        role labels (in the model's defined order) describing which selected types matched.
-        Recipients are deduped per school by lowercase email — a person matching multiple
-        types appears once with multiple role labels.
+        List of (school, person, roles, course_signup) tuples where `roles` is a list of
+        human-readable role labels (in the model's defined order) describing which selected
+        types matched. Recipients are deduped per school by lowercase email — a person
+        matching multiple types appears once with multiple role labels.
 
-        For UNDERVISERE_KURSUS, person is an unsaved Person built from a CourseSignUp's
-        participant fields (no pk — `send_to_school` handles this and stores the recipient
-        with a null Person FK).
+        For UNDERVISERE_KURSUS-only candidates, `person` is an unsaved Person built from a
+        CourseSignUp's participant fields (no pk — `send_to_school` stores the recipient
+        with a null Person FK) and `course_signup` is the matching CourseSignUp so the
+        detail view can display the participant's name/role. `course_signup` is None for
+        Person-backed recipients.
     """
     types = set(recipient_types or [])
     if not types:
@@ -158,7 +160,8 @@ def resolve_recipients(schools, recipient_types):
         if school.do_not_contact_at:
             continue
 
-        # candidates: dict keyed by email.lower() -> {"person": Person, "type_keys": set[str]}
+        # candidates: dict keyed by email.lower() ->
+        #   {"person": Person, "type_keys": set[str], "course_signup": CourseSignUp | None}
         candidates = {}
 
         people_with_email = [p for p in school.people.all() if p.email]
@@ -177,13 +180,17 @@ def resolve_recipients(schools, recipient_types):
             if not matched:
                 continue
             key = p.email.lower()
-            entry = candidates.setdefault(key, {"person": p, "type_keys": set()})
+            entry = candidates.setdefault(key, {"person": p, "type_keys": set(), "course_signup": None})
             entry["type_keys"].update(matched)
 
         for su in underviser_signups_by_school.get(school.pk, []):
             key = su.participant_email.lower()
             if key in candidates:
                 candidates[key]["type_keys"].add(BulkEmail.UNDERVISERE_KURSUS)
+                # Only link the CourseSignUp when there is no Person backing — Person-backed
+                # rows render their role/name from Person.
+                if candidates[key]["course_signup"] is None and candidates[key]["person"].pk is None:
+                    candidates[key]["course_signup"] = su
             else:
                 candidates[key] = {
                     "person": Person(
@@ -192,22 +199,26 @@ def resolve_recipients(schools, recipient_types):
                         phone=su.participant_phone,
                     ),
                     "type_keys": {BulkEmail.UNDERVISERE_KURSUS},
+                    "course_signup": su,
                 }
 
         for entry in candidates.values():
             roles = [role_label[t] for t in role_order if t in entry["type_keys"]]
-            result.append((school, entry["person"], roles))
+            result.append((school, entry["person"], roles, entry["course_signup"]))
 
     return result
 
 
-def send_to_school(bulk_email, school, person, attachment_data=None):
+def send_to_school(bulk_email, school, person, attachment_data=None, course_signup=None):
     """
     Send a single bulk email to one school/person. Writes and returns a BulkEmailRecipient.
     Does NOT abort on failure — caller should continue iterating.
 
     If attachment_data is provided (list of {"filename", "content"} dicts), it is used
     directly instead of re-reading files from disk — avoids repeated I/O in bulk loops.
+
+    course_signup, when provided, is stored on the recipient so the detail view can show
+    the participant name/role for underviser-type recipients that have no Person FK.
     """
     email_address = person.email
     subject = render_for_school(bulk_email.subject, school, person)
@@ -216,6 +227,7 @@ def send_to_school(bulk_email, school, person, attachment_data=None):
     recipient = BulkEmailRecipient(
         bulk_email=bulk_email,
         person=person if (person and person.pk) else None,
+        course_signup=course_signup if (person is None or not person.pk) else None,
         school=school,
         email=email_address,
     )
